@@ -379,15 +379,14 @@ textarea{resize:vertical;min-height:80px}
         </select>
       </div>
     </div>
-    <label class="lbl" id="lg-lbl-email">Email</label>
-    <input class="li" type="email" id="lg-email" placeholder="admin@beercontrol.io" value="admin@beercontrol.io">
+    <label class="lbl" id="lg-lbl-email">Username</label>
+    <input class="li" type="text" id="lg-email" placeholder="admin" value="admin">
     <label class="lbl" id="lg-lbl-pass">Password</label>
     <input class="li" type="password" id="lg-pass" placeholder="••••••••" value="admin">
     <button class="login-btn" id="lg-btn" onclick="doLogin()">Sign In →</button>
     <div class="login-err" id="lg-err"></div>
     <div class="login-hint">
-      admin@beercontrol.io / admin → Admin<br>
-      carlos@cerveceria.es / demo123 → Restaurant
+      admin / admin
     </div>
   </div>
 </div>
@@ -876,6 +875,8 @@ textarea{resize:vertical;min-height:80px}
     <div class="detail-tab" onclick="switchSettingsTab('mqtt',this)">⚡ MQTT</div>
     <div class="detail-tab" onclick="switchSettingsTab('thresholds',this)">🔔 Thresholds</div>
     <div class="detail-tab" onclick="switchSettingsTab('styles',this)">🍺 Beer Styles</div>
+    <div class="detail-tab" onclick="switchSettingsTab('roles',this)">👤 Roles</div>
+    <div class="detail-tab" onclick="switchSettingsTab('plans',this)">💳 Plans</div>
   </div>
 
   <!-- TAB: General -->
@@ -969,6 +970,48 @@ textarea{resize:vertical;min-height:80px}
           <div class="form-group fg-full"><label class="fl" data-i18n="cleaning_interval">Line Cleaning Interval (days)</label><input type="number" value="14"></div>
         </div>
         <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')" data-i18n="save">Save</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Roles -->
+  <div id="stab-roles" style="display:none">
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">User Roles</span><span id="rolesCount" style="font-size:12px;color:var(--text3);font-family:var(--fm)"></span></div>
+        <div id="rolesList" style="padding:8px 12px;max-height:420px;overflow-y:auto"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">Add New Role</span></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="form-group fg-full"><label class="fl">Role Name</label><input id="newRoleName" placeholder="e.g. Bartender"></div>
+            <div class="form-group fg-full"><label class="fl">Description (optional)</label><input id="newRoleDesc" placeholder="e.g. Can view taps, log pours"></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="saveNewRole()">Add Role</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Plans -->
+  <div id="stab-plans" style="display:none">
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">Subscription Plans</span><span id="plansCount" style="font-size:12px;color:var(--text3);font-family:var(--fm)"></span></div>
+        <div id="plansList" style="padding:8px 12px;max-height:420px;overflow-y:auto"></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">Add New Plan</span></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="form-group fg-full"><label class="fl">Plan Name</label><input id="newPlanName" placeholder="e.g. Business"></div>
+            <div class="form-group"><label class="fl">Price (€/mo)</label><input id="newPlanPrice" type="number" placeholder="299" min="0"></div>
+            <div class="form-group"><label class="fl">Max Taps</label><input id="newPlanTaps" type="number" placeholder="20" min="1"><div style="font-size:11px;color:var(--text3);margin-top:4px">Use 0 for unlimited</div></div>
+            <div class="form-group fg-full"><label class="fl">Description</label><input id="newPlanDesc" placeholder="e.g. Up to 20 taps, priority support"></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="saveNewPlan()">Add Plan</button></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1139,24 +1182,19 @@ textarea{resize:vertical;min-height:80px}
       <div id="mAddRestStep1">
         <div style="font-size:12px;color:var(--amber);font-family:var(--fm);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px">Step 1 of 3 — Restaurant Details</div>
         <div class="fg">
-          <div class="form-group fg-full"><label class="fl" data-i18n="restaurant_name">Restaurant Name</label><input id="nr-name" placeholder="e.g. Bar La Marina"></div>
-          <div class="form-group fg-full"><label class="fl" data-i18n="city">City</label><input id="nr-city" placeholder="Barcelona"></div>
-          <div class="form-group fg-full"><label class="fl" data-i18n="plan">Plan</label>
-            <select id="nr-plan">
-              <option value="starter">Starter — €89/mo (≤4 taps)</option>
-              <option value="pro">Pro — €189/mo (≤12 taps)</option>
-              <option value="enterprise">Enterprise — €390/mo (unlimited)</option>
-            </select>
-          </div>
-          <div class="form-group fg-full"><label class="fl" data-i18n="interface_language">Interface Language</label>
-            <select id="nr-lang"><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option><option value="it">🇮🇹 Italiano</option><option value="el">🇬🇷 Ελληνικά</option></select>
-          </div>
-          <div class="form-group fg-full"><label class="fl">Number of Taps</label><input id="nr-taps" type="number" placeholder="e.g. 6" min="1" max="50" style="font-size:15px">
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">You can add more taps later from the restaurant settings</div>
+          <div class="form-group fg-full"><label class="fl">Restaurant Name</label><input id="nr-name" placeholder="e.g. Bar La Marina"></div>
+          <div class="form-group"><label class="fl">Phone Number</label><input id="nr-phone" type="tel" placeholder="+34 93 000 00 00"></div>
+          <div class="form-group"><label class="fl">City</label><input id="nr-city" placeholder="Barcelona"></div>
+          <div class="form-group fg-full"><label class="fl">Street Address</label><input id="nr-address" placeholder="Carrer de la Marina, 16"></div>
+          <div class="form-group"><label class="fl">Postal Code</label><input id="nr-postal" placeholder="08005"></div>
+          <div class="form-group"><label class="fl">Country</label><input id="nr-country" placeholder="Spain"></div>
+          <div class="form-group"><label class="fl">Plan</label><select id="nr-plan"></select></div>
+          <div class="form-group"><label class="fl">Number of Taps</label><input id="nr-taps" type="number" placeholder="e.g. 6" min="1" max="50">
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Can add more later</div>
           </div>
         </div>
         <div class="form-actions" style="justify-content:flex-end">
-          <button class="btn btn-ghost" onclick="closeM('mAddRest')" data-i18n="cancel">Cancel</button>
+          <button class="btn btn-ghost" onclick="closeM('mAddRest')">Cancel</button>
           <button class="btn btn-primary" onclick="restStep(2)">Next: Add Users →</button>
         </div>
       </div>
@@ -1214,11 +1252,13 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group fg-full">
           <label class="fl">Beer Logo</label>
           <div class="fxc g12">
-            <div id="nb-logo-preview" style="width:72px;height:72px;border-radius:10px;border:2px dashed var(--border2);background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:32px;flex-shrink:0" onclick="toast(t('upload_soon'),'info')">🍺</div>
+            <div id="nb-logo-preview" style="width:72px;height:72px;border-radius:10px;border:2px dashed var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden">🍺</div>
             <div>
-              <button class="btn btn-ghost btn-sm" onclick="toast(t('upload_soon'),'info')">Upload PNG / SVG</button>
-              <div style="font-size:11px;color:var(--text3);margin-top:6px" data-i18n="logo_hint">PNG/SVG, max 512KB.</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px">Same logo used in admin dashboard, restaurant view and ESP32 display</div>
+              <input type="file" id="nb-logo-file" accept="image/*" style="display:none" onchange="previewLogo(this,'nb-logo-preview','nb-logo-data')">
+              <input type="hidden" id="nb-logo-data">
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('nb-logo-file').click()">Upload PNG / SVG / JPG</button>
+              <div style="font-size:11px;color:var(--text3);margin-top:6px">Any size — auto-resized. Max 512 KB.</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">Same logo used in dashboard, restaurant view and ESP32 display</div>
             </div>
           </div>
         </div>
@@ -1234,6 +1274,79 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-actions">
         <button class="btn btn-primary" onclick="addBeerToLibrary()">Add to Library</button>
         <button class="btn btn-ghost" onclick="closeM('mAddBeer')" data-i18n="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Beer -->
+<div class="modal-overlay" id="mEditBeer">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span style="font-size:20px">✏️</span>
+      <div class="modal-title">Edit Beer</div>
+      <button class="modal-x" onclick="closeM('mEditBeer')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="eb-id">
+      <div class="fg">
+        <div class="form-group fg-full">
+          <label class="fl">Beer Name</label>
+          <input id="eb-name" placeholder="e.g. Heineken">
+        </div>
+        <div class="form-group">
+          <label class="fl">Style</label>
+          <select id="eb-style"></select>
+        </div>
+        <div class="form-group">
+          <label class="fl">ABV (%)</label>
+          <input id="eb-abv" type="number" step="0.1" min="0" max="25">
+        </div>
+        <div class="form-group">
+          <label class="fl">Brand</label>
+          <input id="eb-brand" placeholder="e.g. Heineken N.V.">
+        </div>
+        <div class="form-group">
+          <label class="fl">Origin</label>
+          <input id="eb-origin" placeholder="e.g. Netherlands">
+        </div>
+        <div class="form-group fg-full">
+          <label class="fl">Beer Logo</label>
+          <div class="fxc g12">
+            <div id="eb-logo-preview" style="width:72px;height:72px;border-radius:10px;border:2px dashed var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden">🍺</div>
+            <div>
+              <input type="file" id="eb-logo-file" accept="image/*" style="display:none" onchange="previewLogo(this,'eb-logo-preview','eb-logo-data')">
+              <input type="hidden" id="eb-logo-data">
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('eb-logo-file').click()">Change Logo</button>
+              <button class="btn btn-ghost btn-sm" style="margin-left:6px;color:var(--red)" onclick="clearBeerLogo()">Remove Logo</button>
+              <div style="font-size:11px;color:var(--text3);margin-top:6px">Any size — auto-resized. Max 512 KB.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions" style="justify-content:space-between">
+        <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(232,75,75,.3)" onclick="deleteBeerFromLibrary()">🗑 Delete Beer</button>
+        <div class="flex g8">
+          <button class="btn btn-primary" onclick="saveEditBeer()">Save Changes</button>
+          <button class="btn btn-ghost" onclick="closeM('mEditBeer')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog (replaces browser confirm()) -->
+<div class="modal-overlay" id="mConfirm" style="z-index:1100">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr" style="padding-bottom:12px">
+      <div id="mConfirm-icon" style="font-size:24px">⚠️</div>
+      <div id="mConfirm-title" class="modal-title" style="font-size:16px"></div>
+    </div>
+    <div class="modal-body" style="padding-top:0">
+      <p id="mConfirm-msg" style="color:var(--text2);font-size:14px;line-height:1.6;margin-bottom:24px"></p>
+      <div class="form-actions" style="justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeM('mConfirm')" id="mConfirm-cancel">Cancel</button>
+        <button id="mConfirm-ok" class="btn" style="background:var(--red);color:#fff;border:none">Delete</button>
       </div>
     </div>
   </div>
@@ -1299,8 +1412,10 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label class="fl" data-i18n="last_name">Last Name</label><input placeholder="Smith"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="email">Email</label><input type="email" placeholder="john@restaurant.com"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="restaurant">Restaurant</label><select><option>La Cervecería</option><option>Pub Dublin</option><option>Biergarten Munich</option></select></div>
-        <div class="form-group fg-full"><label class="fl" data-i18n="role">Role</label><select><option data-i18n="manager">Manager</option><option>Owner</option><option>Staff</option></select></div>
-        <div class="form-group fg-full"><label class="fl">Password</label><input type="password" placeholder="Temporary password"></div>
+        <div class="form-group fg-full"><label class="fl" data-i18n="role">Role</label><select id="addUserRole"></select></div>
+      </div>
+      <div style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);margin-bottom:16px">
+        🔐 A temporary password will be auto-generated and emailed to this user. They must set a new password on first login.
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="closeM('mAddUser');toast(t('user_created'),'info')" data-i18n="create_user">Create User</button><button class="btn btn-ghost" onclick="closeM('mAddUser')" data-i18n="cancel">Cancel</button></div>
     </div>
@@ -1456,7 +1571,7 @@ const TR={
    MOCK DATA
 ══════════════════════════════════════════ */
 const USERS={
-  'admin@beercontrol.io':{pw:'admin',role:'admin',name:'Super Admin',init:'A'},
+  'admin':{pw:'admin',role:'admin',name:'Super Admin',init:'A'},
   'carlos@cerveceria.es':{pw:'demo123',role:'user',name:'Carlos Martínez',init:'C',venue:'La Cervecería · Barcelona'},
   'sean@pubdublin.ie':{pw:'demo123',role:'user',name:"Sean O'Brien",init:'S',venue:'Pub Dublin · Dublin'},
   'hans@biergarten.de':{pw:'demo123',role:'user',name:'Hans Weber',init:'H',venue:'Biergarten Munich · Munich'},
@@ -2376,7 +2491,7 @@ const USERS_DATA = [
   {id:8, name:'James Smith',     email:'james@redlion.co.uk',   rest:'The Red Lion',     role:'Manager', active:false, lastLogin:'5 days ago'},
 ];
 
-const BEER_LIBRARY = [
+const BEER_LIBRARY_DEFAULT = [
   {id:1,  name:'Heineken',          brand:'Heineken N.V.',       origin:'Netherlands', style:'Lager', abv:5.0,  emoji:'🍺', assignedTo:['La Cervecería','Biergarten Munich']},
   {id:2,  name:'Guinness',          brand:'Diageo',              origin:'Ireland',     style:'Stout', abv:4.2,  emoji:'⬛', assignedTo:['Pub Dublin']},
   {id:3,  name:'Estrella Damm',     brand:'Damm S.A.',           origin:'Spain',       style:'Lager', abv:5.4,  emoji:'⭐', assignedTo:['La Cervecería','Bar Estrella']},
@@ -2385,7 +2500,16 @@ const BEER_LIBRARY = [
   {id:6,  name:'Weihenstephaner',   brand:'Weihenstephan Brewery',origin:'Germany',    style:'Wheat', abv:5.4,  emoji:'🏔', assignedTo:['Biergarten Munich']},
   {id:7,  name:'Voll-Damm',         brand:'Damm S.A.',           origin:'Spain',       style:'Ale',   abv:5.5,  emoji:'🔶', assignedTo:['La Cervecería']},
   {id:8,  name:'Guinness Extra',    brand:'Diageo',              origin:'Ireland',     style:'Stout', abv:4.3,  emoji:'🖤', assignedTo:[]},
+  {id:9,  name:'Corona Extra',      brand:'Grupo Modelo',        origin:'Mexico',      style:'Lager', abv:4.5,  logo:'/public/logos/corona.svg',    emoji:'🌞', assignedTo:[]},
+  {id:10, name:'Budweiser',         brand:'Anheuser-Busch InBev',origin:'USA',         style:'Lager', abv:5.0,  logo:'/public/logos/budweiser.svg',  emoji:'🦅', assignedTo:[]},
+  {id:11, name:'Stella Artois',     brand:'AB InBev',            origin:'Belgium',     style:'Lager', abv:5.2,  logo:'/public/logos/stella.png',     emoji:'⭐', assignedTo:[]},
+  {id:12, name:'Hoegaarden',        brand:'AB InBev',            origin:'Belgium',     style:'Wheat', abv:4.9,  logo:'/public/logos/hoegaarden.png', emoji:'🌾', assignedTo:[]},
+  {id:13, name:'Carlsberg',         brand:'Carlsberg Group',     origin:'Denmark',     style:'Lager', abv:5.0,  logo:'/public/logos/carlsberg.png',  emoji:'🍀', assignedTo:[]},
 ];
+const BEER_LIBRARY = (()=>{
+  try { const s = localStorage.getItem('bc_beer_library'); return s ? JSON.parse(s) : BEER_LIBRARY_DEFAULT; } catch(e){ return BEER_LIBRARY_DEFAULT; }
+})();
+function saveBeerLibrary(){ try{ localStorage.setItem('bc_beer_library', JSON.stringify(BEER_LIBRARY)); }catch(e){} }
 
 let restFilter = 'all';
 let userStatusFilter = 'all';
@@ -2575,7 +2699,7 @@ function renderBeerLibraryGrid(){
     <div class="beer-lib-card" onclick="openM('mAddBeer')">
       ${b.assignedTo.length>0?`<div class="beer-assigned-count">${b.assignedTo.length} venue${b.assignedTo.length!==1?'s':''}</div>`:''}
       <div class="fxc g12" style="margin-bottom:12px">
-        <div class="beer-lib-logo">${b.emoji}</div>
+        <div class="beer-lib-logo">${b.logo ? `<img src="${b.logo}" style="width:42px;height:42px;object-fit:contain;" onerror="this.parentElement.textContent='${b.emoji}'">` : b.emoji}</div>
         <div>
           <div class="beer-lib-name">${b.name}</div>
           <div class="beer-lib-meta">${b.brand} · ${b.origin}</div>
@@ -2677,8 +2801,10 @@ function addNewRestUserRow(){
     <div class="fg" style="grid-template-columns:1fr 1fr">
       <div class="form-group"><label class="fl">Name</label><input placeholder="Full name"></div>
       <div class="form-group"><label class="fl">Email</label><input type="email" placeholder="email@venue.com"></div>
-      <div class="form-group"><label class="fl">Role</label><select><option>Owner</option><option>Manager</option><option>Staff</option></select></div>
-      <div class="form-group"><label class="fl">Temp Password</label><input type="password" placeholder="Will be sent by email"></div>
+      <div class="form-group fg-full"><label class="fl">Role</label><select id="user-role-select-${idx}">${getRoleOptions()}</select></div>
+    </div>
+    <div style="margin-top:8px;padding:8px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:8px">
+      🔐 A temporary password will be auto-generated and emailed to this user. They must set a new password on first login.
     </div>`;
   container.appendChild(row);
 }
@@ -3435,7 +3561,7 @@ let BEER_STYLES = [
 
 // Populate all style selects in the DOM
 function populateStyleSelects(){
-  const selects = document.querySelectorAll('#nb-style, #beerStyleFilter, #newStylePreview');
+  const selects = document.querySelectorAll('#nb-style, #eb-style, #beerStyleFilter, #newStylePreview');
   selects.forEach(sel => {
     if(!sel) return;
     const isFilter = sel.id === 'beerStyleFilter';
@@ -3517,13 +3643,156 @@ function deleteStyle(id){
 // SETTINGS TABS
 // ══════════════════════════════════════════
 function switchSettingsTab(tab, el){
-  ['general','email','telegram','mqtt','thresholds','styles'].forEach(t=>{
+  ['general','email','telegram','mqtt','thresholds','styles','roles','plans'].forEach(t=>{
     const panel = document.getElementById('stab-'+t);
     if(panel) panel.style.display = t===tab ? 'block' : 'none';
   });
   document.querySelectorAll('#settingsTabs .detail-tab').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
-  if(tab==='styles'){ renderStylesList(); populateStyleSelects(); }
+  if(tab==='styles') { renderStylesList(); populateStyleSelects(); }
+  if(tab==='roles')  renderRolesList();
+  if(tab==='plans')  renderPlansList();
+}
+
+// ══════════════════════════════════════════
+// ROLES
+// ══════════════════════════════════════════
+const ROLES_DEFAULT = [
+  {id:1, name:'Owner',   desc:'Full access to all restaurant settings and data'},
+  {id:2, name:'Manager', desc:'Manage kegs, users, alerts and reports'},
+  {id:3, name:'Staff',   desc:'View taps and log manual pours only'},
+];
+const ROLES = (()=>{ try{ const s=localStorage.getItem('bc_roles'); return s?JSON.parse(s):ROLES_DEFAULT; }catch(e){ return ROLES_DEFAULT; } })();
+function saveRoles(){ try{ localStorage.setItem('bc_roles', JSON.stringify(ROLES)); }catch(e){} }
+
+function getRoleOptions(){
+  return ROLES.map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+}
+
+function renderRolesList(){
+  const el  = document.getElementById('rolesList');
+  const cnt = document.getElementById('rolesCount');
+  if(!el) return;
+  if(cnt) cnt.textContent = ROLES.length + ' roles';
+  el.innerHTML = ROLES.map(r=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:var(--text1)">${r.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${r.desc||'—'}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="editRole(${r.id})">✏</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteRole(${r.id})">🗑</button>
+    </div>`).join('');
+}
+
+function saveNewRole(){
+  const name = document.getElementById('newRoleName')?.value.trim();
+  const desc = document.getElementById('newRoleDesc')?.value.trim();
+  if(!name){ toast('Role name is required','error'); return; }
+  if(ROLES.find(r=>r.name.toLowerCase()===name.toLowerCase())){ toast('Role already exists','error'); return; }
+  ROLES.push({id: Math.max(0,...ROLES.map(r=>r.id))+1, name, desc:desc||''});
+  saveRoles();
+  document.getElementById('newRoleName').value='';
+  document.getElementById('newRoleDesc').value='';
+  renderRolesList();
+  toast(name + ' role added','info');
+}
+
+function editRole(id){
+  const r = ROLES.find(x=>x.id===id);
+  if(!r) return;
+  const name = prompt('Role name:', r.name);
+  if(!name || !name.trim()) return;
+  const desc = prompt('Description:', r.desc);
+  r.name = name.trim();
+  r.desc = desc||'';
+  saveRoles();
+  renderRolesList();
+  toast('Role updated','info');
+}
+
+function deleteRole(id){
+  const r = ROLES.find(x=>x.id===id);
+  if(!r) return;
+  showConfirm({
+    icon:'👤', title:'Delete Role',
+    message:`Are you sure you want to delete the <strong>${r.name}</strong> role?`,
+    confirmLabel:'Yes, Delete',
+    onConfirm:()=>{ ROLES.splice(ROLES.indexOf(r),1); saveRoles(); renderRolesList(); toast(r.name+' deleted','info'); }
+  });
+}
+
+// ══════════════════════════════════════════
+// PLANS
+// ══════════════════════════════════════════
+const PLANS_DEFAULT = [
+  {id:1, name:'Starter',    price:89,  maxTaps:4,  desc:'Up to 4 taps, email alerts'},
+  {id:2, name:'Pro',        price:189, maxTaps:12, desc:'Up to 12 taps, all alerts, reports'},
+  {id:3, name:'Enterprise', price:390, maxTaps:0,  desc:'Unlimited taps, priority support, SLA'},
+];
+const PLANS = (()=>{ try{ const s=localStorage.getItem('bc_plans'); return s?JSON.parse(s):PLANS_DEFAULT; }catch(e){ return PLANS_DEFAULT; } })();
+function savePlans(){ try{ localStorage.setItem('bc_plans', JSON.stringify(PLANS)); }catch(e){} }
+
+function renderPlansList(){
+  const el  = document.getElementById('plansList');
+  const cnt = document.getElementById('plansCount');
+  if(!el) return;
+  if(cnt) cnt.textContent = PLANS.length + ' plans';
+  el.innerHTML = PLANS.map(p=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 8px;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:var(--text1)">${p.name} <span style="color:var(--amber);font-family:var(--fm)">€${p.price}/mo</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${p.maxTaps===0?'Unlimited taps':p.maxTaps+' taps max'} · ${p.desc||''}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="editPlan(${p.id})">✏</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deletePlan(${p.id})">🗑</button>
+    </div>`).join('');
+}
+
+function populatePlanSelects(){
+  document.querySelectorAll('#nr-plan, #ds-plan, .plan-select').forEach(sel=>{
+    if(!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = PLANS.map(p=>`<option value="${p.name.toLowerCase()}">${p.name} — €${p.price}/mo${p.maxTaps?` (≤${p.maxTaps} taps)`:' (unlimited)'}</option>`).join('');
+    if(cur) sel.value = cur;
+  });
+}
+
+function saveNewPlan(){
+  const name  = document.getElementById('newPlanName')?.value.trim();
+  const price = parseInt(document.getElementById('newPlanPrice')?.value||0);
+  const taps  = parseInt(document.getElementById('newPlanTaps')?.value||0);
+  const desc  = document.getElementById('newPlanDesc')?.value.trim();
+  if(!name){ toast('Plan name is required','error'); return; }
+  PLANS.push({id: Math.max(0,...PLANS.map(p=>p.id))+1, name, price, maxTaps:taps, desc:desc||''});
+  savePlans();
+  ['newPlanName','newPlanPrice','newPlanTaps','newPlanDesc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderPlansList();
+  populatePlanSelects();
+  toast(name + ' plan added','info');
+}
+
+function editPlan(id){
+  const p = PLANS.find(x=>x.id===id);
+  if(!p) return;
+  const name  = prompt('Plan name:', p.name);     if(!name||!name.trim()) return;
+  const price = prompt('Price (€/mo):', p.price); if(price===null) return;
+  const taps  = prompt('Max taps (0 = unlimited):', p.maxTaps); if(taps===null) return;
+  const desc  = prompt('Description:', p.desc);
+  p.name=name.trim(); p.price=parseInt(price)||0; p.maxTaps=parseInt(taps)||0; p.desc=desc||'';
+  savePlans(); renderPlansList(); populatePlanSelects();
+  toast('Plan updated','info');
+}
+
+function deletePlan(id){
+  const p = PLANS.find(x=>x.id===id);
+  if(!p) return;
+  showConfirm({
+    icon:'💳', title:'Delete Plan',
+    message:`Are you sure you want to delete the <strong>${p.name}</strong> plan? Restaurants currently on this plan will not be affected.`,
+    confirmLabel:'Yes, Delete',
+    onConfirm:()=>{ PLANS.splice(PLANS.indexOf(p),1); savePlans(); renderPlansList(); populatePlanSelects(); toast(p.name+' deleted','info'); }
+  });
 }
 
 // ══════════════════════════════════════════
@@ -3551,19 +3820,23 @@ function renderBeerLibraryGrid(){
     <div class="beer-lib-card" onclick="openEditBeer(${b.id})">
       ${b.assignedTo.length>0 ? `<div class="beer-assigned-count">${b.assignedTo.length} venue${b.assignedTo.length!==1?'s':''}</div>` : ''}
       <div class="fxc g12" style="margin-bottom:12px">
-        <div class="beer-lib-logo">${b.emoji}</div>
-        <div>
+        <div class="beer-lib-logo">${b.logo ? `<img src="${b.logo}" style="width:42px;height:42px;object-fit:contain;" onerror="this.parentElement.textContent='${b.emoji}'">` : b.emoji}</div>
+        <div style="flex:1">
           <div class="beer-lib-name">${b.name}</div>
           <div class="beer-lib-meta">${b.style} · ${b.abv}% ABV</div>
+          ${b.brand ? `<div class="beer-lib-meta">${b.brand}${b.origin ? ' · ' + b.origin : ''}</div>` : ''}
         </div>
       </div>
       <div class="flex g6" style="flex-wrap:wrap;margin-bottom:10px">
         <span class="tag tg-blue">${b.style}</span>
         <span class="tag tg-gray">${b.abv}% ABV</span>
       </div>
-      ${b.assignedTo.length>0
-        ? `<div style="font-size:11px;color:var(--text3);font-family:var(--fm)">Used by: ${b.assignedTo.join(', ')}</div>`
-        : `<div style="font-size:11px;color:var(--text3);font-family:var(--fm)">Not assigned to any venue yet</div>`}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        ${b.assignedTo.length>0
+          ? `<div style="font-size:11px;color:var(--text3);font-family:var(--fm)">Used by: ${b.assignedTo.join(', ')}</div>`
+          : `<div></div>`}
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditBeer(${b.id})" style="font-size:11px;padding:4px 10px">✏ Edit</button>
+      </div>
     </div>`).join('') + `
   <div class="beer-lib-card" style="border-style:dashed;opacity:.5;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;gap:8px;color:var(--text3)" onclick="openM('mAddBeer')" onmouseenter="this.style.opacity='1';this.style.borderColor='var(--amber)'" onmouseleave="this.style.opacity='.5';this.style.borderColor=''">
     <div style="font-size:32px">+</div>
@@ -3572,9 +3845,105 @@ function renderBeerLibraryGrid(){
 }
 
 function openEditBeer(id){
-  // In real app would open edit modal — for demo just toast
   const b = BEER_LIBRARY.find(x=>x.id===id);
-  if(b) toast('Editing: ' + b.name,'info');
+  if(!b) return;
+  document.getElementById('eb-id').value    = b.id;
+  document.getElementById('eb-name').value  = b.name;
+  document.getElementById('eb-abv').value   = b.abv;
+  document.getElementById('eb-brand').value = b.brand||'';
+  document.getElementById('eb-origin').value= b.origin||'';
+  document.getElementById('eb-logo-data').value = '';
+  // populate style select then set value
+  populateStyleSelects();
+  setTimeout(()=>{ const s=document.getElementById('eb-style'); if(s) s.value=b.style; },60);
+  // show logo preview
+  const prev = document.getElementById('eb-logo-preview');
+  if(b.logo){
+    prev.innerHTML = `<img src="${b.logo}" style="width:64px;height:64px;object-fit:contain;">`;
+  } else {
+    prev.textContent = b.emoji||'🍺';
+  }
+  openM('mEditBeer');
+}
+
+function saveEditBeer(){
+  const id    = parseInt(document.getElementById('eb-id').value);
+  const name  = document.getElementById('eb-name').value.trim();
+  const style = document.getElementById('eb-style').value;
+  const abv   = parseFloat(document.getElementById('eb-abv').value||0);
+  const brand = document.getElementById('eb-brand').value.trim();
+  const origin= document.getElementById('eb-origin').value.trim();
+  const logoData = document.getElementById('eb-logo-data').value;
+  if(!name)  { toast('Beer name is required','error'); return; }
+  if(!style) { toast('Please select a style','error'); return; }
+  const b = BEER_LIBRARY.find(x=>x.id===id);
+  if(!b) return;
+  b.name   = name;
+  b.style  = style;
+  b.abv    = abv;
+  b.brand  = brand;
+  b.origin = origin;
+  if(logoData) b.logo = logoData;
+  saveBeerLibrary();
+  closeM('mEditBeer');
+  renderBeerLibraryGrid();
+  toast(name + ' updated ✓', 'info');
+}
+
+function deleteBeerFromLibrary(){
+  const id = parseInt(document.getElementById('eb-id').value);
+  const b  = BEER_LIBRARY.find(x=>x.id===id);
+  if(!b) return;
+  showConfirm({
+    icon: '🗑️',
+    title: 'Delete Beer',
+    message: `Are you sure you want to delete <strong>${b.name}</strong> from the library? This action cannot be undone.`,
+    confirmLabel: 'Yes, Delete',
+    onConfirm: () => {
+      const idx = BEER_LIBRARY.indexOf(b);
+      BEER_LIBRARY.splice(idx, 1);
+      saveBeerLibrary();
+      closeM('mEditBeer');
+      renderBeerLibraryGrid();
+      toast(b.name + ' deleted', 'info');
+    }
+  });
+}
+
+function showConfirm({ icon='⚠️', title='Are you sure?', message='', confirmLabel='Confirm', danger=true, onConfirm }){
+  document.getElementById('mConfirm-icon').textContent  = icon;
+  document.getElementById('mConfirm-title').textContent = title;
+  document.getElementById('mConfirm-msg').innerHTML     = message;
+  const okBtn = document.getElementById('mConfirm-ok');
+  okBtn.textContent = confirmLabel;
+  okBtn.style.background = danger ? 'var(--red)' : 'var(--amber)';
+  okBtn.onclick = () => { closeM('mConfirm'); onConfirm(); };
+  openM('mConfirm');
+}
+
+function clearBeerLogo(){
+  const id = parseInt(document.getElementById('eb-id').value);
+  const b  = BEER_LIBRARY.find(x=>x.id===id);
+  document.getElementById('eb-logo-data').value = '';
+  const prev = document.getElementById('eb-logo-preview');
+  prev.textContent = b?.emoji||'🍺';
+  if(b) delete b.logo;
+  saveBeerLibrary();
+  toast('Logo removed','info');
+}
+
+function previewLogo(input, previewId, dataId){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 512*1024){ toast('File too large — max 512 KB','error'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const dataUrl = e.target.result;
+    document.getElementById(dataId).value = dataUrl;
+    const prev = document.getElementById(previewId);
+    prev.innerHTML = `<img src="${dataUrl}" style="width:64px;height:64px;object-fit:contain;">`;
+  };
+  reader.readAsDataURL(file);
 }
 
 // Override addBeerToLibrary to use new simplified form
@@ -3582,14 +3951,19 @@ function addBeerToLibrary(){
   const name  = document.getElementById('nb-name')?.value.trim();
   const style = document.getElementById('nb-style')?.value;
   const abv   = parseFloat(document.getElementById('nb-abv')?.value||0);
+  const logoData = document.getElementById('nb-logo-data')?.value;
   if(!name)  { toast('Beer name is required','error'); return; }
   if(!style) { toast('Please select a style','error'); return; }
   const newId = Math.max(...BEER_LIBRARY.map(b=>b.id)) + 1;
-  BEER_LIBRARY.push({id:newId, name, style, abv, emoji:'🍺', assignedTo:[]});
+  const newBeer = {id:newId, name, style, abv, emoji:'🍺', assignedTo:[]};
+  if(logoData) newBeer.logo = logoData;
+  BEER_LIBRARY.push(newBeer);
+  saveBeerLibrary();
   closeM('mAddBeer');
-  // clear form
   ['nb-name','nb-abv'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.value = id==='nb-abv'?'5.0':''; } });
   const styleEl = document.getElementById('nb-style'); if(styleEl) styleEl.value='';
+  document.getElementById('nb-logo-data').value='';
+  document.getElementById('nb-logo-preview').textContent='🍺';
   renderBeerLibraryGrid();
   toast(name + ' added to library ✓','info');
 }
@@ -3600,7 +3974,9 @@ function addBeerToLibrary(){
 const _origOpenM = openM;
 openM = function(id){
   _origOpenM(id);
-  if(id==='mAddBeer') setTimeout(populateStyleSelects, 50);
+  if(id==='mAddBeer'||id==='mEditBeer') setTimeout(populateStyleSelects, 50);
+  if(id==='mAddRest') setTimeout(populatePlanSelects, 50);
+  if(id==='mAddUser') setTimeout(()=>{ const s=document.getElementById('addUserRole'); if(s) s.innerHTML=getRoleOptions(); }, 50);
 };
 
 // ══════════════════════════════════════════
