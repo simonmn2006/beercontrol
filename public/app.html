@@ -669,9 +669,6 @@ textarea{resize:vertical;min-height:80px}
             <div class="form-group"><label class="fl" data-i18n="plan">Plan</label>
               <select id="ds-plan"><option value="starter">Starter — €89/mo</option><option value="pro">Pro — €189/mo</option><option value="enterprise">Enterprise — €390/mo</option></select>
             </div>
-            <div class="form-group"><label class="fl">Billing Renewal</label>
-              <div class="dp-wrap"><input class="dp-input" id="dpDetailRenewal" readonly placeholder="dd/mm/yyyy" onclick="openDP('dpDetailRenewal')"><span class="dp-icon" onclick="openDP('dpDetailRenewal')">📅</span></div>
-            </div>
             <div class="form-group"><label class="fl">Timezone</label>
               <select id="ds-tz"><option>Europe/Madrid</option><option>Europe/Berlin</option><option>Europe/London</option><option>Europe/Athens</option><option>Europe/Rome</option></select>
             </div>
@@ -696,20 +693,28 @@ textarea{resize:vertical;min-height:80px}
         </div>
       </div>
       <div class="card">
-        <div class="card-hdr"><span class="card-title">Opening Hours</span></div>
+        <div class="card-hdr"><span class="card-title">Opening Hours</span><span style="font-size:11px;color:var(--text3);margin-left:8px">24h format · toggle to enable/disable each day</span></div>
         <div class="card-body" id="detail-schedule"></div>
       </div>
-      <div class="card" style="border-color:rgba(232,75,75,.3)">
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-hdr"><span class="card-title">WiFi Networks</span><span style="font-size:12px;color:var(--text3);margin-left:8px">Credentials pushed to ESP32 devices</span></div>
+        <div class="card-body">
+          <div id="wifi-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+          <button class="btn btn-ghost btn-sm" onclick="addWifiNetwork()">+ Add WiFi Network</button>
+          <div style="margin-top:14px"><button class="btn btn-primary" onclick="saveWifiNetworks()">Save WiFi Settings</button></div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(232,75,75,.3);grid-column:1/-1">
         <div class="card-hdr"><span class="card-title" style="color:var(--red)">Danger Zone</span></div>
         <div class="card-body">
           <div style="display:flex;flex-direction:column;gap:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--r)">
-              <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Suspend Restaurant</div><div style="font-size:12px;color:var(--text3)">All users lose access immediately</div></div>
-              <button class="btn btn-danger btn-sm" onclick="toast(t('suspended_ok'),'error')">Suspend</button>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Suspend Restaurant</div><div style="font-size:12px;color:var(--text3)">All users lose access immediately. Requires double confirmation.</div></div>
+              <button class="btn btn-danger btn-sm" onclick="suspendRestaurant()">Suspend</button>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--r)">
-              <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Delete Restaurant</div><div style="font-size:12px;color:var(--text3)">Permanently deletes all data</div></div>
-              <button class="btn btn-danger btn-sm" onclick="toast('Confirm required','error')">Delete</button>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Delete Restaurant</div><div style="font-size:12px;color:var(--text3)">Permanently deletes all data — irreversible. Requires double confirmation.</div></div>
+              <button class="btn btn-danger btn-sm" onclick="deleteRestaurant()">Delete</button>
             </div>
           </div>
         </div>
@@ -927,6 +932,15 @@ textarea{resize:vertical;min-height:80px}
           <div>Uptime: <strong style="color:var(--green)">14d 6h 22m</strong></div>
           <div>MQTT Broker: <strong style="color:var(--green)">Online · 47 clients</strong></div>
           <div>Version: <strong style="color:var(--text1)">BeerControl v1.0.0</strong></div>
+        </div>
+      </div>
+      <div class="card" style="grid-column:1/-1"><div class="card-hdr"><span class="card-title">Display Locations</span><span style="font-size:12px;color:var(--text3);margin-left:8px">Used in device registration for display unit placement</span></div>
+        <div class="card-body">
+          <div id="locations-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+          <div style="display:flex;gap:8px">
+            <input id="new-location-input" placeholder="e.g. Bar — main counter" style="flex:1;padding:8px 12px;font-size:13px">
+            <button class="btn btn-primary btn-sm" onclick="addLocation()">+ Add Location</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1612,12 +1626,15 @@ textarea{resize:vertical;min-height:80px}
         <!-- MQTT credentials -->
         <div class="form-group">
           <label class="fl">MQTT Username</label>
-          <input id="nd-mqtt-user" readonly style="font-family:var(--fm);font-size:12px;background:var(--bg4);color:var(--text2)" placeholder="Auto-generated">
+          <div style="display:flex;gap:8px">
+            <input id="nd-mqtt-user" readonly style="font-family:var(--fm);font-size:12px;background:var(--bg4);color:var(--text2);flex:1" placeholder="Auto-generated">
+            <button class="btn btn-ghost btn-sm" onclick="regenerateMqttUser()" title="Regenerate">↺</button>
+          </div>
         </div>
         <div class="form-group">
           <label class="fl">MQTT Password</label>
           <div style="display:flex;gap:8px">
-            <input id="nd-mqtt-pass" readonly style="font-family:var(--fm);font-size:12px;background:var(--bg4);color:var(--text2)" placeholder="Auto-generated">
+            <input id="nd-mqtt-pass" readonly style="font-family:var(--fm);font-size:12px;background:var(--bg4);color:var(--text2);flex:1" placeholder="Auto-generated">
             <button class="btn btn-ghost btn-sm" onclick="regenerateMqttPass()" title="Regenerate">↺</button>
           </div>
         </div>
@@ -1627,17 +1644,63 @@ textarea{resize:vertical;min-height:80px}
         </div>
       </div>
 
-      <!-- Config download preview -->
-      <div id="nd-config-preview" style="display:none;margin-top:16px;background:var(--bg0);border:1px solid var(--border);border-radius:var(--r);padding:14px">
-        <div style="font-size:11px;color:var(--text3);font-family:var(--fm);letter-spacing:.8px;margin-bottom:8px">FIRMWARE CONFIG (copy to ESP32)</div>
-        <pre id="nd-config-code" style="font-family:var(--fm);font-size:11px;color:var(--text2);white-space:pre-wrap;line-height:1.8"></pre>
+      <!-- Config preview — always visible once type selected -->
+      <div id="nd-config-preview" style="margin-top:16px;background:var(--bg0);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--text3);font-family:var(--fm);letter-spacing:.8px">FIRMWARE CONFIG (ESP32)</div>
+          <button class="btn btn-ghost btn-sm" onclick="downloadDeviceConfigScript()" title="Download .h file">⤓ Download Script</button>
+        </div>
+        <pre id="nd-config-code" style="font-family:var(--fm);font-size:11px;color:var(--text2);white-space:pre-wrap;line-height:1.8;max-height:280px;overflow-y:auto"></pre>
       </div>
 
       <div class="form-actions">
         <button class="btn btn-primary" onclick="registerDevice()">Register Device</button>
-        <button class="btn btn-ghost btn-sm" onclick="showDeviceConfig()" style="margin-left:auto">📋 Preview Config</button>
+        <button class="btn btn-ghost btn-sm" onclick="testDeviceConnection()" style="margin-left:auto">📡 Test Connection</button>
         <button class="btn btn-ghost" onclick="closeM('mAddDevice')">Cancel</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Device -->
+<div class="modal-overlay" id="mEditDevice">
+  <div class="modal" style="width:520px">
+    <div class="modal-hdr"><span style="font-size:20px">✏</span><div class="modal-title">Edit Device</div><button class="modal-x" onclick="closeM('mEditDevice')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="form-group fg-full"><label class="fl">Device ID</label><input id="ed-id" readonly style="font-family:var(--fm);font-size:12px;background:var(--bg4);color:var(--amber);cursor:default"></div>
+        <div class="form-group fg-full"><label class="fl">Type</label><input id="ed-type" readonly style="background:var(--bg4);color:var(--text2);cursor:default"></div>
+        <!-- Sensor-only fields -->
+        <div id="ed-sensor-fields" style="display:none;grid-column:1/-1">
+          <div class="fg">
+            <div class="form-group"><label class="fl">Assigned Keg</label><input id="ed-keg" placeholder="e.g. Heineken"></div>
+            <div class="form-group"><label class="fl">Tap Number</label><input id="ed-tap" type="number" min="1"></div>
+            <div class="form-group fg-full" style="margin-top:4px">
+              <label class="fl" style="margin-bottom:8px">Sensors</label>
+              <div class="flex g16" style="flex-wrap:wrap">
+                <label class="twrap"><span class="toggle"><input type="checkbox" id="ed-has-flow"><span class="tslider"></span></span><span class="tlabel">Flow</span></label>
+                <label class="twrap"><span class="toggle"><input type="checkbox" id="ed-has-temp"><span class="tslider"></span></span><span class="tlabel">Temp</span></label>
+                <label class="twrap"><span class="toggle"><input type="checkbox" id="ed-has-co2"><span class="tslider"></span></span><span class="tlabel">CO₂</span></label>
+                <label class="twrap"><span class="toggle"><input type="checkbox" id="ed-has-fob"><span class="tslider"></span></span><span class="tlabel">FOB</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Display-only fields -->
+        <div id="ed-display-fields" style="display:none;grid-column:1/-1">
+          <div class="fg">
+            <div class="form-group"><label class="fl">Location</label><select id="ed-loc"></select></div>
+            <div class="form-group"><label class="fl">Kegs to show</label>
+              <select id="ed-show-kegs">
+                <option value="all">All kegs (cycles)</option>
+                <option value="critical">Critical/Low only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-group fg-full"><label class="fl">MQTT Topic</label><input id="ed-topic" readonly style="font-family:var(--fm);font-size:11px;background:var(--bg4);color:var(--green);cursor:default"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="saveEditDevice()">Save Changes</button><button class="btn btn-ghost" onclick="closeM('mEditDevice')">Cancel</button></div>
     </div>
   </div>
 </div>
@@ -3103,17 +3166,19 @@ function regenerateMqttPass(){
 }
 
 function showDeviceConfig(){
-  const deviceId  = document.getElementById('nd-device-id')?.value||'';
-  const mqttUser  = document.getElementById('nd-mqtt-user')?.value||'';
-  const mqttPass  = document.getElementById('nd-mqtt-pass')?.value||'';
-  const topic     = document.getElementById('nd-topic')?.value||'';
+  const deviceId  = document.getElementById('nd-device-id')?.value||'<device_id>';
+  const mqttUser  = document.getElementById('nd-mqtt-user')?.value||'<mqtt_user>';
+  const mqttPass  = document.getElementById('nd-mqtt-pass')?.value||'<mqtt_pass>';
+  const topic     = document.getElementById('nd-topic')?.value||'<topic>';
   const type      = document.getElementById('nd-type')?.value||'';
-  if(!deviceId||!mqttUser||!mqttPass) return;
 
   const hasFlow = document.getElementById('nd-has-flow')?.checked;
   const hasTemp = document.getElementById('nd-has-temp')?.checked;
   const hasCo2  = document.getElementById('nd-has-co2')?.checked;
   const hasFob  = document.getElementById('nd-has-fob')?.checked;
+
+  const code = document.getElementById('nd-config-code');
+  if(!type){ if(code) code.textContent='// Select a device type above to generate config'; return; }
 
   const config = type==='sensor' ? `// BeerControl ESP32 Sensor Config
 // Device: ${deviceId}
@@ -3160,9 +3225,7 @@ function showDeviceConfig(){
 #define ALERT_THRESHOLD_LOW      20   // % remaining
 #define ALERT_THRESHOLD_CRITICAL 10   // % remaining`;
 
-  const preview = document.getElementById('nd-config-preview');
-  const code    = document.getElementById('nd-config-code');
-  if(preview&&code){ preview.style.display='block'; code.textContent=config; }
+  if(code) code.textContent=config;
 }
 
 function showDeviceConfigById(id){
@@ -3179,14 +3242,347 @@ function showDeviceConfigById(id){
   if(w){ w.document.write(`<pre style="background:#0e0f11;color:#22c97a;font-family:monospace;font-size:13px;padding:24px;margin:0">${config}</pre>`); w.document.close(); }
 }
 
+function regenerateMqttUser(){
+  const rest = document.getElementById('nd-rest')?.value||'';
+  const type = document.getElementById('nd-type')?.value||'';
+  const tap  = document.getElementById('nd-tap')?.value||'X';
+  const slug = rest.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  const user = type==='sensor' ? `${slug}_k${tap}_s` : `${slug}_d1`;
+  document.getElementById('nd-mqtt-user').value = user||`dev_${Math.random().toString(36).slice(2,8)}`;
+  showDeviceConfig();
+}
+
+function testDeviceConnection(){
+  const id = document.getElementById('nd-device-id')?.value;
+  if(!id){ toast('Generate device ID first','error'); return; }
+  toast('Connecting to MQTT broker…','info');
+  setTimeout(()=>toast(`✓ Broker reachable · Device ${id} not yet online (not flashed)`,'info'),1200);
+}
+
+function downloadDeviceConfigScript(){
+  const code = document.getElementById('nd-config-code')?.textContent;
+  if(!code||code.trim()==='// Fill in restaurant and device type above'){ toast('Complete the form first','error'); return; }
+  const devId = document.getElementById('nd-device-id')?.value||'beercontrol_device';
+  const blob  = new Blob([code],{type:'text/plain'});
+  const a     = document.createElement('a');
+  a.href      = URL.createObjectURL(blob);
+  a.download  = `${devId}_config.h`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadDeviceScriptById(deviceId){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  const d = r.devices.find(x=>x.id===deviceId);
+  if(!d){ toast('Device not found','error'); return; }
+  const wifi = (r.wifi||[]).map((w,i)=>
+    `#define WIFI_SSID_${i+1}     "${w.ssid}"\n#define WIFI_PASS_${i+1}     "${w.pass}"\n${w.hidden?`#define WIFI_HIDDEN_${i+1}  true`:''}`.trim()
+  ).join('\n');
+  const script = `// BeerControl ESP32 Config — ${d.id}
+// Restaurant: ${r.name}
+// Generated: ${new Date().toLocaleDateString()}
+
+// ── WiFi ────────────────────────────────
+${wifi||'// No WiFi networks configured'}
+
+// ── MQTT ────────────────────────────────
+#define MQTT_BROKER    "yourdomain.com"
+#define MQTT_PORT      8883
+#define MQTT_USER      "${d.mqttUser||d.id}"
+#define MQTT_PASS      "// stored securely — paste manually"
+#define MQTT_TOPIC     "${d.topic}"
+#define DEVICE_ID      "${d.id}"
+
+// ── Thresholds ──────────────────────────
+#define TEMP_MAX_C     ${r.temp_max||6}
+#define CO2_MIN_BAR    ${r.co2_min||1.5}
+#define LOW_PCT        ${r.low_warning||20}
+#define CRITICAL_PCT   ${r.critical_alert||10}
+
+${d.type==='sensor'?`// ── Sensor Pins ─────────────────────────
+#define FLOW_PIN       4
+#define TEMP_PIN       5
+#define CO2_PIN        34
+#define FOB_PIN        15
+#define FLOW_KFACTOR   450
+#define HAS_FLOW_METER ${d.sensors?.flow?'true':'false'}
+#define HAS_TEMP_SENSOR ${d.sensors?.temp?'true':'false'}
+#define HAS_CO2_SENSOR ${d.sensors?.co2?'true':'false'}
+#define HAS_FOB_SWITCH ${d.sensors?.fob?'true':'false'}
+#define HEARTBEAT_MS   30000`:`// ── Display Pins ────────────────────────
+#define TFT_CS   15
+#define TFT_DC    2
+#define TFT_RST   4
+#define CYCLE_MS  5000`}`;
+  const blob = new Blob([script],{type:'text/plain'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${d.id}_config.h`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Script downloaded: ${d.id}_config.h`,'info');
+}
+
+function openAddDeviceToRest(){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  // Reset form
+  document.getElementById('nd-type').value='';
+  document.getElementById('nd-sensor-fields').style.display='none';
+  document.getElementById('nd-display-fields').style.display='none';
+  document.getElementById('dtype-sensor').style.borderColor='var(--border)';
+  document.getElementById('dtype-display').style.borderColor='var(--border)';
+  document.getElementById('nd-device-id').value='';
+  document.getElementById('nd-mqtt-user').value='';
+  document.getElementById('nd-mqtt-pass').value='';
+  document.getElementById('nd-topic').value='';
+  document.getElementById('nd-config-code').textContent='// Fill in restaurant and device type above';
+  // Pre-select restaurant
+  if(r){
+    const sel=document.getElementById('nd-rest');
+    if(sel){ for(let o of sel.options){ if(o.text===r.name||o.value===r.name){ sel.value=o.value; break; } } }
+  }
+  // Populate location dropdown from LOCATIONS
+  populateLocationDropdown('nd-loc');
+  openM('mAddDevice');
+}
+
+function openEditDevice(deviceId){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  const d = r.devices.find(x=>x.id===deviceId);
+  if(!d) return;
+  document.getElementById('ed-id').value    = d.id;
+  document.getElementById('ed-type').value  = d.type==='sensor'?'Sensor (Cellar)':'Display (Bar)';
+  document.getElementById('ed-topic').value = d.topic;
+  document.getElementById('ed-sensor-fields').style.display  = d.type==='sensor' ?'contents':'none';
+  document.getElementById('ed-display-fields').style.display = d.type==='display'?'contents':'none';
+  if(d.type==='sensor'){
+    document.getElementById('ed-keg').value = d.keg||'';
+    document.getElementById('ed-tap').value = d.tap||'';
+    document.getElementById('ed-has-flow').checked = d.sensors?.flow||false;
+    document.getElementById('ed-has-temp').checked = d.sensors?.temp||false;
+    document.getElementById('ed-has-co2').checked  = d.sensors?.co2||false;
+    document.getElementById('ed-has-fob').checked  = d.sensors?.fob||false;
+  } else {
+    populateLocationDropdown('ed-loc');
+    const locEl=document.getElementById('ed-loc');
+    if(locEl) locEl.value = d.loc||'';
+    const showEl=document.getElementById('ed-show-kegs');
+    if(showEl) showEl.value = d.shows||'all';
+  }
+  openM('mEditDevice');
+}
+
+function saveEditDevice(){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  const devId = document.getElementById('ed-id')?.value;
+  const d = r.devices.find(x=>x.id===devId);
+  if(!d) return;
+  if(d.type==='sensor'){
+    d.keg  = document.getElementById('ed-keg')?.value.trim()||d.keg;
+    d.tap  = parseInt(document.getElementById('ed-tap')?.value)||d.tap;
+    d.sensors = {
+      flow: document.getElementById('ed-has-flow')?.checked,
+      temp: document.getElementById('ed-has-temp')?.checked,
+      co2:  document.getElementById('ed-has-co2')?.checked,
+      fob:  document.getElementById('ed-has-fob')?.checked,
+    };
+  } else {
+    d.loc   = document.getElementById('ed-loc')?.value||d.loc;
+    d.shows = document.getElementById('ed-show-kegs')?.value||d.shows;
+  }
+  closeM('mEditDevice');
+  renderDetailDevices(r);
+  toast('Device updated','info');
+}
+
+function deleteDevice(deviceId){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  const d = r.devices.find(x=>x.id===deviceId);
+  if(!d) return;
+  showConfirm({
+    icon:'🗑', title:'Delete Device',
+    message:`Remove device <b>${d.id}</b> from ${r.name}? The physical device will stop sending data.`,
+    confirmLabel:'Delete Device', danger:true,
+    onConfirm:()=>{ r.devices=r.devices.filter(x=>x.id!==deviceId); renderDetailDevices(r); toast('Device removed','error'); }
+  });
+}
+
 function registerDevice(){
   const rest = document.getElementById('nd-rest')?.value;
   const type = document.getElementById('nd-type')?.value;
   const id   = document.getElementById('nd-device-id')?.value;
   if(!rest||!type||!id){ toast('Please fill all required fields','error'); return; }
+  // Add to current restaurant's device list
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(r){
+    const newDev = {
+      id, type,
+      keg:   type==='sensor'?(document.getElementById('nd-keg')?.value||''):'',
+      tap:   type==='sensor'?parseInt(document.getElementById('nd-tap')?.value||'0'):null,
+      online: false, fw:'v2.1.4',
+      ip:'—',
+      topic: document.getElementById('nd-topic')?.value||'',
+      mqttUser: document.getElementById('nd-mqtt-user')?.value||'',
+      loc:   type==='display'?(document.getElementById('nd-loc')?.value||'Bar — main counter'):'',
+      shows: type==='display'?(document.getElementById('nd-show-kegs')?.value||'all'):'',
+      sensors: type==='sensor'?{
+        flow: document.getElementById('nd-has-flow')?.checked,
+        temp: document.getElementById('nd-has-temp')?.checked,
+        co2:  document.getElementById('nd-has-co2')?.checked,
+        fob:  document.getElementById('nd-has-fob')?.checked,
+      }:null,
+    };
+    r.devices.push(newDev);
+  }
   toast(`Device ${id} registered ✓ — MQTT credentials created`,'info');
   closeM('mAddDevice');
+  if(r) renderDetailDevices(r);
   buildDevicesPage();
+}
+
+// ── DISPLAY LOCATIONS ──
+const LOCATIONS_DEFAULT = ['Bar — main counter','Bar — secondary counter','Cellar','Manager office','Terrace'];
+const LOCATIONS = (()=>{ try{ const s=localStorage.getItem('bc_locations'); return s?JSON.parse(s):LOCATIONS_DEFAULT.slice(); }catch(e){ return LOCATIONS_DEFAULT.slice(); } })();
+function saveLocations(){ try{ localStorage.setItem('bc_locations',JSON.stringify(LOCATIONS)); }catch(e){} }
+
+function renderLocationsList(){
+  const el=document.getElementById('locations-list');
+  if(!el) return;
+  if(!LOCATIONS.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px">No locations yet.</div>'; return; }
+  el.innerHTML=LOCATIONS.map((loc,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
+      <span style="font-size:13px;color:var(--text1);flex:1">📍 ${loc}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteLocation(${i})">🗑</button>
+    </div>`).join('');
+}
+
+function addLocation(){
+  const inp=document.getElementById('new-location-input');
+  if(!inp) return;
+  const val=inp.value.trim();
+  if(!val){ toast('Enter a location name','error'); return; }
+  LOCATIONS.push(val);
+  saveLocations();
+  inp.value='';
+  renderLocationsList();
+  toast('Location added','info');
+}
+
+function deleteLocation(idx){
+  showConfirm({icon:'🗑',title:'Delete Location',message:`Remove <b>${LOCATIONS[idx]}</b>?`,confirmLabel:'Delete',danger:true,
+    onConfirm:()=>{ LOCATIONS.splice(idx,1); saveLocations(); renderLocationsList(); toast('Location removed','error'); }
+  });
+}
+
+function populateLocationDropdown(selectId){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  sel.innerHTML=LOCATIONS.map(l=>`<option value="${l}">${l}</option>`).join('');
+}
+
+// ── WiFi NETWORKS ──
+function renderWifiList(r){
+  const el=document.getElementById('wifi-list');
+  if(!el) return;
+  const networks = r.wifi||[];
+  if(!networks.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:13px">No WiFi networks configured.</div>';
+    return;
+  }
+  el.innerHTML=networks.map((w,i)=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--bg3);border-radius:var(--r)">
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <label class="fl" style="font-size:10px;margin-bottom:4px">SSID${w.hidden?' (hidden)':''}</label>
+          <input data-wifi="${i}" data-field="ssid" value="${w.ssid||''}" placeholder="Network name" style="width:100%;padding:6px 10px;font-size:13px">
+        </div>
+        <div>
+          <label class="fl" style="font-size:10px;margin-bottom:4px">Password</label>
+          <input data-wifi="${i}" data-field="pass" type="password" value="${w.pass||''}" placeholder="••••••••" style="width:100%;padding:6px 10px;font-size:13px">
+        </div>
+        <label class="twrap" style="grid-column:1/-1">
+          <span class="toggle"><input type="checkbox" data-wifi="${i}" data-field="hidden" ${w.hidden?'checked':''}><span class="tslider"></span></span>
+          <span class="tlabel" style="font-size:12px">Hidden network (SSID not broadcast)</span>
+        </label>
+      </div>
+      <button class="btn btn-danger btn-sm" style="margin-top:4px" onclick="deleteWifiNetwork(${i})">🗑</button>
+    </div>`).join('');
+}
+
+function addWifiNetwork(){
+  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  if(!r.wifi) r.wifi=[];
+  r.wifi.push({ssid:'',pass:'',hidden:false});
+  renderWifiList(r);
+}
+
+function deleteWifiNetwork(idx){
+  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r||!r.wifi) return;
+  showConfirm({icon:'📶',title:'Remove WiFi Network',message:'Remove this WiFi connection?',confirmLabel:'Remove',danger:true,
+    onConfirm:()=>{ r.wifi.splice(idx,1); renderWifiList(r); }
+  });
+}
+
+function saveWifiNetworks(){
+  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  if(!r.wifi) r.wifi=[];
+  document.querySelectorAll('[data-wifi]').forEach(el=>{
+    const i=parseInt(el.dataset.wifi);
+    const f=el.dataset.field;
+    if(!r.wifi[i]) r.wifi[i]={ssid:'',pass:'',hidden:false};
+    if(f==='hidden') r.wifi[i][f]=el.checked;
+    else r.wifi[i][f]=el.value;
+  });
+  toast('WiFi settings saved','info');
+}
+
+// ── DANGER ZONE ──
+function suspendRestaurant(){
+  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  showConfirm({
+    icon:'🚫',title:'Suspend Restaurant',
+    message:`Suspend <b>${r.name}</b>? All users will immediately lose access.`,
+    confirmLabel:'Yes, continue',danger:true,
+    onConfirm:()=>{
+      showConfirm({
+        icon:'⚠',title:'Confirm Suspension',
+        message:`Final confirmation: suspend <b>${r.name}</b>? You can re-activate it later from the restaurant list.`,
+        confirmLabel:'Suspend Now',danger:true,
+        onConfirm:()=>{ r.active=false; toast(r.name+' suspended','error'); nav('adminRestaurants',document.querySelector('#navAdmin .nav-item')); }
+      });
+    }
+  });
+}
+
+function deleteRestaurant(){
+  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  showConfirm({
+    icon:'🗑',title:'Delete Restaurant',
+    message:`Delete <b>${r.name}</b>? This will permanently remove all kegs, devices and user data.`,
+    confirmLabel:'Yes, delete',danger:true,
+    onConfirm:()=>{
+      showConfirm({
+        icon:'💀',title:'Final Warning',
+        message:`This is <b>irreversible</b>. All data for <b>${r.name}</b> will be gone forever. Are you absolutely sure?`,
+        confirmLabel:'Delete Forever',danger:true,
+        onConfirm:()=>{
+          const idx=RESTAURANTS_EXT.findIndex(x=>x.id===currentRestaurantId);
+          if(idx>-1) RESTAURANTS_EXT.splice(idx,1);
+          toast(r.name+' permanently deleted','error');
+          nav('adminRestaurants',document.querySelector('#navAdmin .nav-item'));
+        }
+      });
+    }
+  });
 }
 
 // ── HOOK nav for devices ──
@@ -3412,7 +3808,7 @@ function switchDetailTab(tab, el){
   if(tab==='kegs')      renderDetailKegs(r);
   if(tab==='users')     renderDetailUsers(r);
   if(tab==='devices')   renderDetailDevices(r);
-  if(tab==='settings')  renderDetailSchedule(r);
+  if(tab==='settings'){  renderDetailSchedule(r); renderWifiList(r); }
 }
 
 // ── OVERVIEW TAB ──
@@ -3846,7 +4242,7 @@ function renderDetailDevices(r){
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">${sensorRows}</div>
     <div style="font-size:11px;color:var(--text3);font-family:var(--fm);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">📺 Display Units — Bar (${displays.length})</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">${displayRows}</div>
-    <button class="btn btn-primary btn-sm" onclick="openM('mAddDevice')">+ Register New Device</button>`;
+    <button class="btn btn-primary btn-sm" onclick="openAddDeviceToRest()">+ Register New Device</button>`;
 }
 
 function deviceDetailRow(d){
@@ -3878,9 +4274,10 @@ function deviceDetailRow(d){
       ${sensorBadges}
     </div>
     <div class="flex g6">
-      <button class="btn btn-ghost btn-sm" onclick="showDeviceConfigById('${d.id}')" title="Config">📋</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadDeviceScriptById('${d.id}')" title="Download ESP32 script">⤓</button>
+      <button class="btn btn-ghost btn-sm" onclick="openEditDevice('${d.id}')" title="Edit device">✏</button>
       <button class="btn btn-ghost btn-sm" onclick="toast('Ping sent','info')" title="Ping">📡</button>
-      <button class="btn btn-ghost btn-sm" onclick="toast('Removed','error')" title="Remove">🗑</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteDevice('${d.id}')" title="Delete device">🗑</button>
     </div>
   </div>`;
 }
@@ -3900,14 +4297,22 @@ function renderDetailSchedule(r){
     ${DEFAULT_HOURS.map((h,i)=>`
       <div class="sched-day">
         <div class="day-name">${t(DAYS_KEYS[i])}</div>
-        <label class="twrap" style="margin-right:8px"><span class="toggle"><input type="checkbox" ${h.on?'checked':''}><span class="tslider"></span></span></label>
-        <input type="time" value="${h.open}" style="width:96px" ${h.on?'':'disabled'}>
+        <label class="twrap" style="margin-right:8px"><span class="toggle"><input type="checkbox" id="sched-on-${i}" ${h.on?'checked':''} onchange="toggleSchedDay(${i})"><span class="tslider"></span></span></label>
+        <input type="time" id="sched-open-${i}" value="${h.open}" style="width:96px" ${h.on?'':'disabled'}>
         <span style="color:var(--text3);font-size:12px;margin:0 6px">→</span>
-        <input type="time" value="${h.close}" style="width:96px" ${h.on?'':'disabled'}>
+        <input type="time" id="sched-close-${i}" value="${h.close}" style="width:96px" ${h.on?'':'disabled'}>
       </div>`).join('')}
     <div style="margin-top:14px">
       <button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Schedule</button>
     </div>`;
+}
+
+function toggleSchedDay(i){
+  const on = document.getElementById('sched-on-'+i)?.checked;
+  const openIn  = document.getElementById('sched-open-'+i);
+  const closeIn = document.getElementById('sched-close-'+i);
+  if(openIn)  openIn.disabled  = !on;
+  if(closeIn) closeIn.disabled = !on;
 }
 
 // ── ADD RESTAURANT WIZARD ──
@@ -4047,9 +4452,10 @@ function switchSettingsTab(tab, el){
   });
   document.querySelectorAll('#settingsTabs .detail-tab').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
-  if(tab==='styles') { renderStylesList(); populateStyleSelects(); }
-  if(tab==='roles')  renderRolesList();
-  if(tab==='plans')  renderPlansList();
+  if(tab==='styles')  { renderStylesList(); populateStyleSelects(); }
+  if(tab==='roles')   renderRolesList();
+  if(tab==='plans')   renderPlansList();
+  if(tab==='general') renderLocationsList();
 }
 
 // ══════════════════════════════════════════
@@ -4374,8 +4780,9 @@ openM = function(id){
   _origOpenM(id);
   if(id==='mAddBeer'||id==='mEditBeer') setTimeout(populateStyleSelects, 50);
   if(id==='mAddRest') setTimeout(populatePlanSelects, 50);
-  if(id==='mAddUser') setTimeout(()=>{ const s=document.getElementById('addUserRole'); if(s) s.innerHTML=getRoleOptions(); }, 50);
-  if(id==='mEditUser') setTimeout(()=>{ const s=document.getElementById('eu-role'); if(s&&!s.options.length) s.innerHTML=getRoleOptions(); }, 50);
+  if(id==='mAddUser')    setTimeout(()=>{ const s=document.getElementById('addUserRole'); if(s) s.innerHTML=getRoleOptions(); }, 50);
+  if(id==='mEditUser')   setTimeout(()=>{ const s=document.getElementById('eu-role'); if(s&&!s.options.length) s.innerHTML=getRoleOptions(); }, 50);
+  if(id==='mEditDevice') setTimeout(()=>{ populateLocationDropdown('ed-loc'); }, 50);
 };
 
 // ══════════════════════════════════════════
