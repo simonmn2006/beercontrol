@@ -455,7 +455,6 @@ textarea{resize:vertical;min-height:80px}
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="toast(t('refreshing'),'info')">↻ <span data-i18n="refresh">Refresh</span></button>
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">☀ Light</button>
-      <button class="btn btn-primary btn-sm" id="addKegBtn" onclick="openM('mAddKeg')">+ <span data-i18n="add_keg">Add Keg</span></button>
     </div>
   </div>
 
@@ -1202,6 +1201,41 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- Edit Keg -->
+<div class="modal-overlay" id="mEditKeg">
+  <div class="modal" style="width:560px">
+    <div class="modal-hdr"><span style="font-size:20px">✏</span><div class="modal-title">Edit Keg</div><button class="modal-x" onclick="closeM('mEditKeg')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="form-group fg-full"><label class="fl">Restaurant</label><input id="ek-rest" readonly style="background:var(--bg4);color:var(--text2);cursor:default"></div>
+        <div class="form-group"><label class="fl">Tap Number</label><input id="ek-tap" readonly style="background:var(--bg4);color:var(--text2);cursor:default"></div>
+        <div class="form-group"><label class="fl">Keg Size (L)</label><select id="ek-size"><option>20</option><option>30</option><option>50</option></select></div>
+        <div class="form-group fg-full">
+          <label class="fl">Beer</label>
+          <div style="position:relative">
+            <input id="ek-beer-search" placeholder="Type to search beer library…" autocomplete="off" oninput="filterEkBeers()" onfocus="filterEkBeers()" style="width:100%">
+            <div id="ek-beer-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);max-height:210px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+          </div>
+          <input type="hidden" id="ek-beer-id">
+        </div>
+        <div class="form-group fg-full" id="ek-logo-row">
+          <label class="fl">Beer Logo</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div id="ek-logo-preview" style="width:52px;height:52px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:28px"></div>
+            <span id="ek-beer-name-display" style="font-size:14px;color:var(--text2)"></span>
+          </div>
+        </div>
+        <div class="form-group"><label class="fl">Max Temp (°C)</label><input type="number" id="ek-temp" step="0.5"></div>
+        <div class="form-group"><label class="fl">Min CO₂ (bar)</label><input type="number" id="ek-co2" step="0.1"></div>
+        <div class="form-group"><label class="fl">Min Flow (L/min)</label><input type="number" id="ek-flow" step="0.1"></div>
+        <div class="form-group"><label class="fl">Low Alert (%)</label><input type="number" id="ek-low"></div>
+        <div class="form-group"><label class="fl">Critical Alert (%)</label><input type="number" id="ek-critical"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="saveEditKeg()">Save Changes</button><button class="btn btn-ghost" onclick="closeM('mEditKeg')">Cancel</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- Add Restaurant -->
 <div class="modal-overlay" id="mAddRest">
   <div class="modal" style="width:600px">
@@ -1455,7 +1489,24 @@ textarea{resize:vertical;min-height:80px}
       <div style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);margin-bottom:16px">
         🔐 A temporary password will be auto-generated and emailed to this user. They must set a new password on first login.
       </div>
-      <div class="form-actions"><button class="btn btn-primary" onclick="closeM('mAddUser');toast(t('user_created'),'info')" data-i18n="create_user">Create User</button><button class="btn btn-ghost" onclick="closeM('mAddUser')" data-i18n="cancel">Cancel</button></div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="saveNewUser()">Create User</button><button class="btn btn-ghost" onclick="closeM('mAddUser')" data-i18n="cancel">Cancel</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User -->
+<div class="modal-overlay" id="mEditUser">
+  <div class="modal">
+    <div class="modal-hdr"><span style="font-size:20px">✏</span><div class="modal-title">Edit User</div><button class="modal-x" onclick="closeM('mEditUser')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="form-group fg-full"><label class="fl">Full Name</label><input id="eu-name" placeholder="John Smith"></div>
+        <div class="form-group fg-full"><label class="fl">Email</label><input id="eu-email" type="email" placeholder="john@restaurant.com"></div>
+        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="eu-phone" type="tel" placeholder="+1 555 000 0000"></div>
+        <div class="form-group fg-full"><label class="fl">Role</label><select id="eu-role"></select></div>
+        <input type="hidden" id="eu-idx">
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="saveEditUser()">Save Changes</button><button class="btn btn-ghost" onclick="closeM('mEditUser')">Cancel</button></div>
     </div>
   </div>
 </div>
@@ -1697,12 +1748,10 @@ function doLogin(){
   if(u.role==='admin'){
     document.getElementById('navAdmin').style.display='block';
     document.getElementById('navUser').style.display='none';
-    document.getElementById('addKegBtn').style.display='';
     nav('adminDash',document.querySelector('#navAdmin .nav-item'));
   } else {
     document.getElementById('navAdmin').style.display='none';
     document.getElementById('navUser').style.display='block';
-    document.getElementById('addKegBtn').style.display='none';
     nav('userDash',document.querySelector('#navUser .nav-item'));
   }
   applyI18n();
@@ -1817,6 +1866,9 @@ document.addEventListener('click',e=>{if(e.target.classList.contains('modal-over
 document.addEventListener('click',e=>{
   if(!e.target.closest('#ak-beer-search')&&!e.target.closest('#ak-beer-dropdown')){
     const dd=document.getElementById('ak-beer-dropdown');if(dd)dd.style.display='none';
+  }
+  if(!e.target.closest('#ek-beer-search')&&!e.target.closest('#ek-beer-dropdown')){
+    const dd=document.getElementById('ek-beer-dropdown');if(dd)dd.style.display='none';
   }
 });
 
@@ -3479,15 +3531,12 @@ function renderDetailKegs(r){
             <span style="font-size:12px;color:var(--text3)">🌡 ${k.temp}°C</span>
             <span style="font-size:12px;color:var(--text3)">💨 ${k.co2} bar CO₂</span>
           </div>
-          <div style="font-size:11px;color:var(--text3);font-family:var(--fm)">
-            Sensor: <span style="color:var(--green)">${k.sensor_id}</span>
-            · Topic: <span style="color:var(--amber)">${sensors?sensors.topic:'unassigned'}</span>
-          </div>
+          ${k.sensor_id?`<div style="font-size:11px;color:var(--text3);font-family:var(--fm)">Sensor: <span style="color:var(--green)">${k.sensor_id}</span> · Topic: <span style="color:var(--amber)">${sensors?sensors.topic:'unassigned'}</span></div>`:''}
         </div>
         <div class="flex g6" style="flex-shrink:0">
-          <button class="btn btn-ghost btn-sm" onclick="toast('Keg edited','info')">✏</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditKeg(${k.tap})">✏</button>
           <button class="btn btn-ghost btn-sm" onclick="toast('Manual keg change logged','info')">🛢 New Keg</button>
-          <button class="btn btn-danger btn-sm" onclick="toast('Keg removed','error')">🗑</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteKeg(${k.tap})">🗑</button>
         </div>
       </div>
     </div>`;
@@ -3583,22 +3632,197 @@ function renderDetailUsers(r){
       <td class="mono" style="font-size:12px;color:var(--text3)">${u.lastLogin}</td>
       <td><span class="sp ${u.active?'sp-on':'sp-off'}"><span class="sp-dot"></span>${u.active?t('active'):t('disabled')}</span></td>
       <td><div class="flex g6">
-        <button class="btn btn-ghost btn-sm">✏</button>
-        <button class="btn btn-ghost btn-sm" title="Reset password" onclick="showConfirm({icon:'🔑',title:'Reset Password',message:'Send a password reset link to <b>${u.email}</b>?',confirmLabel:'Send Reset',danger:false,onConfirm:()=>toast('Password reset email sent to ${u.email}','info')})">🔑</button>
+        <button class="btn btn-ghost btn-sm" title="Edit user" onclick="openEditUser(${i})">✏</button>
+        <button class="btn btn-ghost btn-sm" title="Reset password" onclick="showConfirm({icon:'🔑',title:'Reset Password',message:'Send a password reset link to <b>${u.email}</b>?',confirmLabel:'Send Reset',danger:false,onConfirm:()=>toast('Password reset sent to ${u.email}','info')})">🔑</button>
         ${u.active
-          ?`<button class="btn btn-danger btn-sm" onclick="toast(t('suspended_ok'),'error')">${t('disable')}</button>`
-          :`<button class="btn btn-success btn-sm" onclick="toast(t('user_enabled'),'info')">${t('enable')}</button>`}
+          ?`<button class="btn btn-danger btn-sm" onclick="toggleUserActive(${i})">${t('disable')}</button>`
+          :`<button class="btn btn-success btn-sm" onclick="toggleUserActive(${i})">${t('enable')}</button>`}
+        <button class="btn btn-danger btn-sm" title="Delete user" onclick="deleteUser(${i})">🗑</button>
       </div></td>
     </tr>`).join('')
   + `<tr><td colspan="7" style="padding:8px"><button class="btn btn-ghost btn-sm" onclick="openAddUserToRest()" style="width:100%;justify-content:center">+ Add User to this restaurant</button></td></tr>`;
 }
 
 function openAddUserToRest(){
+  // clear fields
+  ['addUserFirst','addUserLast','addUserEmail','addUserPhone'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  openM('mAddUser');
+}
+
+function saveNewUser(){
+  const first = document.getElementById('addUserFirst')?.value.trim();
+  const last  = document.getElementById('addUserLast')?.value.trim();
+  const email = document.getElementById('addUserEmail')?.value.trim();
+  const role  = document.getElementById('addUserRole')?.value;
+  if(!first){ toast('First name is required','error'); return; }
+  if(!last){  toast('Last name is required','error');  return; }
+  if(!email){ toast('Email is required','error');      return; }
+  if(!role){  toast('Please select a role','error');   return; }
+  const phone = document.getElementById('addUserPhone')?.value.trim()||'';
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(r) r.users.push({ name:first+' '+last, email, phone, role, active:true, lastLogin:'Never' });
+  closeM('mAddUser');
+  if(r) renderDetailUsers(r);
+  toast('User created — temp password sent to '+email,'info');
+}
+
+function openEditUser(idx){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r||!r.users[idx]) return;
+  const u = r.users[idx];
+  document.getElementById('eu-name').value  = u.name||'';
+  document.getElementById('eu-email').value = u.email||'';
+  document.getElementById('eu-phone').value = u.phone||'';
+  document.getElementById('eu-idx').value   = idx;
+  const roleEl = document.getElementById('eu-role');
+  if(roleEl){ roleEl.innerHTML=getRoleOptions(); roleEl.value=u.role||''; }
+  openM('mEditUser');
+}
+
+function saveEditUser(){
+  const idx   = parseInt(document.getElementById('eu-idx')?.value);
+  const r     = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r||isNaN(idx)||!r.users[idx]) return;
+  const name  = document.getElementById('eu-name')?.value.trim();
+  const email = document.getElementById('eu-email')?.value.trim();
+  if(!name){  toast('Name is required','error');  return; }
+  if(!email){ toast('Email is required','error'); return; }
+  r.users[idx].name  = name;
+  r.users[idx].email = email;
+  r.users[idx].phone = document.getElementById('eu-phone')?.value.trim()||r.users[idx].phone||'';
+  r.users[idx].role  = document.getElementById('eu-role')?.value||r.users[idx].role;
+  closeM('mEditUser');
+  renderDetailUsers(r);
+  toast('User updated','info');
+}
+
+function deleteUser(idx){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r||!r.users[idx]) return;
+  const u = r.users[idx];
+  showConfirm({
+    icon:'🗑', title:'Delete User',
+    message:`Remove <b>${u.name}</b> from this restaurant? They will lose all access.`,
+    confirmLabel:'Delete User', danger:true,
+    onConfirm:()=>{ r.users.splice(idx,1); renderDetailUsers(r); toast('User removed','error'); }
+  });
+}
+
+function toggleUserActive(idx){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r||!r.users[idx]) return;
+  const u = r.users[idx];
+  const willEnable = !u.active;
+  showConfirm({
+    icon: willEnable?'✅':'🚫',
+    title: willEnable?'Enable User':'Disable User',
+    message: willEnable
+      ?`Re-enable access for <b>${u.name}</b>?`
+      :`Disable access for <b>${u.name}</b>? They won't be able to log in.`,
+    confirmLabel: willEnable?'Enable':'Disable', danger:!willEnable,
+    onConfirm:()=>{ u.active=willEnable; renderDetailUsers(r); toast(u.name+' '+(willEnable?'enabled':'disabled'),willEnable?'info':'error'); }
+  });
+}
+
+// ── KEG EDIT / DELETE ──
+let currentEditKegTap = null;
+
+function openEditKeg(tap){
   const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
   if(!r) return;
-  const sel = document.querySelector('#mAddUser select');
-  if(sel){ for(let o of sel.options){ if(o.text===r.name){ sel.value=o.value; break; } } }
-  openM('mAddUser');
+  const k = r.kegs.find(x=>x.tap===tap);
+  if(!k) return;
+  currentEditKegTap = tap;
+  document.getElementById('ek-rest').value = r.name;
+  document.getElementById('ek-tap').value  = k.tap;
+  const sizeEl = document.getElementById('ek-size');
+  if(sizeEl){ for(let o of sizeEl.options){ o.selected=(parseInt(o.value)===k.size); } }
+  document.getElementById('ek-beer-search').value = k.beer;
+  document.getElementById('ek-beer-id').value = '';
+  document.getElementById('ek-beer-dropdown').style.display = 'none';
+  const b = BEER_LIBRARY.find(x=>x.name===k.beer);
+  const logoPrev = document.getElementById('ek-logo-preview');
+  const nameDisp = document.getElementById('ek-beer-name-display');
+  if(b){
+    document.getElementById('ek-beer-id').value = b.id;
+    nameDisp.textContent = b.name+(b.style?' · '+b.style:'');
+    logoPrev.innerHTML = b.logo
+      ?`<img src="${b.logo}" style="width:42px;height:42px;object-fit:contain" onerror="this.parentElement.textContent='${b.emoji}'">`
+      :`<span style="font-size:28px">${b.emoji}</span>`;
+  } else {
+    nameDisp.textContent = k.beer;
+    logoPrev.textContent = k.emoji||'🍺';
+  }
+  document.getElementById('ek-temp').value = k.temp_max||6;
+  document.getElementById('ek-co2').value  = k.co2_min||1.5;
+  document.getElementById('ek-flow').value = k.flow_min||0.5;
+  document.getElementById('ek-low').value  = k.low_pct||20;
+  document.getElementById('ek-critical').value = k.crit_pct||10;
+  openM('mEditKeg');
+}
+
+function filterEkBeers(){
+  const q  = (document.getElementById('ek-beer-search')?.value||'').toLowerCase();
+  const dd = document.getElementById('ek-beer-dropdown');
+  if(!dd) return;
+  const list = q ? BEER_LIBRARY.filter(b=>b.name.toLowerCase().includes(q)||((b.style||'').toLowerCase().includes(q))) : BEER_LIBRARY;
+  if(!list.length){ dd.style.display='none'; return; }
+  dd.innerHTML = list.map(b=>`
+    <div onclick="selectEkBeer(${b.id})" style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseenter="this.style.background='var(--bg4)'" onmouseleave="this.style.background=''">
+      <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${b.logo?`<img src="${b.logo}" style="width:32px;height:32px;object-fit:contain" onerror="this.parentElement.textContent='${b.emoji}'">`:`<span style="font-size:22px">${b.emoji}</span>`}</div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--text1)">${b.name}</div><div style="font-size:11px;color:var(--text3)">${b.style||''}${b.abv?' · '+b.abv+'%':''}</div></div>
+    </div>`).join('');
+  dd.style.display = 'block';
+}
+
+function selectEkBeer(id){
+  const b = BEER_LIBRARY.find(x=>x.id===id);
+  if(!b) return;
+  document.getElementById('ek-beer-search').value = b.name;
+  document.getElementById('ek-beer-id').value = id;
+  document.getElementById('ek-beer-dropdown').style.display = 'none';
+  document.getElementById('ek-beer-name-display').textContent = b.name+(b.style?' · '+b.style:'');
+  document.getElementById('ek-logo-preview').innerHTML = b.logo
+    ?`<img src="${b.logo}" style="width:42px;height:42px;object-fit:contain" onerror="this.parentElement.textContent='${b.emoji}'">`
+    :`<span style="font-size:28px">${b.emoji}</span>`;
+}
+
+function saveEditKeg(){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  const k = r.kegs.find(x=>x.tap===currentEditKegTap);
+  if(!k) return;
+  const beerId = parseInt(document.getElementById('ek-beer-id')?.value);
+  if(beerId){
+    const beer = BEER_LIBRARY.find(x=>x.id===beerId);
+    if(beer){ k.beer=beer.name; k.emoji=beer.emoji; k.logo=beer.logo||''; }
+  } else {
+    k.beer = document.getElementById('ek-beer-search')?.value.trim()||k.beer;
+  }
+  k.size     = parseInt(document.getElementById('ek-size')?.value)||k.size;
+  k.temp_max = parseFloat(document.getElementById('ek-temp')?.value)||k.temp_max;
+  k.co2_min  = parseFloat(document.getElementById('ek-co2')?.value)||k.co2_min;
+  k.flow_min = parseFloat(document.getElementById('ek-flow')?.value)||k.flow_min;
+  k.low_pct  = parseInt(document.getElementById('ek-low')?.value)||k.low_pct;
+  k.crit_pct = parseInt(document.getElementById('ek-critical')?.value)||k.crit_pct;
+  closeM('mEditKeg');
+  renderDetailKegs(r);
+  toast('Keg updated — Tap #'+k.tap+' · '+k.beer,'info');
+}
+
+function deleteKeg(tap){
+  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  if(!r) return;
+  const k = r.kegs.find(x=>x.tap===tap);
+  if(!k) return;
+  showConfirm({
+    icon:'🗑', title:'Delete Keg',
+    message:`Remove <b>${k.beer}</b> from Tap #${k.tap}? This cannot be undone.`,
+    confirmLabel:'Delete Keg', danger:true,
+    onConfirm:()=>{ r.kegs=r.kegs.filter(x=>x.tap!==tap); renderDetailKegs(r); toast('Keg removed from Tap #'+tap,'error'); }
+  });
 }
 
 // ── DEVICES TAB ──
@@ -4149,6 +4373,7 @@ openM = function(id){
   if(id==='mAddBeer'||id==='mEditBeer') setTimeout(populateStyleSelects, 50);
   if(id==='mAddRest') setTimeout(populatePlanSelects, 50);
   if(id==='mAddUser') setTimeout(()=>{ const s=document.getElementById('addUserRole'); if(s) s.innerHTML=getRoleOptions(); }, 50);
+  if(id==='mEditUser') setTimeout(()=>{ const s=document.getElementById('eu-role'); if(s&&!s.options.length) s.innerHTML=getRoleOptions(); }, 50);
 };
 
 // ══════════════════════════════════════════
