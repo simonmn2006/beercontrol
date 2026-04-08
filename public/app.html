@@ -1152,6 +1152,7 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <!-- ══ PAGE: ADMIN AUDIT LOG ══ -->
+<!-- ══ PAGE: ADMIN AUDIT LOG ══ -->
 <div class="page" id="page-adminAudit">
   <div class="sect-hdr">
     <div><div class="sect-title" data-i18n="nav_audit">Audit Log</div><div class="sect-sub" data-i18n="audit_sub">Every action logged with user and timestamp</div></div>
@@ -1173,6 +1174,170 @@ textarea{resize:vertical;min-height:80px}
     </table></div>
   </div>
 </div>
+
+<!-- ══ PAGE: USER DASHBOARD ══ -->
+<div class="page" id="page-userDash">
+
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_live">Live Dashboard</div><div class="sect-sub" data-i18n="live_updates">Live — updates every 5s</div></div>
+    <div class="flex g8">
+      <button class="btn btn-ghost btn-sm" onclick="nav('userKiosk')">📺 Kiosk Mode</button>
+      <button class="btn btn-primary btn-sm" onclick="openM('mAddKeg')">+ Add Keg</button>
+    </div>
+  </div>
+  <div class="g4 mb16">
+    <div class="stat-card sc-green"><div class="stat-label" data-i18n="poured_today">Poured Today</div><div class="stat-val"><span id="userPouredToday">0.0</span> <span>L</span></div><div class="stat-sub up">Avg: 24.2L</div></div>
+    <div class="stat-card sc-amber"><div class="stat-label" data-i18n="kegs_changed">Kegs Changed</div><div class="stat-val"><span id="userKegChanges">0</span></div><div class="stat-sub">This month</div></div>
+    <div class="stat-card sc-blue"><div class="stat-label" data-i18n="active_taps">Active Taps</div><div class="stat-val">4 <span>/ 4</span></div><div class="stat-sub" data-i18n="all_online">All online</div></div>
+    <div class="stat-card sc-red"><div class="stat-label" data-i18n="low_keg_alerts">Low Kegs</div><div class="stat-val">1</div><div class="stat-sub" data-i18n="needs_attention">Needs attention</div></div>
+  </div>
+  <div class="grid-kegs" id="userKegGrid"></div>
+  <div class="card mt16">
+    <div class="card-hdr"><span class="card-title" data-i18n="todays_activity">Today's Activity</span><div class="live-dot"></div></div>
+    <div id="userActivityContainer" style="padding:0 16px"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: USER KEGS ══ -->
+<div class="page" id="page-userKegs">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_kegs">Kegs & Beers</div><div class="sect-sub" data-i18n="kegs_sub">Configure beers, logos and keg sizes</div></div>
+    <button class="btn btn-primary" onclick="openM('mAddKeg')">+ Add Keg</button>
+  </div>
+  <div id="userKegsDetail" class="grid-kegs"></div>
+</div>
+
+<!-- ══ PAGE: USER REPORTS ══ -->
+<div class="page" id="page-userReports">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_reports">Reports & Analytics</div><div class="sect-sub" data-i18n="reports_sub">Daily volume, best-selling beers and performance</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="toast(t('downloading'),'info')">⤓ CSV Export</button>
+  </div>
+  <div class="card mb16">
+    <div class="card-body flex g16">
+      <div class="form-group"><label class="fl" data-i18n="from">From</label><input type="date" id="repFrom"></div>
+      <div class="form-group"><label class="fl" data-i18n="to">To</label><input type="date" id="repTo"></div>
+      <div class="form-group"><label class="fl" data-i18n="tap">Tap</label><select id="repTap"><option value="" data-i18n="all_taps">All Taps</option></select></div>
+      <button class="btn btn-primary" style="margin-top:20px" data-i18n="generate">Generate</button>
+    </div>
+  </div>
+  <div class="g4 mb16">
+    <div class="stat-card sc-blue"><div class="stat-label" data-i18n="total_poured">Total Poured</div><div class="stat-val">1,248 <span>L</span></div><div class="stat-sub">Selected period</div></div>
+    <div class="stat-card sc-green"><div class="stat-label" data-i18n="daily_avg">Daily Average</div><div class="stat-val">41.6 <span>L</span></div><div class="stat-sub">Stable Trend</div></div>
+    <div class="stat-card sc-amber"><div class="stat-label" data-i18n="best_day">Best Day</div><div class="stat-val">84.2 <span>L</span></div><div class="stat-sub">14 March 2026</div></div>
+    <div class="stat-card sc-gray"><div class="stat-label" data-i18n="keg_changes">Keg Changes</div><div class="stat-val">12</div><div class="stat-sub">Selected period</div></div>
+  </div>
+  <div class="g2 mb16">
+    <div class="card"><div class="card-hdr" data-i18n="daily_volume">Daily Pour Volume</div><div class="card-body"><div style="height:220px"><canvas id="chartDaily"></canvas></div></div></div>
+    <div class="card"><div class="card-hdr" data-i18n="volume_by_beer">Volume by Beer</div><div class="card-body"><div style="height:220px"><canvas id="chartByBeer"></canvas></div></div></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: USER ALERTS ══ -->
+<div class="page" id="page-userAlerts">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_alerts">Alerts</div><div class="sect-sub" data-i18n="alerts_sub">All alerts for your venue</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="toast(t('alerts_cleared'),'info')" data-i18n="clear_all">Clear all</button>
+  </div>
+  <div class="card"><div id="userAlertsList"></div></div>
+</div>
+
+<!-- ══ PAGE: USER COSTS ══ -->
+<div class="page" id="page-userCosts">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_costs">Costs & Revenue</div><div class="sect-sub" data-i18n="costs_sub">Margin per tap and profitability</div></div>
+  </div>
+  <div class="g4 mb16">
+    <div class="stat-card sc-green"><div class="stat-label">Revenue Today</div><div class="stat-val">€ 424</div></div>
+    <div class="stat-card sc-amber"><div class="stat-label">Keg Cost Today</div><div class="stat-val">€ 142</div></div>
+    <div class="stat-card sc-blue"><div class="stat-label">Gross Margin</div><div class="stat-val">66%</div></div>
+    <div class="stat-card sc-red"><div class="stat-label">Waste Today</div><div class="stat-val">4.2 L</div></div>
+  </div>
+  <div class="card mb16">
+    <div class="card-hdr">Profit per Tap</div>
+    <div class="card-body"><div style="height:280px"><canvas id="chartCostTap"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: USER FORECAST ══ -->
+<div class="page" id="page-userForecast">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_forecast">Forecast</div><div class="sect-sub" data-i18n="forecast_sub">Predicted run-out based on historical consumption</div></div>
+  </div>
+  <div class="grid-kegs" id="forecastCards"></div>
+  <div class="card mt16">
+    <div class="card-hdr" data-i18n="order_suggestions">Suggested Orders</div>
+    <div id="orderSuggestions" style="padding:16px;display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</div>
+
+<!-- ══ PAGE: USER CALIBRATION ══ -->
+<div class="page" id="page-userCalibration">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_calibration">Calibration</div><div class="sect-sub" data-i18n="calibration_sub">Calibrate each tap K-factor</div></div>
+  </div>
+  <div id="calibList" style="display:flex;flex-direction:column;gap:20px"></div>
+</div>
+
+<!-- ══ PAGE: USER KIOSK ══ -->
+<div class="page" id="page-userKiosk">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_kiosk">Kiosk Mode</div><div class="sect-sub" data-i18n="kiosk_sub">Full-screen display for bar or cellar</div></div>
+    <button class="btn btn-primary" onclick="launchKiosk()">Launch Fullscreen ↗</button>
+  </div>
+  <div class="card mb20">
+    <div class="card-body flex g16">
+      <div class="form-group"><label class="fl">Columns</label><select id="kioskCols" onchange="buildKioskPreview()"><option>2</option><option selected>3</option><option>4</option></select></div>
+      <label class="fxc g8" style="margin-top:20px;cursor:pointer"><input type="checkbox" id="kioskShowTemp" checked onchange="buildKioskPreview()"> 🌡 Show Temp</label>
+      <label class="fxc g8" style="margin-top:20px;cursor:pointer"><input type="checkbox" id="kioskShowCo2" checked onchange="buildKioskPreview()"> 🫧 Show CO₂</label>
+    </div>
+  </div>
+  <div id="kioskPreview"></div>
+</div>
+
+<!-- ══ PAGE: USER SETTINGS ══ -->
+<div class="page" id="page-userSettings">
+  <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;gap:20px" id="userSettingsTabs">
+    <div class="detail-tab active" onclick="switchUserSettingsTab('account',this)">👤 Account</div>
+    <div class="detail-tab" onclick="switchUserSettingsTab('alerts',this)">🔔 Alerts</div>
+    <div class="detail-tab" onclick="switchUserSettingsTab('hours',this)">🕒 Hours</div>
+  </div>
+
+  <div id="ustab-account">
+    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title" data-i18n="account_settings">Account Settings</span></div>
+      <div class="card-body">
+        <div class="fg">
+          <div class="form-group fg-full"><label class="fl">Venue Name</label><input id="us-venue" readonly style="background:var(--bg4)"></div>
+          <div class="form-group fg-full"><label class="fl">Your Name</label><input id="us-name"></div>
+          <div class="form-group fg-full"><label class="fl">Email</label><input id="us-email" readonly style="background:var(--bg4)"></div>
+          <div class="form-group fg-full"><label class="fl">Language</label><select id="us-lang"><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option><option value="el">🇬🇷 Ελληνικά</option></select></div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Changes</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ustab-alerts" style="display:none">
+    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title" data-i18n="alert_recipients">Alert Recipients</span></div>
+      <div class="card-body">
+         <div class="form-group fg-full"><label class="fl" data-i18n="email_recipients">Email Recipients</label><textarea id="us-emails" placeholder="email1@example.com, email2@example.com" style="min-height:80px"></textarea><div class="fl-hint" data-i18n="max_recipients">Up to 5 email recipients</div></div>
+         <div class="form-group fg-full"><label class="fl">Telegram Chat ID</label><input id="us-telegram" placeholder="-100123456789"><div class="fl-hint">Add group or personal chat ID for alerts</div></div>
+         <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Preferences</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ustab-hours" style="display:none">
+    <div class="card"><div class="card-hdr"><span class="card-title" data-i18n="opening_hours">Opening Hours</span></div>
+      <div class="card-body">
+        <div id="scheduleContainer"></div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Schedule</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
 </div><!-- /app -->
@@ -1788,42 +1953,79 @@ function applyI18n(){
 /* ══════════════════════════════════════════
    LOGIN
 ══════════════════════════════════════════ */
-function doLogin(){
+async function doLogin(){
   const email=document.getElementById('lg-email').value.trim().toLowerCase();
   const pass=document.getElementById('lg-pass').value;
   const errEl=document.getElementById('lg-err');
-  const u=USERS[email];
-  if(!u||u.pw!==pass){
-    errEl.textContent=t('invalid_credentials');
-    errEl.style.display='block';
-    document.getElementById('lg-email').classList.add('err');
+  
+  if(!email || !pass) {
+    errEl.textContent = 'Please enter email and password';
+    errEl.style.display = 'block';
     return;
   }
-  errEl.style.display='none';
-  document.getElementById('lg-email').classList.remove('err');
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('app').style.display='block';
-  currentRole=u.role;
-  document.getElementById('av').textContent=u.init;
-  document.getElementById('uname').textContent=u.name;
-  document.getElementById('uemail').textContent=u.role==='admin'?email:(u.venue||email);
-  document.getElementById('urole').textContent=u.role==='admin'?'Admin':t('active');
-  document.getElementById('urole').className='role-badge '+(u.role==='admin'?'admin':'user');
-  if(u.role==='admin'){
-    document.getElementById('navAdmin').style.display='block';
-    document.getElementById('navUser').style.display='none';
-    nav('adminDash',document.querySelector('#navAdmin .nav-item'));
-  } else {
-    document.getElementById('navAdmin').style.display='none';
-    document.getElementById('navUser').style.display='block';
-    nav('userDash',document.querySelector('#navUser .nav-item'));
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const d = await res.json();
+    if(!d.success){
+      errEl.textContent = t(d.error) || 'Login failed';
+      errEl.style.display = 'block';
+      document.getElementById('lg-email').classList.add('err');
+      return;
+    }
+    // Success - reload /app to get clean state or just call checkSession
+    window.location.href = '/app';
+  } catch(e) {
+    errEl.textContent = 'Network error';
+    errEl.style.display = 'block';
   }
-  applyI18n();
-  buildKegGrids();
-  buildSchedule();
-  setTimeout(initCharts,100);
-  startMqttFeed();
 }
+
+async function checkSession(){
+  try {
+    const res = await fetch('/api/me');
+    const d = await res.json();
+    if(d.loggedIn){
+      const u = d.user;
+      document.getElementById('loginPage').style.display='none';
+      document.getElementById('app').style.display='block';
+      currentRole=u.role;
+      document.getElementById('av').textContent=u.name.charAt(0);
+      document.getElementById('uname').textContent=u.name;
+      document.getElementById('uemail').textContent=u.role==='admin'?u.email:u.restaurant;
+      document.getElementById('urole').textContent=u.role==='admin'?'Admin':t('active');
+      document.getElementById('urole').className='role-badge '+(u.role==='admin'?'admin':'user');
+      
+      if(u.role==='admin'){
+        document.getElementById('navAdmin').style.display='flex';
+        document.getElementById('navUser').style.display='none';
+        nav('adminDash',document.querySelector('#navAdmin .nav-item'));
+      } else {
+        document.getElementById('navAdmin').style.display='none';
+        document.getElementById('navUser').style.display='flex';
+        nav('userDash',document.querySelector('#navUser .nav-item'));
+      }
+      applyI18n();
+      buildKegGrids();
+      buildSchedule();
+      setTimeout(initCharts,100);
+      startMqttFeed();
+    } else {
+      document.getElementById('loginPage').style.display='flex';
+      document.getElementById('app').style.display='none';
+    }
+  } catch(e){
+    console.error('Session check failed', e);
+  }
+}
+
+// Check session on load
+window.addEventListener('DOMContentLoaded', checkSession);
+
 
 function doLogout(){
   document.getElementById('app').style.display='none';
@@ -1909,15 +2111,16 @@ function openEditKeg(id){
    SCHEDULE
 ══════════════════════════════════════════ */
 function buildSchedule(){
-  const el=document.getElementById('schedBlock');
+  const el = document.getElementById('schedBlock') || document.getElementById('scheduleContainer');
   if(!el) return;
-  el.innerHTML=SCHED.map(s=>`
-    <div class="sched-day">
-      <div class="day-name">${t(s.day)}</div>
-      <label class="twrap" style="margin-right:8px"><span class="toggle"><input type="checkbox" ${s.on?'checked':''}><span class="tslider"></span></span></label>
-      <input type="time" value="${s.open}" style="width:100px" ${s.on?'':'disabled'}>
-      <span style="color:var(--text3);font-size:12px;margin:0 6px">→</span>
-      <input type="time" value="${s.close}" style="width:100px" ${s.on?'':'disabled'}>
+  el.innerHTML = SCHED.map(s => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border)">
+      <div style="width:100px;font-weight:500;color:var(--text1)">${t(s.day)}</div>
+      <label class="switch"><input type="checkbox" ${s.on?'checked':''}><span class="slider"></span></label>
+      <div style="flex:1"></div>
+      <input type="time" value="${s.open}" style="width:110px" ${s.on?'':'disabled'}>
+      <span style="color:var(--text3)">→</span>
+      <input type="time" value="${s.close}" style="width:110px" ${s.on?'':'disabled'}>
     </div>`).join('');
 }
 
@@ -4456,6 +4659,16 @@ function switchSettingsTab(tab, el){
   if(tab==='roles')   renderRolesList();
   if(tab==='plans')   renderPlansList();
   if(tab==='general') renderLocationsList();
+}
+
+function switchUserSettingsTab(tab, el){
+  document.querySelectorAll('#userSettingsTabs .detail-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['account','alerts','hours'].forEach(id=>{
+    const target = document.getElementById('ustab-'+id);
+    if(target) target.style.display = (id===tab?'block':'none');
+  });
+  if(tab==='hours') buildSchedule();
 }
 
 // ══════════════════════════════════════════

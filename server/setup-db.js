@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
   name        TEXT NOT NULL,
   city        TEXT,
   country     TEXT,
-  timezone    TEXT DEFAULT 'Europe/Berlin',
   language    TEXT DEFAULT 'en',
   plan        TEXT DEFAULT 'starter',
   active      INTEGER DEFAULT 1,
@@ -143,8 +142,8 @@ if (!existingAdmin) {
 let rest = db.prepare("SELECT id FROM restaurants WHERE name = 'La Cervecería'").get();
 if (!rest) {
   const r = db.prepare(`
-    INSERT INTO restaurants (name, city, country, timezone, language, plan, renewal_date)
-    VALUES ('La Cervecería', 'Barcelona', 'Spain', 'Europe/Madrid', 'es', 'pro', '2026-12-01')
+    INSERT INTO restaurants (name, city, country, language, plan, renewal_date)
+    VALUES ('La Cervecería', 'Barcelona', 'Spain', 'es', 'pro', '2026-12-01')
   `).run();
   rest = { id: r.lastInsertRowid };
 

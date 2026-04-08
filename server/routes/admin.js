@@ -19,24 +19,24 @@ router.get('/restaurants', (req, res) => {
 });
 
 router.post('/restaurants', (req, res) => {
-  const { name, city, country, timezone, language, plan, renewal_date, owner_name, owner_email, owner_password } = req.body;
+  const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password } = req.body;
   const r = db.prepare(`
-    INSERT INTO restaurants (name,city,country,timezone,language,plan,renewal_date)
-    VALUES (?,?,?,?,?,?,?)
-  `).run(name, city||'', country||'', timezone||'Europe/Berlin', language||'en', plan||'starter', renewal_date||null);
+    INSERT INTO restaurants (name,city,country,language,plan,renewal_date)
+    VALUES (?,?,?,?,?,?)
+  `).run(name, city||'', country||'', language||'en', plan||'starter', renewal_date||null);
   if (owner_email && owner_name) {
     const hash = bcrypt.hashSync(owner_password || 'changeme123', 10);
-    db.prepare("INSERT OR IGNORE INTO users (name,email,password_hash,role,language,restaurant_id) VALUES (?,?,?,'user',?,?)")
+    db.prepare("INSERT OR IGNORE INTO users (name,email,password_hash,role,language,restaurant_id) VALUES (?,?,?,'owner',?,?)")
       .run(owner_name, owner_email, hash, language||'en', r.lastInsertRowid);
   }
   res.json({ success: true, id: r.lastInsertRowid });
 });
 
 router.put('/restaurants/:id', (req, res) => {
-  const { name, city, country, timezone, language, plan, renewal_date, active } = req.body;
+  const { name, city, country, language, plan, renewal_date, active } = req.body;
   db.prepare(`
-    UPDATE restaurants SET name=?,city=?,country=?,timezone=?,language=?,plan=?,renewal_date=?,active=? WHERE id=?
-  `).run(name, city, country, timezone, language, plan, renewal_date, active?1:0, req.params.id);
+    UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=? WHERE id=?
+  `).run(name, city, country, language, plan, renewal_date, active?1:0, req.params.id);
   res.json({ success: true });
 });
 
@@ -157,6 +157,80 @@ router.post('/settings', (req, res) => {
   db.transaction(() => {
     Object.entries(req.body).forEach(([k,v]) => upsert.run(k, v));
   })();
+  res.json({ success: true });
+});
+
+// ── Billing ─────────────────────────────────
+router.get('/payments', (req, res) => {
+  const rid = req.query.restaurant_id;
+  let query = `
+    SELECT p.*, r.name as restaurant_name 
+    FROM payments p 
+    JOIN restaurants r ON p.restaurant_id=r.id
+  `;
+  const params = [];
+  if (rid) {
+    query += ` WHERE p.restaurant_id = ?`;
+    params.push(rid);
+  }
+  query += ` ORDER BY p.created_at DESC`;
+  const rows = db.prepare(query).all(...params);
+  res.json(rows);
+});
+
+router.get('/payments/export', (req, res) => {
+  const rows = db.prepare(`
+    SELECT p.created_at, r.name as restaurant, p.amount, p.currency, p.status, p.stripe_invoice_id
+    FROM payments p 
+    JOIN restaurants r ON p.restaurant_id=r.id
+    ORDER BY p.created_at DESC
+  `).all();
+  
+  let csv = 'Date,Restaurant,Amount,Currency,Status,Stripe Invoice ID\n';
+  rows.forEach(r => {
+    csv += `"${r.created_at}","${r.restaurant}",${r.amount},"${r.currency}","${r.status}","${r.stripe_invoice_id}"\n`;
+  });
+  
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename=payments_export.csv');
+  res.status(200).send(csv);
+});
+
+router.post('/payments/:id/send-email', async (req, res) => {
+  const payment = db.prepare(`
+    SELECT p.*, r.name as restaurant_name, u.email as owner_email, u.name as owner_name
+    FROM payments p
+    JOIN restaurants r ON p.restaurant_id=r.id
+    JOIN users u ON u.restaurant_id=r.id AND u.role='user' -- Assuming 'user' is the owner/manager
+    WHERE p.id=?
+  `).get(req.params.id);
+
+  if (!payment) return res.status(404).json({ error: 'Payment not found' });
+  if (!payment.owner_email) return res.status(400).json({ error: 'Restaurant owner email not found' });
+
+  try {
+    const { sendMail } = require('../mail');
+    await sendMail({
+      to: payment.owner_email,
+      subject: `Receipt for ${payment.restaurant_name} - ${payment.amount} ${payment.currency}`,
+      html: `<h3>Hello ${payment.owner_name},</h3>
+             <p>This is a payment receipt for your subscription at <b>BeerControl</b>.</p>
+             <p><b>Amount:</b> ${payment.amount} ${payment.currency}<br>
+                <b>Date:</b> ${payment.created_at}<br>
+                <b>Status:</b> ${payment.status.toUpperCase()}</p>
+             ${payment.hosted_invoice_url ? `<p><a href="${payment.hosted_invoice_url}">View Full Invoice Details</a></p>` : ''}
+             <p>Thank you for your business!</p>`
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send email: ' + err.message });
+  }
+});
+
+router.put('/restaurants/:id/billing-settings', (req, res) => {
+  const { admin_billing_alerts, grace_period_days } = req.body;
+  db.prepare(`UPDATE restaurants SET admin_billing_alerts=?, grace_period_days=? WHERE id=?`)
+    .run(admin_billing_alerts?1:0, grace_period_days||7, req.params.id);
   res.json({ success: true });
 });
 

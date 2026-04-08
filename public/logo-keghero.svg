@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="kegGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0a500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4700a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e2128;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#2a2e36;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e2128;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#21242a" />
+      <stop offset="100%" style="stop-color:#141518" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="96" fill="url(#bgGrad)" stroke="#f0a500" stroke-width="2.5" opacity="0.9"/>
+
+  <!-- Keg body -->
+  <rect x="62" y="52" width="76" height="96" rx="10" ry="10" fill="url(#bodyGrad)" stroke="#3a3f50" stroke-width="1.5"/>
+
+  <!-- Keg top cap -->
+  <rect x="55" y="48" width="90" height="14" rx="5" ry="5" fill="#f0a500"/>
+  <rect x="55" y="48" width="90" height="7" rx="5" ry="5" fill="#fdb827"/>
+
+  <!-- Keg bottom cap -->
+  <rect x="55" y="138" width="90" height="14" rx="5" ry="5" fill="#f0a500"/>
+  <rect x="55" y="138" width="90" height="7" rx="0" ry="0" fill="#f0a500"/>
+
+  <!-- Keg horizontal rings -->
+  <rect x="62" y="73" width="76" height="5" rx="2" fill="#3a3f50"/>
+  <rect x="62" y="73" width="76" height="2" rx="2" fill="#4a5060"/>
+  <rect x="62" y="118" width="76" height="5" rx="2" fill="#3a3f50"/>
+  <rect x="62" y="118" width="76" height="2" rx="2" fill="#4a5060"/>
+
+  <!-- Center tap/valve -->
+  <circle cx="100" cy="100" r="12" fill="#1a1c20" stroke="#3a3f50" stroke-width="2"/>
+  <circle cx="100" cy="100" r="7" fill="#f0a500" filter="url(#glow)"/>
+  <circle cx="100" cy="100" r="3.5" fill="#fdb827"/>
+
+  <!-- Lightning bolt / hero bolt -->
+  <polygon points="116,58 107,82 114,82 98,118 110,118 95,158 130,100 117,100 134,58"
+           fill="url(#kegGrad)" opacity="0.92" filter="url(#glow)"/>
+  <polygon points="116,58 107,82 114,82 98,118 110,118 95,158 130,100 117,100 134,58"
+           fill="none" stroke="#ffd060" stroke-width="0.8" opacity="0.5"/>
+
+  <!-- Shine on keg -->
+  <rect x="68" y="56" width="8" height="80" rx="4" fill="white" opacity="0.05"/>
+</svg>

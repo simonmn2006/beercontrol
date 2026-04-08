@@ -8,7 +8,7 @@ const router  = express.Router();
 // ── Login page ──────────────────────────────
 router.get('/login', (req, res) => {
   if (req.session && req.session.user) return res.redirect('/app');
-  res.sendFile(path.join(__dirname, '..', '..', 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, '..', '..', 'public', 'app.html'));
 });
 
 // ── Login POST ──────────────────────────────

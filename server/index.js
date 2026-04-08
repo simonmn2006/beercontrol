@@ -10,9 +10,13 @@ const { db }       = require('./db');
 const authRouter   = require('./routes/auth');
 const apiRouter    = require('./routes/api');
 const adminRouter  = require('./routes/admin');
+const billingRouter= require('./routes/billing');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+
+// ── Webhooks & Billing ────────────────────
+app.use('/api/billing', billingRouter); // Mounted before global express.json() for webhook raw body
 
 // ── Middleware ──────────────────────────────
 app.use(express.json());

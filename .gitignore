@@ -23,5 +23,8 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code local settings (personal, not for team)
+.claude/settings.local.json
+
 # Uploads (logo files stored locally)
 public/uploads/
