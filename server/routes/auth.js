@@ -47,10 +47,7 @@ router.post('/api/login', async (req, res) => {
       return res.json({ success: false, error: 'invalid_credentials' });
     }
 
-    console.log(`✅ Login successful: ${user.email} (${user.role})`);
-
-    // Update last login
-    await db.run("UPDATE users SET last_login = NOW() WHERE id = ?", [user.id]);
+    console.log(`✅ Login successful: ${user.email} (${user.role}) | SID: ${req.sessionID}`);
 
     // Store session
     req.session.user = {
@@ -63,12 +60,18 @@ router.post('/api/login', async (req, res) => {
       language:      user.language || user.rest_language || 'en',
     };
 
-    res.json({
-      success:  true,
-      role:     user.role,
-      name:     user.name,
-      language: user.language || user.rest_language || 'en',
-      redirect: '/app',
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session save error:', err);
+        return res.status(500).json({ success: false, error: 'session_error' });
+      }
+      res.json({
+        success:  true,
+        role:     user.role,
+        name:     user.name,
+        language: user.language || user.rest_language || 'en',
+        redirect: '/app',
+      });
     });
   } catch (err) {
     console.error('Login error:', err);

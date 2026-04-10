@@ -394,9 +394,9 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
     <label class="lbl" id="lg-lbl-email">Username</label>
-    <input class="li" type="text" id="lg-email" placeholder="super" value="super">
+    <input class="li" type="text" id="lg-email" placeholder="admin" value="admin">
     <label class="lbl" id="lg-lbl-pass">Password</label>
-    <input class="li" type="password" id="lg-pass" placeholder="••••••••" value="super">
+    <input class="li" type="password" id="lg-pass" placeholder="••••••••" value="admin">
     <button class="login-btn" id="lg-btn" onclick="doLogin()">Sign In →</button>
     <div class="login-err" id="lg-err"></div>
     <div class="login-hint">
@@ -1920,11 +1920,20 @@ async function doLogin(){
   const pass=document.getElementById('lg-pass').value;
   const errEl=document.getElementById('lg-err');
   
+  const btn = document.getElementById('lg-btn');
+  const oldText = btn.textContent;
+  
   if(!email || !pass) {
     errEl.textContent = 'Please enter email and password';
     errEl.style.display = 'block';
     return;
   }
+
+  // Visual feedback
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+  errEl.style.display = 'none';
+  document.getElementById('lg-email').classList.remove('err');
 
   try {
     const res = await fetch('/api/login', {
@@ -1934,15 +1943,19 @@ async function doLogin(){
     });
     const d = await res.json();
     if(!d.success){
-      errEl.textContent = t(d.error) || 'Login failed';
+      btn.disabled = false;
+      btn.textContent = oldText;
+      errEl.textContent = d.error === 'invalid_credentials' ? 'Invalid username or password' : (t(d.error) || 'Login failed');
       errEl.style.display = 'block';
       document.getElementById('lg-email').classList.add('err');
       return;
     }
-    // Success - reload /app to get clean state or just call checkSession
+    // Success - reload /app to get clean state
     window.location.href = '/app';
   } catch(e) {
-    errEl.textContent = 'Network error';
+    btn.disabled = false;
+    btn.textContent = oldText;
+    errEl.textContent = 'Network error — Is the server running?';
     errEl.style.display = 'block';
   }
 }
