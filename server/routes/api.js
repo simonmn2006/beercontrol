@@ -251,20 +251,33 @@ router.post('/settings/schedule', async (req, res) => {
   }
 });
 
-// ── MQTT simulator endpoint (for testing without real ESP32) ──
-router.post('/simulate/pour', async (req, res) => {
-  try {
-    const { keg_id, liters } = req.body;
-    const keg = await db.get("SELECT * FROM kegs WHERE id=?", [keg_id]);
-    if (!keg) return res.status(404).json({ error: 'Keg not found' });
-    const newRem = Math.max(0, (keg.remaining_liters || keg.keg_size_liters) - liters);
-    await db.run("UPDATE kegs SET remaining_liters=?, current_flow=? WHERE id=?", [newRem, liters, keg_id]);
-    await db.run("INSERT INTO pour_events (keg_id, restaurant_id, liters, temp, co2) VALUES (?,?,?,?,?)", [keg_id, keg.restaurant_id, liters, keg.current_temp, keg.current_co2]);
-    res.json({ success: true, remaining: newRem });
-  } catch (err) {
-    console.error('Simulate pour error:', err);
-    res.status(500).json({ error: 'server_error' });
-  }
+// ── Real-time MQTT Stream (SSE) ──────────────────
+router.get('/mqtt/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const mqttService = require('../mqtt');
+
+  // Send current status immediately
+  res.write(`data: ${JSON.stringify({ type: 'status', data: mqttService.getStatus() })}\n\n`);
+
+  const onMessage = (msg) => {
+    res.write(`data: ${JSON.stringify({ type: 'message', data: msg })}\n\n`);
+  };
+
+  const onStatus = (status) => {
+    res.write(`data: ${JSON.stringify({ type: 'status', data: status })}\n\n`);
+  };
+
+  mqttService.on('message', onMessage);
+  mqttService.on('status', onStatus);
+
+  req.on('close', () => {
+    mqttService.off('message', onMessage);
+    mqttService.off('status', onStatus);
+  });
 });
 
 module.exports = router;

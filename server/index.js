@@ -63,6 +63,9 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🍺  BeerControl running at http://localhost:${PORT}`);
   console.log(`    Admin: ${process.env.ADMIN_EMAIL || 'admin@beercontrol.io'} / admin\n`);
+  
+  // Start MQTT Service
+  require('./mqtt').init();
 });
 
 module.exports = app;

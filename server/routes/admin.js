@@ -245,12 +245,26 @@ router.post('/settings', async (req, res) => {
     }
     await conn.commit();
     res.json({ success: true });
+
+    // Restart MQTT if host changed
+    if (Object.keys(req.body).some(k => k.startsWith('mqtt_'))) {
+      require('../mqtt').init();
+    }
   } catch (err) {
     await conn.rollback();
     console.error('Update settings error:', err);
     res.status(500).json({ error: 'server_error' });
   } finally {
     conn.release();
+  }
+});
+
+router.post('/mqtt/test', async (req, res) => {
+  try {
+    const result = await require('../mqtt').testConnection(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
