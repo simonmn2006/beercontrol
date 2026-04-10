@@ -34,11 +34,13 @@ async function setup() {
     await connection.query(cleanSchema);
 
     console.log('◈ Seeding data...');
+    // Insert super admin users
     const adminHash = bcrypt.hashSync('super', 10);
+    const adminUserHash = bcrypt.hashSync('admin', 10);
 
-    // Insert super admin user
-    const [existing] = await connection.query("SELECT id FROM users WHERE email = 'super'");
-    if (existing.length === 0) {
+    // Existing "super" account
+    const [existingSuper] = await connection.query("SELECT id FROM users WHERE email = 'super'");
+    if (existingSuper.length === 0) {
       await connection.query(`
         INSERT INTO users (name, email, password_hash, role, language, restaurant_id)
         VALUES ('Super Admin', 'super', ?, 'admin', 'en', NULL)
@@ -46,7 +48,20 @@ async function setup() {
       console.log('✓ Admin user created: super / super');
     } else {
       await connection.query("UPDATE users SET password_hash = ? WHERE email = 'super'", [adminHash]);
-      console.log('✓ Admin user already exists, password updated to: super');
+      console.log('✓ Admin user "super" updated.');
+    }
+
+    // New "admin" account
+    const [existingAdmin] = await connection.query("SELECT id FROM users WHERE email = 'admin'");
+    if (existingAdmin.length === 0) {
+      await connection.query(`
+        INSERT INTO users (name, email, password_hash, role, language, restaurant_id)
+        VALUES ('Admin', 'admin', ?, 'admin', 'en', NULL)
+      `, [adminUserHash]);
+      console.log('✓ Admin user created: admin / admin');
+    } else {
+      await connection.query("UPDATE users SET password_hash = ? WHERE email = 'admin'", [adminUserHash]);
+      console.log('✓ Admin user "admin" updated.');
     }
 
     // Default settings

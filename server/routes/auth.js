@@ -26,16 +26,28 @@ router.post('/api/login', async (req, res) => {
       WHERE u.email = ?
     `, [email.trim()]);
 
-    if (!user) return res.json({ success: false, error: 'invalid_credentials' });
-    if (!user.active) return res.json({ success: false, error: 'account_disabled' });
+    if (!user) {
+      console.log(`❌ Login failed: User not found [${email.trim()}]`);
+      return res.json({ success: false, error: 'invalid_credentials' });
+    }
+    if (!user.active) {
+      console.log(`❌ Login failed: Account disabled [${email.trim()}]`);
+      return res.json({ success: false, error: 'account_disabled' });
+    }
     
     // In MySQL, boolean/tinyint 0/1 are used.
     if (user.role !== 'admin' && user.rest_active === 0) {
+      console.log(`❌ Login failed: Restaurant suspended [${email.trim()}]`);
       return res.json({ success: false, error: 'restaurant_suspended' });
     }
 
     const ok = bcrypt.compareSync(password, user.password_hash);
-    if (!ok) return res.json({ success: false, error: 'invalid_credentials' });
+    if (!ok) {
+      console.log(`❌ Login failed: Password mismatch [${email.trim()}]`);
+      return res.json({ success: false, error: 'invalid_credentials' });
+    }
+
+    console.log(`✅ Login successful: ${user.email} (${user.role})`);
 
     // Update last login
     await db.run("UPDATE users SET last_login = NOW() WHERE id = ?", [user.id]);
