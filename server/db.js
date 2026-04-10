@@ -1,49 +1,87 @@
 // server/db.js
-const Database = require('better-sqlite3');
-const path     = require('path');
-const fs       = require('fs');
+const mysql = require('mysql2/promise');
 
-const DB_PATH  = path.join(__dirname, '..', 'data', 'beercontrol.db');
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'beercontrol',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// Helper for easier query execution (mimicking better-sqlite3 slightly but async)
+const db = {
+  execute: async (sql, params = []) => {
+    const [result] = await pool.execute(sql, params);
+    return result;
+  },
+  query: async (sql, params = []) => {
+    const [rows] = await pool.query(sql, params);
+    return rows;
+  },
+  // Compatibility helpers
+  all: async (sql, params = []) => {
+    const [rows] = await pool.query(sql, params);
+    return rows;
+  },
+  get: async (sql, params = []) => {
+    const [rows] = await pool.query(sql, params);
+    return rows[0];
+  },
+  run: async (sql, params = []) => {
+    const [result] = await pool.execute(sql, params);
+    return { lastInsertRowid: result.insertId, changes: result.affectedRows };
+  }
+};
 
 // ── Auto-Migrations ─────────────────────────
-try {
-  // Add columns if they don't exist
-  // We use PRAGMA table_info to check for column existence safely
-  const cols = db.prepare('PRAGMA table_info(restaurants)').all().map(c => c.name);
-  if (!cols.includes('stripe_customer_id')) {
-    db.prepare('ALTER TABLE restaurants ADD COLUMN stripe_customer_id TEXT').run();
-  }
-  if (!cols.includes('stripe_subscription_id')) {
-    db.prepare('ALTER TABLE restaurants ADD COLUMN stripe_subscription_id TEXT').run();
-  }
-  if (!cols.includes('grace_period_days')) {
-    db.prepare('ALTER TABLE restaurants ADD COLUMN grace_period_days INTEGER DEFAULT 7').run();
-  }
-  if (!cols.includes('admin_billing_alerts')) {
-    db.prepare('ALTER TABLE restaurants ADD COLUMN admin_billing_alerts INTEGER DEFAULT 0').run();
-  }
+async function runMigrations() {
+  try {
+    // We check for columns in MariaDB using INFORMATION_SCHEMA or SHOW COLUMNS
+    const [cols] = await pool.query('SHOW COLUMNS FROM restaurants');
+    const colNames = cols.map(c => c.Field);
 
-  // Create payments table
-  db.prepare(`
-    CREATE TABLE IF NOT EXISTS payments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      restaurant_id INTEGER NOT NULL REFERENCES restaurants(id),
-      stripe_invoice_id TEXT,
-      amount REAL NOT NULL,
-      currency TEXT DEFAULT 'EUR',
-      status TEXT,
-      receipt_url TEXT,
-      hosted_invoice_url TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    )
-  `).run();
-} catch (e) {
-  console.error("Migration error:", e.message);
+    if (!colNames.includes('stripe_customer_id')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN stripe_customer_id VARCHAR(255)');
+    }
+    if (!colNames.includes('stripe_subscription_id')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN stripe_subscription_id VARCHAR(255)');
+    }
+    if (!colNames.includes('grace_period_days')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN grace_period_days INT DEFAULT 7');
+    }
+    if (!colNames.includes('admin_billing_alerts')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN admin_billing_alerts TINYINT DEFAULT 0');
+    }
+
+    // Create payments table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        restaurant_id INT NOT NULL,
+        stripe_invoice_id VARCHAR(255),
+        amount DOUBLE NOT NULL,
+        currency VARCHAR(10) DEFAULT 'EUR',
+        status VARCHAR(50),
+        receipt_url VARCHAR(2048),
+        hosted_invoice_url VARCHAR(2048),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
+      )
+    `);
+  } catch (e) {
+    if (e.code === 'ER_NO_SUCH_TABLE') {
+      console.log("ℹ️ Restaurants table not yet created. Run 'npm run setup' first.");
+    } else {
+      console.error("Migration error:", e.message);
+    }
+  }
 }
 
-module.exports = { db };
+// Do not block initialization, but run migrations
+runMigrations();
+
+module.exports = { pool, db };

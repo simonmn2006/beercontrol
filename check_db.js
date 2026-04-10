@@ -1,6 +1,17 @@
+// check_db.js
 const { db } = require('./server/db');
-console.log('--- RESTAURANTS ---');
-console.log(db.prepare('SELECT id, name FROM restaurants').all());
-console.log('--- USERS ---');
-console.log(db.prepare('SELECT id, name, username, role, restaurant_id FROM users').all());
-process.exit(0);
+
+async function check() {
+  try {
+    console.log('--- RESTAURANTS ---');
+    console.log(await db.all('SELECT id, name FROM restaurants'));
+    console.log('--- USERS ---');
+    console.log(await db.all('SELECT id, name, email, role, restaurant_id FROM users'));
+  } catch (err) {
+    console.error('Error checking DB:', err.message);
+  } finally {
+    process.exit(0);
+  }
+}
+
+check();

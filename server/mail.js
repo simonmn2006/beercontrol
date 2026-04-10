@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const { db } = require('./db');
 
 async function sendMail({ to, subject, html, text }) {
-  const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'admin_email')").all();
+  const rows = await db.all("SELECT `key`, `value` FROM settings WHERE `key` IN ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from', 'admin_email')");
   const settings = {};
   rows.forEach(r => settings[r.key] = r.value);
 

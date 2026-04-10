@@ -1,214 +1,318 @@
 // server/routes/admin.js  — admin-only API routes
 const express = require('express');
 const bcrypt  = require('bcryptjs');
-const { db }  = require('../db');
+const { db, pool }  = require('../db');
 const router  = express.Router();
 
 // ── Restaurants ─────────────────────────────
-router.get('/restaurants', (req, res) => {
-  const rows = db.prepare(`
-    SELECT r.*,
-      COUNT(DISTINCT u.id) as user_count,
-      COUNT(DISTINCT k.id) as keg_count
-    FROM restaurants r
-    LEFT JOIN users u ON u.restaurant_id=r.id
-    LEFT JOIN kegs  k ON k.restaurant_id=r.id AND k.active=1
-    GROUP BY r.id ORDER BY r.name
-  `).all();
-  res.json(rows);
-});
-
-router.post('/restaurants', (req, res) => {
-  const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password } = req.body;
-  const r = db.prepare(`
-    INSERT INTO restaurants (name,city,country,language,plan,renewal_date)
-    VALUES (?,?,?,?,?,?)
-  `).run(name, city||'', country||'', language||'en', plan||'starter', renewal_date||null);
-  if (owner_email && owner_name) {
-    const hash = bcrypt.hashSync(owner_password || 'changeme123', 10);
-    db.prepare("INSERT OR IGNORE INTO users (name,email,password_hash,role,language,restaurant_id) VALUES (?,?,?,'owner',?,?)")
-      .run(owner_name, owner_email, hash, language||'en', r.lastInsertRowid);
+router.get('/restaurants', async (req, res) => {
+  try {
+    const rows = await db.all(`
+      SELECT r.*,
+        COUNT(DISTINCT u.id) as user_count,
+        COUNT(DISTINCT k.id) as keg_count
+      FROM restaurants r
+      LEFT JOIN users u ON u.restaurant_id=r.id
+      LEFT JOIN kegs  k ON k.restaurant_id=r.id AND k.active=1
+      GROUP BY r.id ORDER BY r.name
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error('Get restaurants error:', err);
+    res.status(500).json({ error: 'server_error' });
   }
-  res.json({ success: true, id: r.lastInsertRowid });
 });
 
-router.put('/restaurants/:id', (req, res) => {
-  const { name, city, country, language, plan, renewal_date, active } = req.body;
-  db.prepare(`
-    UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=? WHERE id=?
-  `).run(name, city, country, language, plan, renewal_date, active?1:0, req.params.id);
-  res.json({ success: true });
+router.post('/restaurants', async (req, res) => {
+  try {
+    const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password } = req.body;
+    const r = await db.run(`
+      INSERT INTO restaurants (name,city,country,language,plan,renewal_date)
+      VALUES (?,?,?,?,?,?)
+    `, [name, city||'', country||'', language||'en', plan||'starter', renewal_date||null]);
+    
+    if (owner_email && owner_name) {
+      const hash = bcrypt.hashSync(owner_password || 'changeme123', 10);
+      await db.run("INSERT IGNORE INTO users (name,email,password_hash,role,language,restaurant_id) VALUES (?,?,?,'owner',?,?)",
+        [owner_name, owner_email, hash, language||'en', r.lastInsertRowid]);
+    }
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (err) {
+    console.error('Create restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
-router.post('/restaurants/:id/suspend', (req, res) => {
-  db.prepare("UPDATE restaurants SET active=0 WHERE id=?").run(req.params.id);
-  res.json({ success: true });
+router.put('/restaurants/:id', async (req, res) => {
+  try {
+    const { name, city, country, language, plan, renewal_date, active } = req.body;
+    await db.run(`
+      UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=? WHERE id=?
+    `, [name, city, country, language, plan, renewal_date, active?1:0, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
-router.post('/restaurants/:id/activate', (req, res) => {
-  db.prepare("UPDATE restaurants SET active=1 WHERE id=?").run(req.params.id);
-  res.json({ success: true });
+
+router.post('/restaurants/:id/suspend', async (req, res) => {
+  try {
+    await db.run("UPDATE restaurants SET active=0 WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Suspend restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/restaurants/:id/activate', async (req, res) => {
+  try {
+    await db.run("UPDATE restaurants SET active=1 WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Activate restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
 // ── Users ───────────────────────────────────
-router.get('/users', (req, res) => {
-  const rows = db.prepare(`
-    SELECT u.*, r.name as restaurant_name FROM users u
-    LEFT JOIN restaurants r ON u.restaurant_id=r.id
-    ORDER BY u.created_at DESC
-  `).all();
-  res.json(rows.map(u => ({ ...u, password_hash: undefined })));
-});
-
-router.post('/users', (req, res) => {
-  const { name, email, password, role, restaurant_id, language } = req.body;
-  const hash = bcrypt.hashSync(password || 'changeme123', 10);
+router.get('/users', async (req, res) => {
   try {
-    const r = db.prepare("INSERT INTO users (name,email,password_hash,role,restaurant_id,language) VALUES (?,?,?,?,?,?)")
-      .run(name, email, hash, role||'user', restaurant_id||null, language||'en');
-    res.json({ success: true, id: r.lastInsertRowid });
-  } catch (e) {
-    res.status(400).json({ error: 'Email already exists' });
+    const rows = await db.all(`
+      SELECT u.*, r.name as restaurant_name FROM users u
+      LEFT JOIN restaurants r ON u.restaurant_id=r.id
+      ORDER BY u.created_at DESC
+    `);
+    res.json(rows.map(u => ({ ...u, password_hash: undefined })));
+  } catch (err) {
+    console.error('Get users error:', err);
+    res.status(500).json({ error: 'server_error' });
   }
 });
 
-router.put('/users/:id', (req, res) => {
-  const { name, email, role, restaurant_id, language, active } = req.body;
-  db.prepare("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=? WHERE id=?")
-    .run(name, email, role, restaurant_id||null, language||'en', active?1:0, req.params.id);
-  res.json({ success: true });
+router.post('/users', async (req, res) => {
+  try {
+    const { name, email, password, role, restaurant_id, language } = req.body;
+    const hash = bcrypt.hashSync(password || 'changeme123', 10);
+    const r = await db.run("INSERT INTO users (name,email,password_hash,role,restaurant_id,language) VALUES (?,?,?,?,?,?)",
+      [name, email, hash, role||'user', restaurant_id||null, language||'en']);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      res.status(400).json({ error: 'Email already exists' });
+    } else {
+      console.error('Create user error:', err);
+      res.status(500).json({ error: 'server_error' });
+    }
+  }
 });
 
-router.post('/users/:id/reset-password', (req, res) => {
-  const { password } = req.body;
-  const hash = bcrypt.hashSync(password, 10);
-  db.prepare("UPDATE users SET password_hash=? WHERE id=?").run(hash, req.params.id);
-  res.json({ success: true });
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { name, email, role, restaurant_id, language, active } = req.body;
+    await db.run("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=? WHERE id=?",
+      [name, email, role, restaurant_id||null, language||'en', active?1:0, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update user error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
-router.post('/users/:id/disable', (req, res) => {
-  db.prepare("UPDATE users SET active=0 WHERE id=?").run(req.params.id);
-  res.json({ success: true });
+router.post('/users/:id/reset-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const hash = bcrypt.hashSync(password, 10);
+    await db.run("UPDATE users SET password_hash=? WHERE id=?", [hash, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
-router.post('/users/:id/enable', (req, res) => {
-  db.prepare("UPDATE users SET active=1 WHERE id=?").run(req.params.id);
-  res.json({ success: true });
+
+router.post('/users/:id/disable', async (req, res) => {
+  try {
+    await db.run("UPDATE users SET active=0 WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Disable user error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/users/:id/enable', async (req, res) => {
+  try {
+    await db.run("UPDATE users SET active=1 WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Enable user error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
 // ── Kegs (admin) ─────────────────────────────
-router.get('/kegs', (req, res) => {
-  const rid = req.query.restaurant_id;
-  let rows;
-  if (rid) {
-    rows = db.prepare(`SELECT k.*, r.name as restaurant_name FROM kegs k JOIN restaurants r ON k.restaurant_id=r.id WHERE k.restaurant_id=? AND k.active=1 ORDER BY k.tap_number`).all(rid);
-  } else {
-    rows = db.prepare(`SELECT k.*, r.name as restaurant_name FROM kegs k JOIN restaurants r ON k.restaurant_id=r.id WHERE k.active=1 ORDER BY r.name, k.tap_number`).all();
+router.get('/kegs', async (req, res) => {
+  try {
+    const rid = req.query.restaurant_id;
+    let rows;
+    if (rid) {
+      rows = await db.all(`SELECT k.*, r.name as restaurant_name FROM kegs k JOIN restaurants r ON k.restaurant_id=r.id WHERE k.restaurant_id=? AND k.active=1 ORDER BY k.tap_number`, [rid]);
+    } else {
+      rows = await db.all(`SELECT k.*, r.name as restaurant_name FROM kegs k JOIN restaurants r ON k.restaurant_id=r.id WHERE k.active=1 ORDER BY r.name, k.tap_number`);
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error('Get kegs error:', err);
+    res.status(500).json({ error: 'server_error' });
   }
-  res.json(rows);
 });
 
-router.post('/kegs', (req, res) => {
-  const { restaurant_id, tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
-          co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
-  const r = db.prepare(`
-    INSERT INTO kegs (restaurant_id,tap_number,beer_name,keg_size_liters,remaining_liters,
-      esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
-  `).run(restaurant_id, tap_number, beer_name, keg_size_liters, keg_size_liters,
-         esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10);
-  // Start a keg session
-  db.prepare("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size) VALUES (?,?,?)").run(r.lastInsertRowid, restaurant_id, keg_size_liters);
-  res.json({ success: true, id: r.lastInsertRowid });
+router.post('/kegs', async (req, res) => {
+  try {
+    const { restaurant_id, tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
+            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
+    const r = await db.run(`
+      INSERT INTO kegs (restaurant_id,tap_number,beer_name,keg_size_liters,remaining_liters,
+        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    `, [restaurant_id, tap_number, beer_name, keg_size_liters, keg_size_liters,
+           esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10]);
+    // Start a keg session
+    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size) VALUES (?,?,?)", [r.lastInsertRowid, restaurant_id, keg_size_liters]);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (err) {
+    console.error('Create keg error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
-router.put('/kegs/:id', (req, res) => {
-  const { beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
-          co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
-  db.prepare(`UPDATE kegs SET beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
-    co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=? WHERE id=?`)
-    .run(beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
-         co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, req.params.id);
-  res.json({ success: true });
+router.put('/kegs/:id', async (req, res) => {
+  try {
+    const { beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
+            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
+    await db.run(`UPDATE kegs SET beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
+      co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=? WHERE id=?`,
+      [beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
+           co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update keg error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
-router.post('/kegs/:id/new-keg', (req, res) => {
-  const keg = db.prepare("SELECT * FROM kegs WHERE id=?").get(req.params.id);
-  if (!keg) return res.status(404).json({ error: 'Not found' });
-  // Close current session
-  db.prepare("UPDATE keg_sessions SET ended_at=datetime('now') WHERE keg_id=? AND ended_at IS NULL").run(keg.id);
-  // Reset keg
-  db.prepare("UPDATE kegs SET remaining_liters=?, fob_active=0 WHERE id=?").run(keg.keg_size_liters, keg.id);
-  // New session
-  db.prepare("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size) VALUES (?,?,?)").run(keg.id, keg.restaurant_id, keg.keg_size_liters);
-  // Log alert
-  db.prepare("INSERT INTO alerts (restaurant_id,keg_id,type,message) VALUES (?,?,'info',?)").run(keg.restaurant_id, keg.id, `Manual keg change — ${keg.beer_name} Tap #${keg.tap_number}`);
-  res.json({ success: true });
+router.post('/kegs/:id/new-keg', async (req, res) => {
+  try {
+    const keg = await db.get("SELECT * FROM kegs WHERE id=?", [req.params.id]);
+    if (!keg) return res.status(404).json({ error: 'Not found' });
+    // Close current session
+    await db.run("UPDATE keg_sessions SET ended_at=NOW() WHERE keg_id=? AND ended_at IS NULL", [keg.id]);
+    // Reset keg
+    await db.run("UPDATE kegs SET remaining_liters=?, fob_active=0 WHERE id=?", [keg.keg_size_liters, keg.id]);
+    // New session
+    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size) VALUES (?,?,?)", [keg.id, keg.restaurant_id, keg.keg_size_liters]);
+    // Log alert
+    await db.run("INSERT INTO alerts (restaurant_id,keg_id,type,message) VALUES (?,?,'info',?)", [keg.restaurant_id, keg.id, `Manual keg change — ${keg.beer_name} Tap #${keg.tap_number}`]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('New keg error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
 // ── Platform settings ───────────────────────
-router.get('/settings', (req, res) => {
-  const rows = db.prepare("SELECT key, value FROM settings").all();
-  const obj  = {};
-  rows.forEach(r => { obj[r.key] = r.value; });
-  res.json(obj);
+router.get('/settings', async (req, res) => {
+  try {
+    const rows = await db.all("SELECT `key`, `value` FROM settings");
+    const obj  = {};
+    rows.forEach(r => { obj[r.key] = r.value; });
+    res.json(obj);
+  } catch (err) {
+    console.error('Get settings error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
-router.post('/settings', (req, res) => {
-  const upsert = db.prepare("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)");
-  db.transaction(() => {
-    Object.entries(req.body).forEach(([k,v]) => upsert.run(k, v));
-  })();
-  res.json({ success: true });
+router.post('/settings', async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const upsert = "INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=VALUES(`value`)";
+    for (const [k, v] of Object.entries(req.body)) {
+      await conn.execute(upsert, [k, v]);
+    }
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    console.error('Update settings error:', err);
+    res.status(500).json({ error: 'server_error' });
+  } finally {
+    conn.release();
+  }
 });
 
 // ── Billing ─────────────────────────────────
-router.get('/payments', (req, res) => {
-  const rid = req.query.restaurant_id;
-  let query = `
-    SELECT p.*, r.name as restaurant_name 
-    FROM payments p 
-    JOIN restaurants r ON p.restaurant_id=r.id
-  `;
-  const params = [];
-  if (rid) {
-    query += ` WHERE p.restaurant_id = ?`;
-    params.push(rid);
+router.get('/payments', async (req, res) => {
+  try {
+    const rid = req.query.restaurant_id;
+    let query = `
+      SELECT p.*, r.name as restaurant_name 
+      FROM payments p 
+      JOIN restaurants r ON p.restaurant_id=r.id
+    `;
+    const params = [];
+    if (rid) {
+      query += ` WHERE p.restaurant_id = ?`;
+      params.push(rid);
+    }
+    query += ` ORDER BY p.created_at DESC`;
+    const rows = await db.all(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error('Get payments error:', err);
+    res.status(500).json({ error: 'server_error' });
   }
-  query += ` ORDER BY p.created_at DESC`;
-  const rows = db.prepare(query).all(...params);
-  res.json(rows);
 });
 
-router.get('/payments/export', (req, res) => {
-  const rows = db.prepare(`
-    SELECT p.created_at, r.name as restaurant, p.amount, p.currency, p.status, p.stripe_invoice_id
-    FROM payments p 
-    JOIN restaurants r ON p.restaurant_id=r.id
-    ORDER BY p.created_at DESC
-  `).all();
-  
-  let csv = 'Date,Restaurant,Amount,Currency,Status,Stripe Invoice ID\n';
-  rows.forEach(r => {
-    csv += `"${r.created_at}","${r.restaurant}",${r.amount},"${r.currency}","${r.status}","${r.stripe_invoice_id}"\n`;
-  });
-  
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename=payments_export.csv');
-  res.status(200).send(csv);
+router.get('/payments/export', async (req, res) => {
+  try {
+    const rows = await db.all(`
+      SELECT p.created_at, r.name as restaurant, p.amount, p.currency, p.status, p.stripe_invoice_id
+      FROM payments p 
+      JOIN restaurants r ON p.restaurant_id=r.id
+      ORDER BY p.created_at DESC
+    `);
+    
+    let csv = 'Date,Restaurant,Amount,Currency,Status,Stripe Invoice ID\n';
+    rows.forEach(r => {
+      csv += `"${r.created_at}","${r.restaurant}",${r.amount},"${r.currency}","${r.status}","${r.stripe_invoice_id}"\n`;
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=payments_export.csv');
+    res.status(200).send(csv);
+  } catch (err) {
+    console.error('Export payments error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
 router.post('/payments/:id/send-email', async (req, res) => {
-  const payment = db.prepare(`
-    SELECT p.*, r.name as restaurant_name, u.email as owner_email, u.name as owner_name
-    FROM payments p
-    JOIN restaurants r ON p.restaurant_id=r.id
-    JOIN users u ON u.restaurant_id=r.id AND u.role='user' -- Assuming 'user' is the owner/manager
-    WHERE p.id=?
-  `).get(req.params.id);
-
-  if (!payment) return res.status(404).json({ error: 'Payment not found' });
-  if (!payment.owner_email) return res.status(400).json({ error: 'Restaurant owner email not found' });
-
   try {
+    const payment = await db.get(`
+      SELECT p.*, r.name as restaurant_name, u.email as owner_email, u.name as owner_name
+      FROM payments p
+      JOIN restaurants r ON p.restaurant_id=r.id
+      JOIN users u ON u.restaurant_id=r.id AND u.role='user' -- Assuming 'user' is the owner/manager
+      WHERE p.id=?
+    `, [req.params.id]);
+
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+    if (!payment.owner_email) return res.status(400).json({ error: 'Restaurant owner email not found' });
+
     const { sendMail } = require('../mail');
     await sendMail({
       to: payment.owner_email,
@@ -227,21 +331,35 @@ router.post('/payments/:id/send-email', async (req, res) => {
   }
 });
 
-router.put('/restaurants/:id/billing-settings', (req, res) => {
-  const { admin_billing_alerts, grace_period_days } = req.body;
-  db.prepare(`UPDATE restaurants SET admin_billing_alerts=?, grace_period_days=? WHERE id=?`)
-    .run(admin_billing_alerts?1:0, grace_period_days||7, req.params.id);
-  res.json({ success: true });
+router.put('/restaurants/:id/billing-settings', async (req, res) => {
+  try {
+    const { admin_billing_alerts, grace_period_days } = req.body;
+    await db.run(`UPDATE restaurants SET admin_billing_alerts=?, grace_period_days=? WHERE id=?`,
+      [admin_billing_alerts?1:0, grace_period_days||7, req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update billing settings error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
 // ── System stats ─────────────────────────────
-router.get('/system', (req, res) => {
-  const uptime    = process.uptime();
-  const mem       = process.memoryUsage();
-  const db_size   = (() => { try { return require('fs').statSync(require('path').join(__dirname,'../../data/beercontrol.db')).size; } catch { return 0; } })();
-  const total_events = db.prepare("SELECT COUNT(*) as c FROM pour_events").get().c;
-  const total_liters = db.prepare("SELECT COALESCE(SUM(liters),0) as t FROM pour_events").get().t;
-  res.json({ uptime, mem_mb: (mem.rss/1024/1024).toFixed(1), db_size_kb: (db_size/1024).toFixed(0), total_events, total_liters: total_liters.toFixed(1) });
+router.get('/system', async (req, res) => {
+  try {
+    const uptime    = process.uptime();
+    const mem       = process.memoryUsage();
+    
+    const total_events_row = await db.get("SELECT COUNT(*) as c FROM pour_events");
+    const total_events = total_events_row.c;
+
+    const total_liters_row = await db.get("SELECT COALESCE(SUM(liters),0) as t FROM pour_events");
+    const total_liters = total_liters_row.t;
+
+    res.json({ uptime, mem_mb: (mem.rss/1024/1024).toFixed(1), db_size_kb: 'N/A (MariaDB)', total_events, total_liters: Number(total_liters).toFixed(1) });
+  } catch (err) {
+    console.error('System stats error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
 
 module.exports = router;
