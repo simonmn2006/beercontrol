@@ -86,7 +86,7 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .mqtt-label{color:var(--green)}
 
 /* ── RESPONSIVE ── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .sidebar { width: 68px; min-width: 68px; }
   .sb-name, .sb-sub, .sb-sect, .nav-item span:not(.nav-icon), .u-name, .u-role, .user-pill div:not(.u-av), .role-badge, .btn-sm span { display: none; }
   .nav-item { justify-content: center; padding: 12px 0; margin: 4px; }
@@ -96,15 +96,6 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
   .user-pill { justify-content: center; padding: 8px 0; }
   .topbar { padding: 0 16px; }
   .page { padding: 16px; }
-}
-@media (max-width: 600px) {
-  .shell { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; flex-direction: row; position: relative; border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; }
-  .main { margin-left: 0; }
-  .sb-logo, .sb-bottom, .sb-sect { display: none; }
-  #navAdmin, #navUser { display: flex; align-items: center; }
-  .nav-item { margin: 0; padding: 12px 16px; border-radius: 0; }
-  .g4, .g2 { grid-template-columns: 1fr; }
 }
 
 /* ── BUTTONS ── */
