@@ -60,10 +60,26 @@ app.get('/', (req, res) => {
 });
 
 // ── Start ───────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`\n🍺  BeerControl running at http://localhost:${PORT}`);
-  console.log(`    Admin: ${process.env.ADMIN_EMAIL || 'admin@beercontrol.io'} / admin\n`);
+  console.log(`    Admin: admin / admin\n`);
   
+  // Ensure default admin exists
+  try {
+    const bcrypt = require('bcryptjs');
+    const existing = await db.get("SELECT id FROM users WHERE email = 'admin'");
+    if (!existing) {
+      const hash = bcrypt.hashSync('admin', 10);
+      await db.run("INSERT INTO users (name, email, password_hash, role, active) VALUES (?,?,?,?,?)",
+        ['Admin', 'admin', hash, 'admin', 1]);
+      console.log('🛡️  System: Default admin account created (admin / admin)');
+    } else {
+      console.log('🛡️  System: Admin account verified.');
+    }
+  } catch (e) {
+    console.error('🛡️  System: Error checking admin account:', e.message);
+  }
+
   // Start MQTT Service
   require('./mqtt').init();
 });
