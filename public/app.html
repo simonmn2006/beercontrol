@@ -52,12 +52,12 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .login-hint{text-align:center;margin-top:16px;font-size:11px;color:var(--text3);line-height:1.7;font-family:var(--fm)}
 
 /* ── APP SHELL ── */
-#app{display:none;width:100%;min-height:100vh}
-.shell{display:flex}
+#app{display:none;width:100%;height:100vh}
+.shell{display:flex;height:100%;width:100%;overflow:hidden}
 
 /* ── SIDEBAR ── */
-.sidebar{width:220px;min-width:220px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:100}
-.sb-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar{width:220px;min-width:220px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;z-index:100;flex-shrink:0}
+.sb-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .sb-icon{width:32px;height:32px;background:var(--amber);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .sb-name{font-family:var(--fh);font-size:18px;font-weight:700;letter-spacing:.5px}
 .sb-sub{font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--fm)}
@@ -78,12 +78,34 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .role-badge.user{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,158,255,.25)}
 
 /* ── MAIN ── */
-.main{margin-left:220px;flex:1;min-height:100vh;overflow-y:auto}
-.topbar{position:sticky;top:0;z-index:50;background:rgba(14,15,17,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;gap:16px}
+.main{flex:1;height:100%;overflow-y:auto;background:var(--bg0);display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(14,15,17,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0}
 .topbar-title{font-family:var(--fh);font-size:20px;font-weight:600;letter-spacing:.3px}
 .topbar-spacer{flex:1}
 .mqtt-status{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--fm);color:var(--text3);padding:0 14px}
 .mqtt-label{color:var(--green)}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .sidebar { width: 68px; min-width: 68px; }
+  .sb-name, .sb-sub, .sb-sect, .nav-item span:not(.nav-icon), .u-name, .u-role, .user-pill div:not(.u-av), .role-badge, .btn-sm span { display: none; }
+  .nav-item { justify-content: center; padding: 12px 0; margin: 4px; }
+  .nav-icon { font-size: 18px; }
+  .sb-logo { justify-content: center; padding: 20px 0; }
+  .sb-bottom { padding: 12px 0; }
+  .user-pill { justify-content: center; padding: 8px 0; }
+  .topbar { padding: 0 16px; }
+  .page { padding: 16px; }
+}
+@media (max-width: 600px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; flex-direction: row; position: relative; border-right: none; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .main { margin-left: 0; }
+  .sb-logo, .sb-bottom, .sb-sect { display: none; }
+  #navAdmin, #navUser { display: flex; align-items: center; }
+  .nav-item { margin: 0; padding: 12px 16px; border-radius: 0; }
+  .g4, .g2 { grid-template-columns: 1fr; }
+}
 
 /* ── BUTTONS ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-family:var(--fb);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
