@@ -1862,36 +1862,1377 @@ textarea{resize:vertical;min-height:80px}
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script>
+<script id="core-logic">
+  /* ══════════════════════════════════════════
+     CORE LOGIC (Authentication & Navigation)
+  ══════════════════════════════════════════ */
+  console.log("🚀 BeerControl Core Logic Initialized");
+
+  // Global State
+  window.lang = localStorage.getItem('bc_lang') || 'en';
+  window.currentPage = '';
+  window.currentRole = '';
+  window.charts = {};
+
+  // Safe translation helper (handles cases where TR object fails to load)
+  window.t = function(k) {
+    if (typeof TR === 'undefined' || !TR[window.lang]) return (typeof TR !== 'undefined' && TR.en && TR.en[k]) ? TR.en[k] : k;
+    return TR[window.lang][k] || TR.en[k] || k;
+  };
+
+  async function doLogin() {
+    const email = document.getElementById('lg-email').value.trim().toLowerCase();
+    const pass = document.getElementById('lg-pass').value;
+    const errEl = document.getElementById('lg-err');
+    const btn = document.getElementById('lg-btn');
+    const oldText = btn.textContent;
+    
+    if (!email || !pass) {
+      errEl.textContent = 'Please enter email and password';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const d = await res.json();
+      if (!d.success) {
+        btn.disabled = false;
+        btn.textContent = oldText;
+        errEl.textContent = d.error === 'invalid_credentials' ? 'Invalid email or password' : (window.t(d.error) || 'Login failed');
+        errEl.style.display = 'block';
+        return;
+      }
+      window.location.href = '/app';
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = oldText;
+      errEl.textContent = 'Network error — Is the server running?';
+      errEl.style.display = 'block';
+    }
+  }
+
+  async function checkSession() {
+    try {
+      const res = await fetch('/api/me');
+      const d = await res.json();
+      if (d.loggedIn) {
+        const u = d.user;
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        window.currentRole = u.role;
+        document.getElementById('av').textContent = u.name.charAt(0);
+        document.getElementById('uname').textContent = u.name;
+        document.getElementById('uemail').textContent = u.role === 'admin' ? u.email : u.restaurant;
+        document.getElementById('urole').textContent = u.role === 'admin' ? 'Admin' : window.t('active');
+        document.getElementById('urole').className = 'role-badge ' + (u.role === 'admin' ? 'admin' : 'user');
+        
+        if (u.role === 'admin') {
+          document.getElementById('navAdmin').style.display = 'flex';
+          document.getElementById('navUser').style.display = 'none';
+          nav('adminDash', document.querySelector('#navAdmin .nav-item'));
+        } else {
+          document.getElementById('navAdmin').style.display = 'none';
+          document.getElementById('navUser').style.display = 'flex';
+          nav('userDash', document.querySelector('#navUser .nav-item'));
+        }
+        
+        // Signal full application initialization
+        if (typeof window.initAppSupport === 'function') window.initAppSupport();
+      } else {
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
+    } catch (e) {
+      console.error('Core Logic: Session check failed', e);
+    }
+  }
+
+  function doLogout() {
+    fetch('/api/logout', { method: 'POST' }).finally(() => {
+      window.location.href = '/login';
+    });
+  }
+
+  function nav(pageId, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const p = document.getElementById('page-' + pageId);
+    if (p) p.classList.add('active');
+    if (el) el.classList.add('active');
+    window.currentPage = pageId;
+    
+    const titles = {
+      adminDash: window.t('nav_dashboard'), adminRestaurants: window.t('nav_restaurants'),
+      adminKegs: window.t('nav_kegs'), adminUsers: window.t('nav_users'),
+      adminAlerts: window.t('nav_alerts'), adminDevices: window.t('nav_devices'),
+      adminMqtt: window.t('nav_mqtt'), adminBeerLibrary: window.t('nav_beer_library'),
+      adminBilling: window.t('nav_billing'), adminAudit: window.t('nav_audit'),
+      adminSettings: window.t('nav_settings'), userDash: window.t('nav_live'),
+      userKegs: window.t('nav_kegs'), userReports: window.t('nav_reports'),
+      userAlerts: window.t('nav_alerts'), userCosts: window.t('nav_costs'),
+      userForecast: window.t('nav_forecast'), userKiosk: window.t('nav_kiosk'),
+      userCalibration: window.t('nav_calibration'), userSettings: window.t('nav_settings')
+    };
+    const titleEl = document.getElementById('topTitle');
+    if (titleEl) titleEl.textContent = titles[pageId] || pageId;
+    
+    // Call extended navigation logic if available
+    if (typeof window.onNav === 'function') window.onNav(pageId);
+  }
+
+  window.addEventListener('DOMContentLoaded', checkSession);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
+  });
+</script>
+
+<script id="translations">
 /* ══════════════════════════════════════════
    TRANSLATIONS
 ══════════════════════════════════════════ */
-const TR={
-  en:{tagline:"Draft Beer Management Platform",email:"Email",password:"Password",signin:"Sign In →",invalid_credentials:"Invalid email or password.",account_disabled:"This account is disabled.",restaurant_suspended:"Your restaurant account is suspended.",logout:"Logout",refresh:"Refresh",add_keg:"Add Keg",nav_overview:"Overview",nav_dashboard:"Dashboard",nav_restaurants:"Restaurants",nav_management:"Management",nav_kegs:"Kegs & Beers",nav_users:"Users",nav_alerts:"Alerts",nav_system:"System",nav_mqtt:"MQTT Monitor",nav_settings:"Settings",nav_my_taps:"My Taps",nav_live:"Live Dashboard",nav_analytics:"Analytics",nav_reports:"Reports",active_restaurants:"Active Restaurants",venues:"venues",this_month:"this month",kegs_online:"Kegs Online",taps:"taps",offline:"offline",liters_today:"Liters Poured Today",vs_yesterday:"vs yesterday",low_keg_alerts:"Low Keg Alerts",kegs:"kegs",needs_attention:"Needs attention",pour_activity:"Pour Activity — Last 7 Days",all_venues:"All venues",live_alerts:"Live Alerts",al_crit:"Keg critically low",al_low:"Keg low",al_new:"New keg connected",al_offline:"ESP32 offline",restaurants_overview:"Restaurants Overview",view_all:"View all",restaurant:"Restaurant",poured_today:"Poured Today",keg_changes:"Keg Changes",last_active:"Last Active",active:"Active",warning:"Warning",suspended:"Suspended",just_now:"Just now",days_3:"3 days ago",restaurants_sub:"Manage venue accounts, subscriptions and access",add_restaurant:"Add Restaurant",all:"All",venue:"Venue",owner:"Owner",plan:"Plan",renewal:"Renewal",actions:"Actions",edit:"Edit",suspend:"Suspend",activate:"Activate",overdue:"Overdue",kegs_sub:"Configure beers, logos and keg sizes per restaurant",remaining:"Remaining",poured:"Poured",temp:"Temp",low:"LOW",fresh:"FRESH",critical:"CRITICAL",users_sub:"Manage restaurant user accounts",add_user:"Add User",name:"Name",role:"Role",last_login:"Last Login",disable:"Disable",disabled:"Disabled",enable:"Enable",manager:"Manager",alerts_sub:"All alerts across all venues",clear_all:"Clear all",mqtt_sub:"Live message stream from all ESP32 devices",connected:"Connected",broker_status:"Broker Status",clients:"Clients",messages_sec:"Msg/sec",uptime:"Uptime",active_topics:"Active Topics",live_stream:"Live Message Stream",platform_settings:"Platform Settings",email_alerts:"Email Alerts (SMTP)",smtp_host:"SMTP Host",port:"Port",security:"Security",api_key:"API Key",from_address:"From Address",save:"Save",send_test:"Send Test",bot_token:"Bot Token",admin_chat_id:"Admin Chat ID",alert_thresholds:"Alert Thresholds",low_warning:"Low Warning (%)",critical_alert:"Critical Alert (%)",max_temp:"Max Temp (°C)",min_co2:"Min CO₂ (bar)",cleaning_interval:"Line Cleaning (days)",live_updates:"Live — updates every 5s",poured_today:"Poured Today",kegs_changed:"Kegs Changed",active_taps:"Active Taps",my_taps:"My Taps",all_online:"All online",critically_low:"is critically low",new_keg_started:"new keg started",todays_activity:"Today's Activity",daily_report:"Daily report generated for",reports_analytics:"Reports & Analytics",from:"From",to:"To",tap:"Tap",all_taps:"All Taps",generate:"Generate",total_poured:"Total Poured",daily_avg:"Daily Average",best_day:"Best Day",daily_volume:"Daily Pour Volume",volume_by_beer:"Volume by Beer",keg_change_log:"Keg Change Log",date:"Date",beer:"Beer",keg_size:"Keg Size",duration:"Duration",recipients:"recipients",threshold:"threshold",my_kegs_detailed:"My Kegs — Detailed",account_settings:"Account Settings",alert_recipients:"Alert Recipients",email_recipients:"Email Recipients",add:"Add",max_recipients:"Up to 5 email recipients.",telegram_hint:"Add group/personal chat IDs.",alert_preferences:"Alert Preferences",alert_low_keg:"Keg is low (< 20%)",alert_critical:"Keg is critical (< 10%)",alert_new_keg:"New keg connected",alert_temp:"Temperature warning",alert_offline:"ESP32 offline",alert_cleaning:"Line cleaning reminder",opening_hours:"Opening Hours",schedule_hint:"Daily pour counters reset at opening time",mon:"Monday",tue:"Tuesday",wed:"Wednesday",thu:"Thursday",fri:"Friday",sat:"Saturday",sun:"Sunday",timezone:"Timezone",tap_number:"Tap Number",beer_name:"Beer Name",co2_threshold:"CO₂ Min (bar)",beer_logo:"Beer Logo",logo_hint:"PNG/SVG, max 512KB. Shown on ESP32 display.",esp32_sensor:"ESP32 Sensor ID",esp32_display:"ESP32 Display ID",cancel:"Cancel",restaurant_name:"Restaurant Name",city:"City",country:"Country",owner_name:"Owner Name",owner_email:"Owner Email",starter:"Starter (≤4 taps)",pro:"Pro (≤12 taps)",enterprise:"Enterprise (unlimited)",interface_language:"Interface Language",invite_hint:"An invitation email will be sent with login instructions.",create_invite:"Create & Invite",first_name:"First Name",last_name:"Last Name",create_user:"Create User",account_status:"Account Status",manual_keg_change:"⚠ Manual keg change",manual_keg_hint:"Use only if FOB sensor didn't detect the change.",log_manual:"Log Manual Keg Change",saved:"Changes saved",test_sent:"Test message sent",refreshing:"Refreshing…",suspended_ok:"Restaurant suspended",activated_ok:"Restaurant activated",user_enabled:"User enabled",user_created:"User created — invite sent",alerts_cleared:"All alerts cleared",keg_added:"Keg added successfully",keg_logged:"Keg change logged manually",restaurant_created:"Restaurant created — invite email sent",report_generated:"Report generated",downloading:"Downloading CSV…",upload_soon:"Logo upload — coming soon",nav_analytics:"Analytics",nav_settings_section:"Settings",my_taps:"My Taps",nav_devices:"Devices",nav_beer_library:"Beer Library",nav_billing:"Billing",nav_audit:"Audit Log",nav_costs:"Costs & Revenue",nav_forecast:"Forecast",nav_kiosk:"Kiosk Mode",nav_calibration:"Calibration",costs_sub:"Margin per tap, waste and profitability",revenue_today:"Revenue Today",cost_today:"Keg Cost Today",gross_margin:"Gross Margin",waste_today:"Waste Today",profit_per_tap:"Profit per Tap",waste_trend:"Waste Trend (7 days)",tap_economics:"Tap Economics",configure_prices:"Configure Prices",forecast_sub:"Predicted run-out based on historical consumption",forecast_title:"AI-Powered Forecast",forecast_desc:"Based on your last 30 days of consumption patterns, weekday vs weekend analysis, and time-of-day modelling.",weekly_pattern:"Weekly Consumption Pattern",order_suggestions:"Suggested Orders",calibration_sub:"Calibrate each tap K-factor for accurate volume",calib_warning:"Calibration must be done with a measured container.",kiosk_sub:"Full-screen display for bar or cellar",launch_fullscreen:"Launch Fullscreen",kiosk_theme:"Theme",kiosk_columns:"Columns",show_temp:"Show Temperature",show_co2:"Show CO₂",kiosk_preview:"Preview",billing_sub:"Manage subscriptions, payments and invoices",audit_sub:"Every action logged with user and timestamp"},
-  de:{tagline:"Fassbier-Management-Plattform",email:"E-Mail",password:"Passwort",signin:"Anmelden →",invalid_credentials:"Ungültige E-Mail oder Passwort.",account_disabled:"Dieses Konto wurde deaktiviert.",restaurant_suspended:"Ihr Restaurant-Konto ist gesperrt.",logout:"Abmelden",refresh:"Aktualisieren",add_keg:"Fass hinzufügen",nav_overview:"Übersicht",nav_dashboard:"Dashboard",nav_restaurants:"Restaurants",nav_management:"Verwaltung",nav_kegs:"Fässer & Biere",nav_users:"Benutzer",nav_alerts:"Warnungen",nav_system:"System",nav_mqtt:"MQTT-Monitor",nav_settings:"Einstellungen",nav_my_taps:"Meine Hähne",nav_live:"Live-Dashboard",nav_analytics:"Analyse",nav_reports:"Berichte",active_restaurants:"Aktive Restaurants",venues:"Standorte",this_month:"diesen Monat",kegs_online:"Fässer Online",taps:"Hähne",offline:"offline",liters_today:"Liter heute",vs_yesterday:"vs gestern",low_keg_alerts:"Niedrige Fass-Warnungen",kegs:"Fässer",needs_attention:"Aufmerksamkeit erforderlich",pour_activity:"Aktivität — 7 Tage",all_venues:"Alle Standorte",live_alerts:"Live-Warnungen",al_crit:"Fass kritisch niedrig",al_low:"Fass niedrig",al_new:"Neues Fass verbunden",al_offline:"ESP32 offline",restaurants_overview:"Restaurants Übersicht",view_all:"Alle anzeigen",restaurant:"Restaurant",poured_today:"Heute gezapft",keg_changes:"Fasswechsel",last_active:"Zuletzt aktiv",active:"Aktiv",warning:"Warnung",suspended:"Gesperrt",just_now:"Gerade eben",days_3:"Vor 3 Tagen",restaurants_sub:"Konten und Abonnements verwalten",add_restaurant:"Restaurant hinzufügen",all:"Alle",venue:"Standort",owner:"Inhaber",plan:"Tarif",renewal:"Verlängerung",actions:"Aktionen",edit:"Bearbeiten",suspend:"Sperren",activate:"Aktivieren",overdue:"Überfällig",kegs_sub:"Biere, Logos und Fassgrößen konfigurieren",remaining:"Verbleibend",poured:"Gezapft",temp:"Temp",low:"NIEDRIG",fresh:"NEU",critical:"KRITISCH",users_sub:"Benutzerverwaltung",add_user:"Benutzer hinzufügen",name:"Name",role:"Rolle",last_login:"Letzter Login",disable:"Deaktivieren",disabled:"Deaktiviert",enable:"Aktivieren",manager:"Manager",alerts_sub:"Alle Warnungen",clear_all:"Alle löschen",mqtt_sub:"Live-Stream aller ESP32",connected:"Verbunden",broker_status:"Broker-Status",clients:"Clients",messages_sec:"Nachr/Sek",uptime:"Laufzeit",active_topics:"Aktive Themen",live_stream:"Live-Strom",platform_settings:"Plattform-Einstellungen",email_alerts:"E-Mail-Warnungen",smtp_host:"SMTP-Host",port:"Port",security:"Sicherheit",api_key:"E-Mail-Schlüssel",from_address:"Absenderadresse",save:"Speichern",send_test:"Test senden",bot_token:"Bot-Token",admin_chat_id:"Admin Chat-ID",alert_thresholds:"Warnschwellen",low_warning:"Niedrig (%)",critical_alert:"Kritisch (%)",max_temp:"Max Temp (°C)",min_co2:"Min CO₂ (bar)",cleaning_interval:"Reinigung (Tage)",live_updates:"Live — alle 5 Sek.",poured_today:"Heute gezapft",kegs_changed:"Fasswechsel",active_taps:"Aktive Hähne",my_taps:"Meine Hähne",all_online:"Alle online",critically_low:"kritisch niedrig",new_keg_started:"neues Fass",todays_activity:"Heute",daily_report:"Tagesbericht für",reports_analytics:"Berichte & Analyse",from:"Von",to:"Bis",tap:"Hahn",all_taps:"Alle Hähne",generate:"Generieren",total_poured:"Gesamt",daily_avg:"Tagesdurchschnitt",best_day:"Bester Tag",daily_volume:"Tagesvolumen",volume_by_beer:"Nach Bier",keg_change_log:"Wechselprotokoll",date:"Datum",beer:"Bier",keg_size:"Größe",duration:"Dauer",recipients:"Empfänger",threshold:"Schwelle",my_kegs_detailed:"Meine Fässer",account_settings:"Kontoeinstellungen",alert_recipients:"Empfänger",email_recipients:"E-Mail-Empfänger",add:"Hinzufügen",max_recipients:"Bis zu 5 E-Mail-Empfänger.",telegram_hint:"Chat-IDs hinzufügen.",alert_preferences:"Warnungseinstellungen",alert_low_keg:"Fass niedrig (<20%)",alert_critical:"Fass kritisch (<10%)",alert_new_keg:"Neues Fass",alert_temp:"Temperaturwarnung",alert_offline:"ESP32 offline",alert_cleaning:"Reinigung fällig",opening_hours:"Öffnungszeiten",schedule_hint:"Zähler wird bei Öffnung zurückgesetzt",mon:"Montag",tue:"Dienstag",wed:"Mittwoch",thu:"Donnerstag",fri:"Freitag",sat:"Samstag",sun:"Sonntag",timezone:"Zeitzone",tap_number:"Hahnnummer",beer_name:"Bier",co2_threshold:"CO₂ Min (bar)",beer_logo:"Logo",logo_hint:"PNG/SVG max 512KB.",esp32_sensor:"Sensor-ID",esp32_display:"Display-ID",cancel:"Abbrechen",restaurant_name:"Name",city:"Stadt",country:"Land",owner_name:"Inhaber",owner_email:"Inhaber E-Mail",starter:"Starter",pro:"Pro",enterprise:"Enterprise",interface_language:"Sprache",invite_hint:"Einladungs-E-Mail wird gesendet.",create_invite:"Erstellen & Einladen",first_name:"Vorname",last_name:"Nachname",create_user:"Erstellen",account_status:"Status",manual_keg_change:"⚠ Manueller Wechsel",manual_keg_hint:"Nur wenn FOB nicht erkannt hat.",log_manual:"Manuell protokollieren",saved:"Gespeichert",test_sent:"Test gesendet",refreshing:"Lädt…",suspended_ok:"Gesperrt",activated_ok:"Aktiviert",user_enabled:"Aktiviert",user_created:"Erstellt",alerts_cleared:"Gelöscht",keg_added:"Hinzugefügt",keg_logged:"Protokolliert",restaurant_created:"Erstellt",report_generated:"Erstellt",downloading:"Lädt…",upload_soon:"Demnächst",nav_analytics:"Analyse",nav_settings_section:"Einstellungen",my_taps:"Meine Hähne",nav_devices:"Geräte",nav_beer_library:"Bierbibliothek",nav_billing:"Abrechnung",nav_audit:"Audit-Log",nav_costs:"Kosten & Einnahmen",nav_forecast:"Prognose",nav_kiosk:"Kiosk-Modus",nav_calibration:"Kalibrierung",costs_sub:"Marge pro Hahn, Verluste und Rentabilität",revenue_today:"Einnahmen Heute",cost_today:"Fasskosten Heute",gross_margin:"Bruttomarge",waste_today:"Verluste Heute",profit_per_tap:"Gewinn pro Hahn",waste_trend:"Verlusttrend (7 Tage)",tap_economics:"Hahn-Wirtschaftlichkeit",configure_prices:"Preise konfigurieren",forecast_sub:"Prognostizierte Leerläufe basierend auf Verbrauchshistorie",forecast_title:"KI-Prognose",forecast_desc:"Basierend auf den letzten 30 Tagen Verbrauchsmustern, Wochentag vs. Wochenende.",weekly_pattern:"Wöchentliches Verbrauchsmuster",order_suggestions:"Bestellvorschläge",calibration_sub:"K-Faktor kalibrieren für genaue Volumenmessung",calib_warning:"Kalibrierung nur mit gemessenem Behälter durchführen.",kiosk_sub:"Vollbildanzeige für Bar oder Keller",launch_fullscreen:"Vollbild starten",kiosk_theme:"Thema",kiosk_columns:"Spalten",show_temp:"Temperatur anzeigen",show_co2:"CO₂ anzeigen",kiosk_preview:"Vorschau",billing_sub:"Abonnements, Zahlungen und Rechnungen",audit_sub:"Jede Aktion mit Benutzer und Zeitstempel protokolliert"},
-  es:{tagline:"Plataforma de Gestión de Cerveza de Barril",email:"Correo electrónico",password:"Contraseña",signin:"Iniciar sesión →",invalid_credentials:"Correo o contraseña incorrectos.",account_disabled:"Esta cuenta está deshabilitada.",restaurant_suspended:"Su cuenta de restaurante está suspendida.",logout:"Cerrar sesión",refresh:"Actualizar",add_keg:"Añadir barril",nav_overview:"Resumen",nav_dashboard:"Panel",nav_restaurants:"Restaurantes",nav_management:"Gestión",nav_kegs:"Barriles & Cervezas",nav_users:"Usuarios",nav_alerts:"Alertas",nav_system:"Sistema",nav_mqtt:"Monitor MQTT",nav_settings:"Ajustes",nav_my_taps:"Mis Grifos",nav_live:"Panel en Vivo",nav_analytics:"Análisis",nav_reports:"Informes",active_restaurants:"Restaurantes Activos",venues:"locales",this_month:"este mes",kegs_online:"Barriles en Línea",taps:"grifos",offline:"sin conexión",liters_today:"Litros Hoy",vs_yesterday:"vs ayer",low_keg_alerts:"Alertas Barril Bajo",kegs:"barriles",needs_attention:"Requiere atención",pour_activity:"Actividad — 7 Días",all_venues:"Todos los locales",live_alerts:"Alertas en Vivo",al_crit:"Barril crítico",al_low:"Barril bajo",al_new:"Nuevo barril",al_offline:"ESP32 offline",restaurants_overview:"Resumen",view_all:"Ver todos",restaurant:"Restaurante",poured_today:"Servido Hoy",keg_changes:"Cambios",last_active:"Última Actividad",active:"Activo",warning:"Aviso",suspended:"Suspendido",just_now:"Ahora mismo",days_3:"Hace 3 días",restaurants_sub:"Gestionar cuentas y accesos",add_restaurant:"Añadir Restaurante",all:"Todos",venue:"Local",owner:"Propietario",plan:"Plan",renewal:"Renovación",actions:"Acciones",edit:"Editar",suspend:"Suspender",activate:"Activar",overdue:"Vencido",kegs_sub:"Configurar cervezas y barriles",remaining:"Restante",poured:"Servido",temp:"Temp",low:"BAJO",fresh:"NUEVO",critical:"CRÍTICO",users_sub:"Gestionar usuarios",add_user:"Añadir Usuario",name:"Nombre",role:"Rol",last_login:"Último Acceso",disable:"Deshabilitar",disabled:"Deshabilitado",enable:"Habilitar",manager:"Gerente",alerts_sub:"Todas las alertas",clear_all:"Borrar todo",mqtt_sub:"Stream en vivo",connected:"Conectado",broker_status:"Estado Broker",clients:"Clientes",messages_sec:"Msg/seg",uptime:"Tiempo activo",active_topics:"Temas activos",live_stream:"Stream en Vivo",platform_settings:"Ajustes",email_alerts:"Alertas Email",smtp_host:"Servidor SMTP",port:"Puerto",security:"Seguridad",api_key:"Clave API",from_address:"Dirección envío",save:"Guardar",send_test:"Enviar prueba",bot_token:"Token Bot",admin_chat_id:"Chat ID Admin",alert_thresholds:"Umbrales",low_warning:"Bajo (%)",critical_alert:"Crítico (%)",max_temp:"Temp máx (°C)",min_co2:"CO₂ mín (bar)",cleaning_interval:"Limpieza (días)",live_updates:"En vivo",poured_today:"Servido Hoy",kegs_changed:"Cambios",active_taps:"Grifos Activos",my_taps:"Mis Grifos",all_online:"Todos online",critically_low:"está críticamente bajo",new_keg_started:"nuevo barril",todays_activity:"Hoy",daily_report:"Informe diario de",reports_analytics:"Informes & Análisis",from:"Desde",to:"Hasta",tap:"Grifo",all_taps:"Todos",generate:"Generar",total_poured:"Total",daily_avg:"Media Diaria",best_day:"Mejor Día",daily_volume:"Volumen Diario",volume_by_beer:"Por Cerveza",keg_change_log:"Registro",date:"Fecha",beer:"Cerveza",keg_size:"Tamaño",duration:"Duración",recipients:"destinatarios",threshold:"umbral",my_kegs_detailed:"Mis Barriles",account_settings:"Ajustes",alert_recipients:"Destinatarios",email_recipients:"Email",add:"Añadir",max_recipients:"Hasta 5 destinatarios.",telegram_hint:"IDs de Telegram.",alert_preferences:"Preferencias",alert_low_keg:"Barril bajo (<20%)",alert_critical:"Barril crítico (<10%)",alert_new_keg:"Nuevo barril",alert_temp:"Temperatura",alert_offline:"ESP32 offline",alert_cleaning:"Limpieza",opening_hours:"Horario",schedule_hint:"Contadores se reinician al abrir",mon:"Lunes",tue:"Martes",wed:"Miércoles",thu:"Jueves",fri:"Viernes",sat:"Sábado",sun:"Domingo",timezone:"Zona horaria",tap_number:"Grifo nº",beer_name:"Cerveza",co2_threshold:"CO₂ mín",beer_logo:"Logo",logo_hint:"PNG/SVG máx 512KB.",esp32_sensor:"ID Sensor",esp32_display:"ID Display",cancel:"Cancelar",restaurant_name:"Nombre",city:"Ciudad",country:"País",owner_name:"Propietario",owner_email:"Email",starter:"Starter",pro:"Pro",enterprise:"Enterprise",interface_language:"Idioma",invite_hint:"Se enviará email de invitación.",create_invite:"Crear e Invitar",first_name:"Nombre",last_name:"Apellidos",create_user:"Crear",account_status:"Estado",manual_keg_change:"⚠ Cambio manual",manual_keg_hint:"Solo si FOB no detectó.",log_manual:"Registrar",saved:"Guardado",test_sent:"Prueba enviada",refreshing:"Cargando…",suspended_ok:"Suspendido",activated_ok:"Activado",user_enabled:"Habilitado",user_created:"Creado",alerts_cleared:"Borradas",keg_added:"Añadido",keg_logged:"Registrado",restaurant_created:"Creado",report_generated:"Generado",downloading:"Descargando…",upload_soon:"Próximamente",nav_analytics:"Análisis",nav_settings_section:"Ajustes",my_taps:"Mis Grifos",nav_devices:"Dispositivos",nav_beer_library:"Catálogo de Cervezas",nav_billing:"Facturación",nav_audit:"Registro de Auditoría",nav_costs:"Costes & Ingresos",nav_forecast:"Previsión",nav_kiosk:"Modo Kiosco",nav_calibration:"Calibración",costs_sub:"Margen por grifo, mermas y rentabilidad",revenue_today:"Ingresos Hoy",cost_today:"Coste Barril Hoy",gross_margin:"Margen Bruto",waste_today:"Mermas Hoy",profit_per_tap:"Beneficio por Grifo",waste_trend:"Tendencia Mermas (7 días)",tap_economics:"Economía por Grifo",configure_prices:"Configurar Precios",forecast_sub:"Predicción de vaciado basada en consumo histórico",forecast_title:"Previsión con IA",forecast_desc:"Basada en los últimos 30 días de patrones de consumo.",weekly_pattern:"Patrón de Consumo Semanal",order_suggestions:"Sugerencias de Pedido",calibration_sub:"Calibrar el factor K de cada grifo",calib_warning:"La calibración debe hacerse con un recipiente medido.",kiosk_sub:"Pantalla completa para barra o bodega",launch_fullscreen:"Iniciar Pantalla Completa",kiosk_theme:"Tema",kiosk_columns:"Columnas",show_temp:"Mostrar Temperatura",show_co2:"Mostrar CO₂",kiosk_preview:"Vista previa",billing_sub:"Gestionar suscripciones, pagos y facturas",audit_sub:"Todas las acciones registradas con usuario y fecha"},
-  it:{tagline:"Piattaforma di Gestione Birra alla Spina",email:"Email",password:"Password",signin:"Accedi →",invalid_credentials:"Email o password non validi.",account_disabled:"Questo account è disabilitato.",restaurant_suspended:"Il vostro ristorante è sospeso.",logout:"Esci",refresh:"Aggiorna",add_keg:"Aggiungi fusto",nav_overview:"Panoramica",nav_dashboard:"Dashboard",nav_restaurants:"Ristoranti",nav_management:"Gestione",nav_kegs:"Fusti & Birre",nav_users:"Utenti",nav_alerts:"Avvisi",nav_system:"Sistema",nav_mqtt:"Monitor MQTT",nav_settings:"Impostazioni",nav_my_taps:"I Miei Rubinetti",nav_live:"Dashboard Live",nav_analytics:"Analisi",nav_reports:"Report",active_restaurants:"Ristoranti Attivi",venues:"locali",this_month:"questo mese",kegs_online:"Fusti Online",taps:"rubinetti",offline:"offline",liters_today:"Litri Oggi",vs_yesterday:"vs ieri",low_keg_alerts:"Avvisi Fusto",kegs:"fusti",needs_attention:"Richiede attenzione",pour_activity:"Attività — 7 Giorni",all_venues:"Tutti",live_alerts:"Avvisi Live",al_crit:"Fusto critico",al_low:"Fusto basso",al_new:"Nuovo fusto",al_offline:"ESP32 offline",restaurants_overview:"Panoramica",view_all:"Vedi tutti",restaurant:"Ristorante",poured_today:"Spillato Oggi",keg_changes:"Cambi",last_active:"Ultima Attività",active:"Attivo",warning:"Avviso",suspended:"Sospeso",just_now:"Proprio ora",days_3:"3 giorni fa",restaurants_sub:"Gestisci account e accessi",add_restaurant:"Aggiungi Ristorante",all:"Tutti",venue:"Locale",owner:"Proprietario",plan:"Piano",renewal:"Rinnovo",actions:"Azioni",edit:"Modifica",suspend:"Sospendi",activate:"Attiva",overdue:"Scaduto",kegs_sub:"Configura birre e fusti",remaining:"Rimanente",poured:"Spillato",temp:"Temp",low:"BASSO",fresh:"NUOVO",critical:"CRITICO",users_sub:"Gestisci utenti",add_user:"Aggiungi Utente",name:"Nome",role:"Ruolo",last_login:"Ultimo Accesso",disable:"Disabilita",disabled:"Disabilitato",enable:"Abilita",manager:"Responsabile",alerts_sub:"Tutti gli avvisi",clear_all:"Cancella tutto",mqtt_sub:"Stream live",connected:"Connesso",broker_status:"Stato Broker",clients:"Client",messages_sec:"Msg/sec",uptime:"Uptime",active_topics:"Argomenti",live_stream:"Stream Live",platform_settings:"Impostazioni",email_alerts:"Avvisi Email",smtp_host:"Host SMTP",port:"Porta",security:"Sicurezza",api_key:"Chiave API",from_address:"Mittente",save:"Salva",send_test:"Invia test",bot_token:"Token Bot",admin_chat_id:"Chat ID Admin",alert_thresholds:"Soglie",low_warning:"Basso (%)",critical_alert:"Critico (%)",max_temp:"Temp max (°C)",min_co2:"CO₂ min (bar)",cleaning_interval:"Pulizia (giorni)",live_updates:"Live",poured_today:"Spillato",kegs_changed:"Cambi",active_taps:"Attivi",my_taps:"I Miei Rubinetti",all_online:"Tutti online",critically_low:"è critico",new_keg_started:"nuovo fusto",todays_activity:"Oggi",daily_report:"Report di",reports_analytics:"Report & Analisi",from:"Da",to:"A",tap:"Rubinetto",all_taps:"Tutti",generate:"Genera",total_poured:"Totale",daily_avg:"Media",best_day:"Miglior Giorno",daily_volume:"Volume",volume_by_beer:"Per Birra",keg_change_log:"Log",date:"Data",beer:"Birra",keg_size:"Dimensione",duration:"Durata",recipients:"destinatari",threshold:"soglia",my_kegs_detailed:"I Miei Fusti",account_settings:"Impostazioni",alert_recipients:"Destinatari",email_recipients:"Email",add:"Aggiungi",max_recipients:"Max 5 destinatari.",telegram_hint:"ID Telegram.",alert_preferences:"Preferenze",alert_low_keg:"Fusto basso (<20%)",alert_critical:"Fusto critico (<10%)",alert_new_keg:"Nuovo fusto",alert_temp:"Temperatura",alert_offline:"ESP32 offline",alert_cleaning:"Pulizia",opening_hours:"Orari",schedule_hint:"Contatori azzerati all'apertura",mon:"Lunedì",tue:"Martedì",wed:"Mercoledì",thu:"Giovedì",fri:"Venerdì",sat:"Sabato",sun:"Domenica",timezone:"Fuso orario",tap_number:"Rubinetto",beer_name:"Birra",co2_threshold:"CO₂ min",beer_logo:"Logo",logo_hint:"PNG/SVG max 512KB.",esp32_sensor:"ID Sensore",esp32_display:"ID Display",cancel:"Annulla",restaurant_name:"Nome",city:"Città",country:"Paese",owner_name:"Proprietario",owner_email:"Email",starter:"Starter",pro:"Pro",enterprise:"Enterprise",interface_language:"Lingua",invite_hint:"Verrà inviata email di invito.",create_invite:"Crea e Invita",first_name:"Nome",last_name:"Cognome",create_user:"Crea",account_status:"Stato",manual_keg_change:"⚠ Cambio manuale",manual_keg_hint:"Solo se FOB non ha rilevato.",log_manual:"Registra",saved:"Salvato",test_sent:"Test inviato",refreshing:"Caricamento…",suspended_ok:"Sospeso",activated_ok:"Attivato",user_enabled:"Abilitato",user_created:"Creato",alerts_cleared:"Cancellati",keg_added:"Aggiunto",keg_logged:"Registrato",restaurant_created:"Creato",report_generated:"Generato",downloading:"Download…",upload_soon:"Prossimamente",nav_analytics:"Analisi",nav_settings_section:"Impostazioni",my_taps:"I Miei Rubinetti",nav_devices:"Dispositivi",nav_beer_library:"Catalogo Birre",nav_billing:"Fatturazione",nav_audit:"Registro Audit",nav_costs:"Costi & Ricavi",nav_forecast:"Previsione",nav_kiosk:"Modalità Kiosk",nav_calibration:"Calibrazione",costs_sub:"Margine per rubinetto, sprechi e redditività",revenue_today:"Ricavi Oggi",cost_today:"Costo Fusto Oggi",gross_margin:"Margine Lordo",waste_today:"Sprechi Oggi",profit_per_tap:"Profitto per Rubinetto",waste_trend:"Tendenza Sprechi (7 giorni)",tap_economics:"Economia per Rubinetto",configure_prices:"Configura Prezzi",forecast_sub:"Previsione esaurimento basata su consumo storico",forecast_title:"Previsione AI",forecast_desc:"Basata sugli ultimi 30 giorni di consumo.",weekly_pattern:"Schema di Consumo Settimanale",order_suggestions:"Ordini Suggeriti",calibration_sub:"Calibra il fattore K di ogni rubinetto",calib_warning:"La calibrazione va eseguita con un contenitore misurato.",kiosk_sub:"Schermo intero per bar o cantina",launch_fullscreen:"Avvia Schermo Intero",kiosk_theme:"Tema",kiosk_columns:"Colonne",show_temp:"Mostra Temperatura",show_co2:"Mostra CO₂",kiosk_preview:"Anteprima",billing_sub:"Gestisci abbonamenti, pagamenti e fatture",audit_sub:"Ogni azione registrata con utente e timestamp"},
-  el:{tagline:"Πλατφόρμα Διαχείρισης Μπύρας Βαρελιού",email:"Email",password:"Κωδικός",signin:"Σύνδεση →",invalid_credentials:"Λανθασμένο email ή κωδικός.",account_disabled:"Αυτός ο λογαριασμός είναι απενεργοποιημένος.",restaurant_suspended:"Ο λογαριασμός σας έχει ανασταλεί.",logout:"Αποσύνδεση",refresh:"Ανανέωση",add_keg:"Προσθήκη βαρελιού",nav_overview:"Επισκόπηση",nav_dashboard:"Πίνακας",nav_restaurants:"Εστιατόρια",nav_management:"Διαχείριση",nav_kegs:"Βαρέλια & Μπύρες",nav_users:"Χρήστες",nav_alerts:"Ειδοποιήσεις",nav_system:"Σύστημα",nav_mqtt:"MQTT",nav_settings:"Ρυθμίσεις",nav_my_taps:"Κάνουλές μου",nav_live:"Ζωντανός Πίνακας",nav_analytics:"Αναλυτικά",nav_reports:"Αναφορές",active_restaurants:"Ενεργά Εστιατόρια",venues:"χώροι",this_month:"αυτό τον μήνα",kegs_online:"Βαρέλια Online",taps:"κάνουλες",offline:"εκτός",liters_today:"Λίτρα Σήμερα",vs_yesterday:"vs χθες",low_keg_alerts:"Προειδοποιήσεις",kegs:"βαρέλια",needs_attention:"Απαιτεί προσοχή",pour_activity:"Δραστηριότητα — 7 Ημέρες",all_venues:"Όλοι",live_alerts:"Ζωντανές Ειδοποιήσεις",al_crit:"Κρίσιμα χαμηλό βαρέλι",al_low:"Χαμηλό βαρέλι",al_new:"Νέο βαρέλι",al_offline:"ESP32 εκτός",restaurants_overview:"Επισκόπηση",view_all:"Όλα",restaurant:"Εστιατόριο",poured_today:"Σήμερα",keg_changes:"Αλλαγές",last_active:"Τελευταία",active:"Ενεργό",warning:"Προειδοποίηση",suspended:"Ανεσταλμένο",just_now:"Μόλις τώρα",days_3:"3 μέρες πριν",restaurants_sub:"Διαχείριση λογαριασμών",add_restaurant:"Προσθήκη Εστιατορίου",all:"Όλα",venue:"Χώρος",owner:"Ιδιοκτήτης",plan:"Πλάνο",renewal:"Ανανέωση",actions:"Ενέργειες",edit:"Επεξεργασία",suspend:"Αναστολή",activate:"Ενεργοποίηση",overdue:"Ληγμένο",kegs_sub:"Ρύθμιση μπυρών",remaining:"Υπόλοιπο",poured:"Σερβιρισμένο",temp:"Θερμ.",low:"ΧΑΜΗΛΟ",fresh:"ΝΕΟ",critical:"ΚΡΙΣΙΜΟ",users_sub:"Διαχείριση χρηστών",add_user:"Προσθήκη Χρήστη",name:"Όνομα",role:"Ρόλος",last_login:"Τελευταία Σύνδεση",disable:"Απενεργοποίηση",disabled:"Απενεργοποιημένο",enable:"Ενεργοποίηση",manager:"Διαχειριστής",alerts_sub:"Όλες οι ειδοποιήσεις",clear_all:"Εκκαθάριση",mqtt_sub:"Ζωντανή ροή",connected:"Συνδεδεμένο",broker_status:"Κατάσταση",clients:"Clients",messages_sec:"Μηνύμ/δευτ",uptime:"Χρόνος",active_topics:"Θέματα",live_stream:"Ζωντανή Ροή",platform_settings:"Ρυθμίσεις",email_alerts:"Email Ειδοποιήσεις",smtp_host:"SMTP Host",port:"Θύρα",security:"Ασφάλεια",api_key:"API Κλειδί",from_address:"Αποστολέας",save:"Αποθήκευση",send_test:"Δοκιμή",bot_token:"Bot Token",admin_chat_id:"Chat ID",alert_thresholds:"Κατώφλια",low_warning:"Χαμηλό (%)",critical_alert:"Κρίσιμο (%)",max_temp:"Μέγ Θερμ (°C)",min_co2:"Ελάχ CO₂",cleaning_interval:"Καθαρισμός (μέρες)",live_updates:"Ζωντανά",poured_today:"Σήμερα",kegs_changed:"Αλλαγές",active_taps:"Ενεργές Κάνουλες",my_taps:"Οι Κάνουλές μου",all_online:"Όλες συνδεδεμένες",critically_low:"κρίσιμα χαμηλό",new_keg_started:"νέο βαρέλι",todays_activity:"Σήμερα",daily_report:"Ημερήσια αναφορά",reports_analytics:"Αναφορές & Αναλυτικά",from:"Από",to:"Έως",tap:"Κάνουλα",all_taps:"Όλες",generate:"Δημιουργία",total_poured:"Σύνολο",daily_avg:"Ημερήσιος Μέσος",best_day:"Καλύτερη Μέρα",daily_volume:"Ημερήσιος Όγκος",volume_by_beer:"Ανά Μπύρα",keg_change_log:"Αρχείο",date:"Ημερομηνία",beer:"Μπύρα",keg_size:"Μέγεθος",duration:"Διάρκεια",recipients:"παραλήπτες",threshold:"κατώφλι",my_kegs_detailed:"Τα Βαρέλια μου",account_settings:"Ρυθμίσεις",alert_recipients:"Παραλήπτες",email_recipients:"Email",add:"Προσθήκη",max_recipients:"Έως 5 παραλήπτες.",telegram_hint:"IDs Telegram.",alert_preferences:"Προτιμήσεις",alert_low_keg:"Χαμηλό (<20%)",alert_critical:"Κρίσιμο (<10%)",alert_new_keg:"Νέο βαρέλι",alert_temp:"Θερμοκρασία",alert_offline:"ESP32 offline",alert_cleaning:"Καθαρισμός",opening_hours:"Ώρες Λειτουργίας",schedule_hint:"Μηδενισμός στο άνοιγμα",mon:"Δευτέρα",tue:"Τρίτη",wed:"Τετάρτη",thu:"Πέμπτη",fri:"Παρασκευή",sat:"Σάββατο",sun:"Κυριακή",timezone:"Ζώνη Ώρας",tap_number:"Κάνουλα",beer_name:"Μπύρα",co2_threshold:"CO₂",beer_logo:"Λογότυπο",logo_hint:"PNG/SVG μέγ 512KB.",esp32_sensor:"ID Αισθητήρα",esp32_display:"ID Οθόνης",cancel:"Ακύρωση",restaurant_name:"Όνομα",city:"Πόλη",country:"Χώρα",owner_name:"Ιδιοκτήτης",owner_email:"Email",starter:"Starter",pro:"Pro",enterprise:"Enterprise",interface_language:"Γλώσσα",invite_hint:"Email πρόσκλησης θα σταλεί.",create_invite:"Δημιουργία & Πρόσκληση",first_name:"Όνομα",last_name:"Επώνυμο",create_user:"Δημιουργία",account_status:"Κατάσταση",manual_keg_change:"⚠ Χειροκίνητη αλλαγή",manual_keg_hint:"Μόνο αν FOB δεν εντόπισε.",log_manual:"Καταχώρηση",saved:"Αποθηκεύτηκε",test_sent:"Εστάλη",refreshing:"Φόρτωση…",suspended_ok:"Ανεστάλη",activated_ok:"Ενεργοποιήθηκε",user_enabled:"Ενεργοποιήθηκε",user_created:"Δημιουργήθηκε",alerts_cleared:"Διαγράφηκαν",keg_added:"Προστέθηκε",keg_logged:"Καταχωρήθηκε",restaurant_created:"Δημιουργήθηκε",report_generated:"Δημιουργήθηκε",downloading:"Λήψη…",upload_soon:"Σύντομα",nav_analytics:"Αναλυτικά",nav_settings_section:"Ρυθμίσεις",my_taps:"Οι Κάνουλές μου",nav_devices:"Συσκευές",nav_beer_library:"Κατάλογος Μπυρών",nav_billing:"Χρέωση",nav_audit:"Αρχείο Ελέγχου",nav_costs:"Κόστη & Έσοδα",nav_forecast:"Πρόβλεψη",nav_kiosk:"Λειτουργία Kiosk",nav_calibration:"Βαθμονόμηση",costs_sub:"Περιθώριο ανά κάνουλα, απώλειες και κερδοφορία",revenue_today:"Έσοδα Σήμερα",cost_today:"Κόστος Βαρελιού Σήμερα",gross_margin:"Μικτό Περιθώριο",waste_today:"Απώλειες Σήμερα",profit_per_tap:"Κέρδος ανά Κάνουλα",waste_trend:"Τάση Απωλειών (7 ημέρες)",tap_economics:"Οικονομικά Κάνουλας",configure_prices:"Ρύθμιση Τιμών",forecast_sub:"Πρόβλεψη αδειάσματος βάσει ιστορικού κατανάλωσης",forecast_title:"Πρόβλεψη AI",forecast_desc:"Βάσει των τελευταίων 30 ημερών κατανάλωσης.",weekly_pattern:"Εβδομαδιαίο Μοτίβο Κατανάλωσης",order_suggestions:"Προτεινόμενες Παραγγελίες",calibration_sub:"Βαθμονόμηση παράγοντα K κάθε κάνουλας",calib_warning:"Η βαθμονόμηση πρέπει να γίνει με μετρημένο δοχείο.",kiosk_sub:"Πλήρης οθόνη για μπαρ ή κελάρι",launch_fullscreen:"Εκκίνηση Πλήρους Οθόνης",kiosk_theme:"Θέμα",kiosk_columns:"Στήλες",show_temp:"Εμφάνιση Θερμοκρασίας",show_co2:"Εμφάνιση CO₂",kiosk_preview:"Προεπισκόπηση",billing_sub:"Διαχείριση συνδρομών, πληρωμών και τιμολογίων",audit_sub:"Κάθε ενέργεια καταγράφεται με χρήστη και χρονική σήμανση"}
+const TR = {
+  en: {
+    tagline: "Draft Beer Management Platform",
+    email: "Email",
+    password: "Password",
+    signin: "Sign In →",
+    invalid_credentials: "Invalid email or password.",
+    account_disabled: "This account is disabled.",
+    restaurant_suspended: "Your restaurant account is suspended.",
+    logout: "Logout",
+    refresh: "Refresh",
+    add_keg: "Add Keg",
+    nav_overview: "Overview",
+    nav_dashboard: "Dashboard",
+    nav_restaurants: "Restaurants",
+    nav_management: "Management",
+    nav_kegs: "Kegs & Beers",
+    nav_users: "Users",
+    nav_alerts: "Alerts",
+    nav_system: "System",
+    nav_mqtt: "MQTT Monitor",
+    nav_settings: "Settings",
+    nav_my_taps: "My Taps",
+    nav_live: "Live Dashboard",
+    nav_analytics: "Analytics",
+    nav_reports: "Reports",
+    active_restaurants: "Active Restaurants",
+    venues: "venues",
+    this_month: "this month",
+    kegs_online: "Kegs Online",
+    taps: "taps",
+    offline: "offline",
+    liters_today: "Liters Poured Today",
+    vs_yesterday: "vs yesterday",
+    low_keg_alerts: "Low Keg Alerts",
+    kegs: "kegs",
+    needs_attention: "Needs attention",
+    pour_activity: "Pour Activity — Last 7 Days",
+    all_venues: "All venues",
+    live_alerts: "Live Alerts",
+    al_crit: "Keg critically low",
+    al_low: "Keg low",
+    al_new: "New keg connected",
+    al_offline: "ESP32 offline",
+    restaurants_overview: "Restaurants Overview",
+    view_all: "View all",
+    restaurant: "Restaurant",
+    poured_today: "Poured Today",
+    keg_changes: "Keg Changes",
+    last_active: "Last Active",
+    active: "Active",
+    warning: "Warning",
+    suspended: "Suspended",
+    just_now: "Just now",
+    days_3: "3 days ago",
+    restaurants_sub: "Manage venue accounts, subscriptions and access",
+    add_restaurant: "Add Restaurant",
+    all: "All",
+    venue: "Venue",
+    owner: "Owner",
+    plan: "Plan",
+    renewal: "Renewal",
+    actions: "Actions",
+    edit: "Edit",
+    suspend: "Suspend",
+    activate: "Activate",
+    overdue: "Overdue",
+    kegs_sub: "Configure beers, logos and keg sizes per restaurant",
+    remaining: "Remaining",
+    poured: "Poured",
+    temp: "Temp",
+    low: "LOW",
+    fresh: "FRESH",
+    critical: "CRITICAL",
+    users_sub: "Manage restaurant user accounts",
+    add_user: "Add User",
+    name: "Name",
+    role: "Role",
+    last_login: "Last Login",
+    disable: "Disable",
+    disabled: "Disabled",
+    enable: "Enable",
+    manager: "Manager",
+    alerts_sub: "All alerts across all venues",
+    clear_all: "Clear all",
+    mqtt_sub: "Live message stream from all ESP32 devices",
+    connected: "Connected",
+    broker_status: "Broker Status",
+    clients: "Clients",
+    messages_sec: "Msg/sec",
+    uptime: "Uptime",
+    active_topics: "Active Topics",
+    live_stream: "Live Message Stream",
+    platform_settings: "Platform Settings",
+    email_alerts: "Email Alerts (SMTP)",
+    smtp_host: "SMTP Host",
+    port: "Port",
+    security: "Security",
+    api_key: "API Key",
+    from_address: "From Address",
+    save: "Save",
+    send_test: "Send Test",
+    bot_token: "Bot Token",
+    admin_chat_id: "Admin Chat ID",
+    alert_thresholds: "Alert Thresholds",
+    low_warning: "Low Warning (%)",
+    critical_alert: "Critical Alert (%)",
+    max_temp: "Max Temp (°C)",
+    min_co2: "Min CO₂ (bar)",
+    cleaning_interval: "Line Cleaning (days)",
+    live_updates: "Live — updates every 5s",
+    kegs_changed: "Kegs Changed",
+    active_taps: "Active Taps",
+    my_taps: "My Taps",
+    all_online: "All online",
+    critically_low: "is critically low",
+    new_keg_started: "new keg started",
+    todays_activity: "Today's Activity",
+    daily_report: "Daily report generated for",
+    reports_analytics: "Reports & Analytics",
+    from: "From",
+    to: "To",
+    tap: "Tap",
+    all_taps: "All Taps",
+    generate: "Generate",
+    total_poured: "Total Poured",
+    daily_avg: "Daily Average",
+    best_day: "Best Day",
+    daily_volume: "Daily Pour Volume",
+    volume_by_beer: "Volume by Beer",
+    keg_change_log: "Keg Change Log",
+    date: "Date",
+    beer: "Beer",
+    keg_size: "Keg Size",
+    duration: "Duration",
+    recipients: "recipients",
+    threshold: "threshold",
+    my_kegs_detailed: "My Kegs — Detailed",
+    account_settings: "Account Settings",
+    alert_recipients: "Alert Recipients",
+    email_recipients: "Email Recipients",
+    add: "Add",
+    max_recipients: "Up to 5 email recipients.",
+    telegram_hint: "Add group/personal chat IDs.",
+    alert_preferences: "Alert Preferences",
+    alert_low_keg: "Keg is low (< 20%)",
+    alert_critical: "Keg is critical (< 10%)",
+    alert_new_keg: "New keg connected",
+    alert_temp: "Temperature warning",
+    alert_offline: "ESP32 offline",
+    alert_cleaning: "Line cleaning reminder",
+    opening_hours: "Opening Hours",
+    schedule_hint: "Daily pour counters reset at opening time",
+    mon: "Monday",
+    tue: "Tuesday",
+    wed: "Wednesday",
+    thu: "Thursday",
+    fri: "Friday",
+    sat: "Saturday",
+    sun: "Sunday",
+    timezone: "Timezone",
+    tap_number: "Tap Number",
+    beer_name: "Beer Name",
+    co2_threshold: "CO₂ Min (bar)",
+    beer_logo: "Beer Logo",
+    logo_hint: "PNG/SVG, max 512KB. Shown on ESP32 display.",
+    esp32_sensor: "ESP32 Sensor ID",
+    esp32_display: "ESP32 Display ID",
+    cancel: "Cancel",
+    restaurant_name: "Restaurant Name",
+    city: "City",
+    country: "Country",
+    owner_name: "Owner Name",
+    owner_email: "Owner Email",
+    starter: "Starter (≤4 taps)",
+    pro: "Pro (≤12 taps)",
+    enterprise: "Enterprise (unlimited)",
+    interface_language: "Interface Language",
+    invite_hint: "An invitation email will be sent with login instructions.",
+    create_invite: "Create & Invite",
+    first_name: "First Name",
+    last_name: "Last Name",
+    create_user: "Create User",
+    account_status: "Account Status",
+    manual_keg_change: "⚠ Manual keg change",
+    manual_keg_hint: "Use only if FOB sensor didn't detect the change.",
+    log_manual: "Log Manual Keg Change",
+    saved: "Changes saved",
+    test_sent: "Test message sent",
+    refreshing: "Refreshing…",
+    suspended_ok: "Restaurant suspended",
+    activated_ok: "Restaurant activated",
+    user_enabled: "User enabled",
+    user_created: "User created — invite sent",
+    alerts_cleared: "All alerts cleared",
+    keg_added: "Keg added successfully",
+    keg_logged: "Keg change logged manually",
+    restaurant_created: "Restaurant created — invite email sent",
+    report_generated: "Report generated",
+    downloading: "Downloading CSV…",
+    upload_soon: "Logo upload — coming soon",
+    nav_devices: "Devices",
+    nav_beer_library: "Beer Library",
+    nav_billing: "Billing",
+    nav_audit: "Audit Log",
+    nav_costs: "Costs & Revenue",
+    nav_forecast: "Forecast",
+    nav_kiosk: "Kiosk Mode",
+    nav_calibration: "Calibration",
+    costs_sub: "Margin per tap, waste and profitability",
+    revenue_today: "Revenue Today",
+    cost_today: "Keg Cost Today",
+    gross_margin: "Gross Margin",
+    waste_today: "Waste Today",
+    profit_per_tap: "Profit per Tap",
+    waste_trend: "Waste Trend (7 days)",
+    tap_economics: "Tap Economics",
+    configure_prices: "Configure Prices",
+    forecast_sub: "Predicted run-out based on historical consumption",
+    forecast_title: "AI-Powered Forecast",
+    forecast_desc: "Based on your last 30 days of consumption patterns, weekday vs weekend analysis, and time-of-day modelling.",
+    weekly_pattern: "Weekly Consumption Pattern",
+    calibration_sub: "Calibrate each tap K-factor for accurate volume",
+    calib_warning: "Calibration must be done with a measured container.",
+    kiosk_sub: "Full-screen display for bar or cellar",
+    launch_fullscreen: "Launch Fullscreen",
+    kiosk_theme: "Theme",
+    kiosk_columns: "Columns",
+    show_temp: "Show Temperature",
+    show_co2: "Show CO₂",
+    kiosk_preview: "Preview",
+    billing_sub: "Manage subscriptions, payments and invoices",
+    audit_sub: "Every action logged with user and timestamp"
+  },
+  de: {
+    tagline: "Fassbier-Management-Plattform",
+    email: "E-Mail",
+    password: "Passwort",
+    signin: "Anmelden →",
+    invalid_credentials: "Ungültige E-Mail oder Passwort.",
+    account_disabled: "Dieses Konto wurde deaktiviert.",
+    restaurant_suspended: "Ihr Restaurant-Konto ist gesperrt.",
+    logout: "Abmelden",
+    refresh: "Aktualisieren",
+    add_keg: "Fass hinzufügen",
+    nav_overview: "Übersicht",
+    nav_dashboard: "Dashboard",
+    nav_restaurants: "Restaurants",
+    nav_management: "Verwaltung",
+    nav_kegs: "Fässer & Biere",
+    nav_users: "Benutzer",
+    nav_alerts: "Warnungen",
+    nav_system: "System",
+    nav_mqtt: "MQTT-Monitor",
+    nav_settings: "Einstellungen",
+    nav_my_taps: "Meine Hähne",
+    nav_live: "Live-Dashboard",
+    nav_analytics: "Analyse",
+    nav_reports: "Berichte",
+    active_restaurants: "Aktive Restaurants",
+    venues: "Standorte",
+    this_month: "diesen Monat",
+    kegs_online: "Fässer Online",
+    taps: "Hähne",
+    offline: "offline",
+    liters_today: "Liter heute",
+    vs_yesterday: "vs gestern",
+    low_keg_alerts: "Niedrige Fass-Warnungen",
+    kegs: "Fässer",
+    needs_attention: "Aufmerksamkeit erforderlich",
+    pour_activity: "Aktivität — 7 Tage",
+    all_venues: "Alle Standorte",
+    live_alerts: "Live-Warnungen",
+    al_crit: "Fass kritisch niedrig",
+    al_low: "Fass niedrig",
+    al_new: "Neues Fass verbunden",
+    al_offline: "ESP32 offline",
+    restaurants_overview: "Restaurants Übersicht",
+    view_all: "Alle anzeigen",
+    restaurant: "Restaurant",
+    poured_today: "Heute gezapft",
+    keg_changes: "Fasswechsel",
+    last_active: "Zuletzt aktiv",
+    active: "Aktiv",
+    warning: "Warnung",
+    suspended: "Gesperrt",
+    just_now: "Gerade eben",
+    days_3: "Vor 3 Tagen",
+    restaurants_sub: "Konten und Abonnements verwalten",
+    add_restaurant: "Restaurant hinzufügen",
+    all: "Alle",
+    venue: "Standort",
+    owner: "Inhaber",
+    plan: "Tarif",
+    renewal: "Verlängerung",
+    actions: "Aktionen",
+    edit: "Bearbeiten",
+    suspend: "Sperren",
+    activate: "Aktivieren",
+    overdue: "Überfällig",
+    kegs_sub: "Biere, Logos und Fassgrößen konfigurieren",
+    remaining: "Verbleibend",
+    poured: "Gezapft",
+    temp: "Temp",
+    low: "NIEDRIG",
+    fresh: "NEU",
+    critical: "KRITISCH",
+    users_sub: "Benutzerverwaltung",
+    add_user: "Benutzer hinzufügen",
+    name: "Name",
+    role: "Rolle",
+    last_login: "Letzter Login",
+    disable: "Deaktivieren",
+    disabled: "Deaktiviert",
+    enable: "Aktivieren",
+    manager: "Manager",
+    alerts_sub: "Alle Warnungen",
+    clear_all: "Alle löschen",
+    mqtt_sub: "Live-Stream aller ESP32",
+    connected: "Verbunden",
+    broker_status: "Broker-Status",
+    clients: "Clients",
+    messages_sec: "Nachr/Sek",
+    uptime: "Laufzeit",
+    active_topics: "Aktive Themen",
+    live_stream: "Live-Strom",
+    platform_settings: "Plattform-Einstellungen",
+    email_alerts: "E-Mail-Warnungen",
+    smtp_host: "SMTP-Host",
+    port: "Port",
+    security: "Sicherheit",
+    api_key: "E-Mail-Schlüssel",
+    from_address: "Absenderadresse",
+    save: "Speichern",
+    send_test: "Test senden",
+    bot_token: "Bot-Token",
+    admin_chat_id: "Admin Chat-ID",
+    alert_thresholds: "Warnschwellen",
+    low_warning: "Niedrig (%)",
+    critical_alert: "Kritisch (%)",
+    max_temp: "Max Temp (°C)",
+    min_co2: "Min CO₂ (bar)",
+    cleaning_interval: "Reinigung (Tage)",
+    live_updates: "Live — alle 5 Sek.",
+    kegs_changed: "Fasswechsel",
+    active_taps: "Aktive Hähne",
+    my_taps: "Meine Hähne",
+    all_online: "Alle online",
+    critically_low: "kritisch niedrig",
+    new_keg_started: "neues Fass",
+    todays_activity: "Heute",
+    daily_report: "Tagesbericht für",
+    reports_analytics: "Berichte & Analyse",
+    from: "Von",
+    to: "Bis",
+    tap: "Hahn",
+    all_taps: "Alle Hähne",
+    generate: "Generieren",
+    total_poured: "Gesamt",
+    daily_avg: "Tagesdurchschnitt",
+    best_day: "Bester Tag",
+    daily_volume: "Tagesvolumen",
+    volume_by_beer: "Nach Bier",
+    keg_change_log: "Wechselprotokoll",
+    date: "Datum",
+    beer: "Bier",
+    keg_size: "Größe",
+    duration: "Dauer",
+    recipients: "Empfänger",
+    threshold: "Schwelle",
+    my_kegs_detailed: "Meine Fässer",
+    account_settings: "Kontoeinstellungen",
+    alert_recipients: "Empfänger",
+    email_recipients: "E-Mail-Empfänger",
+    add: "Hinzufügen",
+    max_recipients: "Bis zu 5 E-Mail-Empfänger.",
+    telegram_hint: "Chat-IDs hinzufügen.",
+    alert_preferences: "Warnungseinstellungen",
+    alert_low_keg: "Fass niedrig (<20%)",
+    alert_critical: "Fass kritisch (<10%)",
+    alert_new_keg: "Neues Fass",
+    alert_temp: "Temperaturwarnung",
+    alert_offline: "ESP32 offline",
+    alert_cleaning: "Reinigung fällig",
+    opening_hours: "Öffnungszeiten",
+    schedule_hint: "Zähler wird bei Öffnung zurückgesetzt",
+    mon: "Montag",
+    tue: "Dienstag",
+    wed: "Mittwoch",
+    thu: "Donnerstag",
+    fri: "Freitag",
+    sat: "Samstag",
+    sun: "Sonntag",
+    timezone: "Zeitzone",
+    tap_number: "Hahnnummer",
+    beer_name: "Bier",
+    co2_threshold: "CO₂ Min (bar)",
+    beer_logo: "Logo",
+    logo_hint: "PNG/SVG max 512KB.",
+    esp32_sensor: "Sensor-ID",
+    esp32_display: "Display-ID",
+    cancel: "Abbrechen",
+    restaurant_name: "Name",
+    city: "Stadt",
+    country: "Land",
+    owner_name: "Inhaber",
+    owner_email: "Inhaber E-Mail",
+    starter: "Starter",
+    pro: "Pro",
+    enterprise: "Enterprise",
+    interface_language: "Sprache",
+    invite_hint: "Einladungs-E-Mail wird gesendet.",
+    create_invite: "Erstellen & Einladen",
+    first_name: "Vorname",
+    last_name: "Nachname",
+    create_user: "Erstellen",
+    account_status: "Status",
+    manual_keg_change: "⚠ Manueller Wechsel",
+    manual_keg_hint: "Nur wenn FOB nicht erkannt hat.",
+    log_manual: "Manuell protokollieren",
+    saved: "Gespeichert",
+    test_sent: "Test gesendet",
+    refreshing: "Lädt…",
+    suspended_ok: "Gesperrt",
+    activated_ok: "Aktiviert",
+    user_enabled: "Aktiviert",
+    user_created: "Erstellt",
+    alerts_cleared: "Gelöscht",
+    keg_added: "Hinzugefügt",
+    keg_logged: "Protokolliert",
+    restaurant_created: "Erstellt",
+    report_generated: "Erstellt",
+    downloading: "Lädt…",
+    upload_soon: "Demnächst",
+    nav_settings_section: "Einstellungen",
+    nav_devices: "Geräte",
+    nav_beer_library: "Bierbibliothek",
+    nav_billing: "Abrechnung",
+    nav_audit: "Audit-Log",
+    nav_costs: "Kosten & Einnahmen",
+    nav_forecast: "Prognose",
+    nav_kiosk: "Kiosk-Modus",
+    nav_calibration: "Kalibrierung",
+    costs_sub: "Marge pro Hahn, Verluste und Rentabilität",
+    revenue_today: "Einnahmen Heute",
+    cost_today: "Fasskosten Heute",
+    gross_margin: "Bruttomarge",
+    waste_today: "Verluste Heute",
+    profit_per_tap: "Gewinn pro Hahn",
+    waste_trend: "Verlusttrend (7 Tage)",
+    tap_economics: "Hahn-Wirtschaftlichkeit",
+    configure_prices: "Preise konfigurieren",
+    forecast_sub: "Prognostizierte Leerläufe basierend auf Verbrauchshistorie",
+    forecast_title: "KI-Prognose",
+    forecast_desc: "Basierend auf den letzten 30 Tagen Verbrauchsmustern, Wochentag vs. Wochenende.",
+    weekly_pattern: "Wöchentliches Verbrauchsmuster",
+    calibration_sub: "K-Faktor kalibrieren für genaue Volumenmessung",
+    calib_warning: "Kalibrierung nur mit gemessenem Behälter durchführen.",
+    kiosk_sub: "Vollbildanzeige für Bar oder Keller",
+    launch_fullscreen: "Vollbild starten",
+    kiosk_theme: "Thema",
+    kiosk_columns: "Spalten",
+    show_temp: "Temperatur anzeigen",
+    show_co2: "CO₂ anzeigen",
+    kiosk_preview: "Vorschau",
+    billing_sub: "Abonnements, Zahlungen und Rechnungen",
+    audit_sub: "Jede Aktion mit Benutzer und Zeitstempel protokolliert"
+  },
+  es: {
+    tagline: "Plataforma de Gestión de Cerveza de Barril",
+    email: "Correo electrónico",
+    password: "Contraseña",
+    signin: "Iniciar sesión →",
+    invalid_credentials: "Correo o contraseña incorrectos.",
+    account_disabled: "Esta cuenta está deshabilitada.",
+    restaurant_suspended: "Su cuenta de restaurante está suspendida.",
+    logout: "Cerrar sesión",
+    refresh: "Actualizar",
+    add_keg: "Añadir barril",
+    nav_overview: "Resumen",
+    nav_dashboard: "Panel",
+    nav_restaurants: "Restaurantes",
+    nav_management: "Gestión",
+    nav_kegs: "Barriles & Cervezas",
+    nav_users: "Usuarios",
+    nav_alerts: "Alertas",
+    nav_system: "Sistema",
+    nav_mqtt: "Monitor MQTT",
+    nav_settings: "Ajustes",
+    nav_my_taps: "Mis Grifos",
+    nav_live: "Panel en Vivo",
+    nav_analytics: "Análisis",
+    nav_reports: "Informes",
+    active_restaurants: "Restaurantes Activos",
+    venues: "locales",
+    this_month: "este mes",
+    kegs_online: "Barriles en Línea",
+    taps: "grifos",
+    offline: "sin conexión",
+    liters_today: "Litros Hoy",
+    vs_yesterday: "vs ayer",
+    low_keg_alerts: "Alertas Barril Bajo",
+    kegs: "barriles",
+    needs_attention: "Requiere atención",
+    pour_activity: "Actividad — 7 Días",
+    all_venues: "Todos los locales",
+    live_alerts: "Alertas en Vivo",
+    al_crit: "Barril crítico",
+    al_low: "Barril bajo",
+    al_new: "Nuevo barril",
+    al_offline: "ESP32 offline",
+    restaurants_overview: "Resumen",
+    view_all: "Ver todos",
+    restaurant: "Restaurante",
+    poured_today: "Servido Hoy",
+    keg_changes: "Cambios",
+    last_active: "Última Actividad",
+    active: "Activo",
+    warning: "Aviso",
+    suspended: "Suspendido",
+    just_now: "Ahora mismo",
+    days_3: "Hace 3 días",
+    restaurants_sub: "Gestionar cuentas y accesos",
+    add_restaurant: "Añadir Restaurante",
+    all: "Todos",
+    venue: "Local",
+    owner: "Propietario",
+    plan: "Plan",
+    renewal: "Renovación",
+    actions: "Acciones",
+    edit: "Editar",
+    suspend: "Suspender",
+    activate: "Activar",
+    overdue: "Vencido",
+    kegs_sub: "Configurar cervezas y barriles",
+    remaining: "Restante",
+    poured: "Servido",
+    temp: "Temp",
+    low: "BAJO",
+    fresh: "NUEVO",
+    critical: "CRÍTICO",
+    users_sub: "Gestionar usuarios",
+    add_user: "Añadir Usuario",
+    name: "Nombre",
+    role: "Rol",
+    last_login: "Último Acceso",
+    disable: "Deshabilitar",
+    disabled: "Deshabilitado",
+    enable: "Habilitar",
+    manager: "Gerente",
+    alerts_sub: "Todas las alertas",
+    clear_all: "Borrar todo",
+    mqtt_sub: "Stream en vivo",
+    connected: "Conectado",
+    broker_status: "Estado Broker",
+    clients: "Clientes",
+    messages_sec: "Msg/seg",
+    uptime: "Tiempo activo",
+    active_topics: "Temas activos",
+    live_stream: "Stream en Vivo",
+    platform_settings: "Ajustes",
+    email_alerts: "Alertas Email",
+    smtp_host: "Servidor SMTP",
+    port: "Puerto",
+    security: "Seguridad",
+    api_key: "Clave API",
+    from_address: "Dirección envío",
+    save: "Guardar",
+    send_test: "Enviar prueba",
+    bot_token: "Token Bot",
+    admin_chat_id: "Chat ID Admin",
+    alert_thresholds: "Umbrales",
+    low_warning: "Bajo (%)",
+    critical_alert: "Crítico (%)",
+    max_temp: "Temp máx (°C)",
+    min_co2: "CO₂ mín (bar)",
+    cleaning_interval: "Limpieza (días)",
+    live_updates: "En vivo",
+    kegs_changed: "Cambios",
+    active_taps: "Grifos Activos",
+    my_taps: "Mis Grifos",
+    all_online: "Todos online",
+    critically_low: "está críticamente bajo",
+    new_keg_started: "nuevo barril",
+    todays_activity: "Hoy",
+    daily_report: "Informe diario de",
+    reports_analytics: "Informes & Análisis",
+    from: "Desde",
+    to: "Hasta",
+    tap: "Grifo",
+    all_taps: "Todos",
+    generate: "Generar",
+    total_poured: "Total",
+    daily_avg: "Media Diaria",
+    best_day: "Mejor Día",
+    daily_volume: "Volumen Diario",
+    volume_by_beer: "Por Cerveza",
+    keg_change_log: "Registro",
+    date: "Fecha",
+    beer: "Cerveza",
+    keg_size: "Tamaño",
+    duration: "Duración",
+    recipients: "destinatarios",
+    threshold: "umbral",
+    my_kegs_detailed: "Mis Barriles",
+    account_settings: "Ajustes",
+    alert_recipients: "Destinatarios",
+    email_recipients: "Email",
+    add: "Añadir",
+    max_recipients: "Hasta 5 destinatarios.",
+    telegram_hint: "IDs de Telegram.",
+    alert_preferences: "Preferencias",
+    alert_low_keg: "Barril bajo (<20%)",
+    alert_critical: "Barril crítico (<10%)",
+    alert_new_keg: "Nuevo barril",
+    alert_temp: "Temperatura",
+    alert_offline: "ESP32 offline",
+    alert_cleaning: "Limpieza",
+    opening_hours: "Horario",
+    schedule_hint: "Contadores se reinician al abrir",
+    mon: "Lunes",
+    tue: "Martes",
+    wed: "Miércoles",
+    thu: "Jueves",
+    fri: "Viernes",
+    sat: "Sábado",
+    sun: "Domingo",
+    timezone: "Zona horaria",
+    tap_number: "Grifo nº",
+    beer_name: "Cerveza",
+    co2_threshold: "CO₂ mín",
+    beer_logo: "Logo",
+    logo_hint: "PNG/SVG máx 512KB.",
+    esp32_sensor: "ID Sensor",
+    esp32_display: "ID Display",
+    cancel: "Cancelar",
+    restaurant_name: "Nombre",
+    city: "Ciudad",
+    country: "País",
+    owner_name: "Propietario",
+    owner_email: "Email",
+    starter: "Starter",
+    pro: "Pro",
+    enterprise: "Enterprise",
+    interface_language: "Idioma",
+    invite_hint: "Se enviará email de invitación.",
+    create_invite: "Crear e Invitar",
+    first_name: "Nombre",
+    last_name: "Apellidos",
+    create_user: "Crear",
+    account_status: "Estado",
+    manual_keg_change: "⚠ Cambio manual",
+    manual_keg_hint: "Solo si FOB no detectó.",
+    log_manual: "Registrar",
+    saved: "Guardado",
+    test_sent: "Prueba enviada",
+    refreshing: "Cargando…",
+    suspended_ok: "Suspendido",
+    activated_ok: "Activado",
+    user_enabled: "Habilitado",
+    user_created: "Creado",
+    alerts_cleared: "Borradas",
+    keg_added: "Añadido",
+    keg_logged: "Registrado",
+    restaurant_created: "Creado",
+    report_generated: "Generado",
+    downloading: "Descargando…",
+    upload_soon: "Próximamente",
+    nav_settings_section: "Ajustes",
+    nav_devices: "Dispositivos",
+    nav_beer_library: "Catálogo de Cervezas",
+    nav_billing: "Facturación",
+    nav_audit: "Registro de Auditoría",
+    nav_costs: "Costes & Ingresos",
+    nav_forecast: "Previsión",
+    nav_kiosk: "Modo Kiosco",
+    nav_calibration: "Calibración",
+    costs_sub: "Margen por grifo, mermas y rentabilidad",
+    revenue_today: "Ingresos Hoy",
+    cost_today: "Coste Barril Hoy",
+    gross_margin: "Margen Bruto",
+    waste_today: "Mermas Hoy",
+    profit_per_tap: "Beneficio por Grifo",
+    waste_trend: "Tendencia Mermas (7 días)",
+    tap_economics: "Economía por Grifo",
+    configure_prices: "Configurar Precios",
+    forecast_sub: "Predicción de vaciado basada en consumo histórico",
+    forecast_title: "Previsión con IA",
+    forecast_desc: "Basada en los últimos 30 días de patrones de consumo.",
+    weekly_pattern: "Patrón de Consumo Semanal",
+    calibration_sub: "Calibrar el factor K de cada grifo",
+    calib_warning: "La calibración debe hacerse con un recipiente medido.",
+    kiosk_sub: "Pantalla completa para barra o bodega",
+    launch_fullscreen: "Iniciar Pantalla Completa",
+    kiosk_theme: "Tema",
+    kiosk_columns: "Columnas",
+    show_temp: "Mostrar Temperatura",
+    show_co2: "Mostrar CO₂",
+    kiosk_preview: "Vista previa",
+    billing_sub: "Gestionar suscripciones, pagos y facturas",
+    audit_sub: "Todas las acciones registradas con usuario y fecha"
+  },
+  it: {
+    tagline: "Piattaforma di Gestione Birra alla Spina",
+    email: "Email",
+    password: "Password",
+    signin: "Accedi →",
+    invalid_credentials: "Email o password non validi.",
+    account_disabled: "Questo account è disabilitato.",
+    restaurant_suspended: "Il vostro ristorante è sospeso.",
+    logout: "Esci",
+    refresh: "Aggiorna",
+    add_keg: "Aggiungi fusto",
+    nav_overview: "Panoramica",
+    nav_dashboard: "Dashboard",
+    nav_restaurants: "Ristoranti",
+    nav_management: "Gestione",
+    nav_kegs: "Fusti & Birre",
+    nav_users: "Utenti",
+    nav_alerts: "Avvisi",
+    nav_system: "Sistema",
+    nav_mqtt: "Monitor MQTT",
+    nav_settings: "Impostazioni",
+    nav_my_taps: "I Miei Rubinetti",
+    nav_live: "Dashboard Live",
+    nav_analytics: "Analisi",
+    nav_reports: "Report",
+    active_restaurants: "Ristoranti Attivi",
+    venues: "locali",
+    this_month: "questo mese",
+    kegs_online: "Fusti Online",
+    taps: "rubinetti",
+    offline: "offline",
+    liters_today: "Litri Oggi",
+    vs_yesterday: "vs ieri",
+    low_keg_alerts: "Avvisi Fusto",
+    kegs: "fusti",
+    needs_attention: "Richiede attenzione",
+    pour_activity: "Attività — 7 Giorni",
+    all_venues: "Tutti",
+    live_alerts: "Avvisi Live",
+    al_crit: "Fusto critico",
+    al_low: "Fusto basso",
+    al_new: "Nuovo fusto",
+    al_offline: "ESP32 offline",
+    restaurants_overview: "Panoramica",
+    view_all: "Vedi tutti",
+    restaurant: "Ristorante",
+    poured_today: "Spillato Oggi",
+    keg_changes: "Cambi",
+    last_active: "Ultima Attività",
+    active: "Attivo",
+    warning: "Avviso",
+    suspended: "Sospeso",
+    just_now: "Proprio ora",
+    days_3: "3 giorni fa",
+    restaurants_sub: "Gestisci account e accessi",
+    add_restaurant: "Aggiungi Ristorante",
+    all: "Tutti",
+    venue: "Locale",
+    owner: "Proprietario",
+    plan: "Piano",
+    renewal: "Rinnovo",
+    actions: "Azioni",
+    edit: "Modifica",
+    suspend: "Sospendi",
+    activate: "Attiva",
+    overdue: "Scaduto",
+    kegs_sub: "Configura birre e fusti",
+    remaining: "Rimanente",
+    poured: "Spillato",
+    temp: "Temp",
+    low: "BASSO",
+    fresh: "NUOVO",
+    critical: "CRITICO",
+    users_sub: "Gestisci utenti",
+    add_user: "Aggiungi Utente",
+    name: "Nome",
+    role: "Ruolo",
+    last_login: "Ultimo Accesso",
+    disable: "Disabilita",
+    disabled: "Disabilitato",
+    enable: "Abilita",
+    manager: "Responsabile",
+    alerts_sub: "Tutti gli avvisi",
+    clear_all: "Cancella tutto",
+    mqtt_sub: "Stream live",
+    connected: "Connesso",
+    broker_status: "Stato Broker",
+    clients: "Client",
+    messages_sec: "Msg/sec",
+    uptime: "Uptime",
+    active_topics: "Argomenti",
+    live_stream: "Stream Live",
+    platform_settings: "Impostazioni",
+    email_alerts: "Avvisi Email",
+    smtp_host: "Host SMTP",
+    port: "Porta",
+    security: "Sicurezza",
+    api_key: "Chiave API",
+    from_address: "Mittente",
+    save: "Salva",
+    send_test: "Invia test",
+    bot_token: "Token Bot",
+    admin_chat_id: "Chat ID Admin",
+    alert_thresholds: "Soglie",
+    low_warning: "Basso (%)",
+    critical_alert: "Critico (%)",
+    max_temp: "Temp max (°C)",
+    min_co2: "CO₂ min (bar)",
+    cleaning_interval: "Pulizia (giorni)",
+    live_updates: "Live",
+    kegs_changed: "Cambi",
+    active_taps: "Attivi",
+    my_taps: "I Miei Rubinetti",
+    all_online: "Tutti online",
+    critically_low: "è critico",
+    new_keg_started: "nuovo fusto",
+    todays_activity: "Oggi",
+    daily_report: "Report di",
+    reports_analytics: "Report & Analisi",
+    from: "Da",
+    to: "A",
+    tap: "Rubinetto",
+    all_taps: "Tutti",
+    generate: "Genera",
+    total_poured: "Totale",
+    daily_avg: "Media",
+    best_day: "Miglior Giorno",
+    daily_volume: "Volume",
+    volume_by_beer: "Per Birra",
+    keg_change_log: "Log",
+    date: "Date",
+    beer: "Birra",
+    keg_size: "Dimensione",
+    duration: "Durata",
+    recipients: "destinatari",
+    threshold: "soglia",
+    my_kegs_detailed: "I Miei Fusti",
+    account_settings: "Impostazioni",
+    alert_recipients: "Destinatari",
+    email_recipients: "Email",
+    add: "Aggiungi",
+    max_recipients: "Max 5 destinatari.",
+    telegram_hint: "ID Telegram.",
+    alert_preferences: "Preferenze",
+    alert_low_keg: "Fusto basso (<20%)",
+    alert_critical: "Fusto critico (<10%)",
+    alert_new_keg: "Nuovo fusto",
+    alert_temp: "Temperatura",
+    alert_offline: "ESP32 offline",
+    alert_cleaning: "Pulizia",
+    opening_hours: "Orari",
+    schedule_hint: "Contatori azzerati all'apertura",
+    mon: "Lunedì",
+    tue: "Martedì",
+    wed: "Mercoledì",
+    thu: "Giovedì",
+    fri: "Venerdì",
+    sat: "Sabato",
+    sun: "Domenica",
+    timezone: "Fuso orario",
+    tap_number: "Rubinetto",
+    beer_name: "Birra",
+    co2_threshold: "CO₂ min",
+    beer_logo: "Logo",
+    logo_hint: "PNG/SVG max 512KB.",
+    esp32_sensor: "ID Sensore",
+    esp32_display: "ID Display",
+    cancel: "Annulla",
+    restaurant_name: "Nome",
+    city: "Città",
+    country: "Paese",
+    owner_name: "Proprietario",
+    owner_email: "Email",
+    starter: "Starter",
+    pro: "Pro",
+    enterprise: "Enterprise",
+    interface_language: "Lingua",
+    invite_hint: "Verrà inviata email di invito.",
+    create_invite: "Crea e Invita",
+    first_name: "Nome",
+    last_name: "Cognome",
+    create_user: "Crea",
+    account_status: "Stato",
+    manual_keg_change: "⚠ Cambio manuale",
+    manual_keg_hint: "Solo se FOB non ha rilevato.",
+    log_manual: "Registra",
+    saved: "Salvato",
+    test_sent: "Test inviato",
+    refreshing: "Caricamento…",
+    suspended_ok: "Sospeso",
+    activated_ok: "Attivato",
+    user_enabled: "Abilitato",
+    user_created: "Creato",
+    alerts_cleared: "Cancellati",
+    keg_added: "Aggiunto",
+    keg_logged: "Registrato",
+    restaurant_created: "Creato",
+    report_generated: "Generato",
+    downloading: "Download…",
+    upload_soon: "Prossimamente",
+    nav_settings_section: "Impostazioni",
+    nav_devices: "Dispositivi",
+    nav_beer_library: "Catalogo Birre",
+    nav_billing: "Facturazione",
+    nav_audit: "Registro Audit",
+    nav_costs: "Costi & Ricavi",
+    nav_forecast: "Previsione",
+    nav_kiosk: "Modalità Kiosk",
+    nav_calibration: "Calibrazione",
+    costs_sub: "Margine per rubinetto, sprechi e redditività",
+    revenue_today: "Ricavi Oggi",
+    cost_today: "Costo Fusto Oggi",
+    gross_margin: "Margine Lordo",
+    waste_today: "Sprechi Oggi",
+    profit_per_tap: "Profitto per Rubinetto",
+    waste_trend: "Tendenza Sprechi (7 giorni)",
+    tap_economics: "Economia per Rubinetto",
+    configure_prices: "Configura Prezzi",
+    forecast_sub: "Previsione esaurimento basata su consumo storico",
+    forecast_title: "Previsione AI",
+    forecast_desc: "Basata sugli ultimi 30 giorni di consumo.",
+    weekly_pattern: "Schema di Consumo Settimanale",
+    calibration_sub: "Calibra il fattore K di ogni rubinetto",
+    calib_warning: "La calibrazione va eseguita con un contenitore misurato.",
+    kiosk_sub: "Schermo intero per bar o cantina",
+    launch_fullscreen: "Avvia Schermo Intero",
+    kiosk_theme: "Tema",
+    kiosk_columns: "Colonne",
+    show_temp: "Mostra Temperatura",
+    show_co2: "Mostra CO₂",
+    kiosk_preview: "Anteprima",
+    billing_sub: "Gestisci abbonamenti, pagamenti e fatture",
+    audit_sub: "Ogni azione registrata con utente e timestamp"
+  },
+  el: {
+    tagline: "Πλατφόρμα Διαχείρισης Μπύρας Βαρελιού",
+    email: "Email",
+    password: "Κωδικός",
+    signin: "Σύνδεση →",
+    invalid_credentials: "Λανθασμένο email ή κωδικός.",
+    account_disabled: "Αυτός ο λογαριασμός είναι απενεργοποιημένος.",
+    restaurant_suspended: "Ο λογαριασμός σας έχει ανασταλεί.",
+    logout: "Αποσύνδεση",
+    refresh: "Ανανέωση",
+    add_keg: "Προσθήκη βαρελιού",
+    nav_overview: "Επισκόπηση",
+    nav_dashboard: "Πίνακας",
+    nav_restaurants: "Εστιατόρια",
+    nav_management: "Διαχείριση",
+    nav_kegs: "Βαρέλια & Μπύρες",
+    nav_users: "Χρήστες",
+    nav_alerts: "Ειδοποιήσεις",
+    nav_system: "Σύστημα",
+    nav_mqtt: "MQTT",
+    nav_settings: "Ρυθμίσεις",
+    nav_my_taps: "Κάνουλές μου",
+    nav_live: "Ζωντανός Πίνακας",
+    nav_analytics: "Αναλυτικά",
+    nav_reports: "Αναφορές",
+    active_restaurants: "Ενεργά Εστιατόρια",
+    venues: "χώροι",
+    this_month: "αυτό τον μήνα",
+    kegs_online: "Βαρέλια Online",
+    taps: "κάνουλες",
+    offline: "εκτός",
+    liters_today: "Λίτρα Σήμερα",
+    vs_yesterday: "vs χθες",
+    low_keg_alerts: "Προειδοποιήσεις",
+    kegs: "βαρέλια",
+    needs_attention: "Απαιτεί προσοχή",
+    pour_activity: "Δραστηριότητα — 7 Ημέρες",
+    all_venues: "Όλοι",
+    live_alerts: "Ζωντανές Ειδοποιήσεις",
+    al_crit: "Κρίσιμα χαμηλό βαρέλι",
+    al_low: "Χαμηλό βαρέλι",
+    al_new: "Νέο βαρέλι",
+    al_offline: "ESP32 εκτός",
+    restaurants_overview: "Επισκόπηση",
+    view_all: "Όλα",
+    restaurant: "Εστιατόριο",
+    poured_today: "Σήμερα",
+    keg_changes: "Αλλαγές",
+    last_active: "Τελευταία",
+    active: "Ενεργό",
+    warning: "Προειδοποίηση",
+    suspended: "Ανεσταλμένο",
+    just_now: "Μόλις τώρα",
+    days_3: "3 μέρες πριν",
+    restaurants_sub: "Διαχείριση λογαριασμών",
+    add_restaurant: "Προσθήκη Εστιατορίου",
+    all: "Όλα",
+    venue: "Χώρος",
+    owner: "Ιδιοκτήτης",
+    plan: "Πλάνο",
+    renewal: "Ανανέωση",
+    actions: "Ενέργειες",
+    edit: "Επεξεργασία",
+    suspend: "Αναστολή",
+    activate: "Ενεργοποίηση",
+    overdue: "Ληγμένο",
+    kegs_sub: "Ρύθμιση μπυρών",
+    remaining: "Υπόλοιπο",
+    poured: "Σερβιρισμένο",
+    temp: "Θερμ.",
+    low: "ΧΑΜΗΛΟ",
+    fresh: "ΝΕΟ",
+    critical: "ΚΡΙΣΙΜΟ",
+    users_sub: "Διαχείριση χρηστών",
+    add_user: "Προσθήκη Χρήστη",
+    name: "Όνομα",
+    role: "Ρόλος",
+    last_login: "Τελευταία Σύνδεση",
+    disable: "Απενεργοποίηση",
+    disabled: "Απενεργοποιημένο",
+    enable: "Ενεργοποίηση",
+    manager: "Διαχειριστής",
+    alerts_sub: "Όλες οι ειδοποιήσεις",
+    clear_all: "Εκκαθάριση",
+    mqtt_sub: "Ζωντανή ροή",
+    connected: "Συνδεδεμένο",
+    broker_status: "Κατάσταση",
+    clients: "Clients",
+    messages_sec: "Μηνύμ/δευτ",
+    uptime: "Χρόνος",
+    active_topics: "Θέματα",
+    live_stream: "Ζωντανή Ροή",
+    platform_settings: "Ρυθμίσεις",
+    email_alerts: "Email Ειδοποιήσεις",
+    smtp_host: "SMTP Host",
+    port: "Θύρα",
+    security: "Ασφάλεια",
+    api_key: "API Κλειδί",
+    from_address: "Αποστολέας",
+    save: "Αποθήκευση",
+    send_test: "Δοκιμή",
+    bot_token: "Bot Token",
+    admin_chat_id: "Chat ID",
+    alert_thresholds: "Κατώφλια",
+    low_warning: "Χαμηλό (%)",
+    critical_alert: "Κρίσιμο (%)",
+    max_temp: "Μέγ Θερμ (°C)",
+    min_co2: "Ελάχ CO₂",
+    cleaning_interval: "Καθαρισμός (μέρες)",
+    live_updates: "Ζωντανά",
+    kegs_changed: "Αλλαγές",
+    active_taps: "Ενεργές Κάνουλες",
+    my_taps: "Οι Κάνουλές μου",
+    all_online: "Όλες συνδεδεμένες",
+    critically_low: "κρίσιμα χαμηλό",
+    new_keg_started: "νέο βαρέλι",
+    todays_activity: "Σήμερα",
+    daily_report: "Ημερήσια αναφορά",
+    reports_analytics: "Αναφορές & Αναλυτικά",
+    from: "Από",
+    to: "Έως",
+    tap: "Κάνουλα",
+    all_taps: "Όλες",
+    generate: "Δημιουργία",
+    total_poured: "Σύνολο",
+    daily_avg: "Ημερήσιος Μέσος",
+    best_day: "Καλύτερη Μέρα",
+    daily_volume: "Ημερήσιος Όγκος",
+    volume_by_beer: "Ανά Μπύρα",
+    keg_change_log: "Αρχείο",
+    date: "Ημερομηνία",
+    beer: "Μπύρα",
+    keg_size: "Μέγεθος",
+    duration: "Διάρκεια",
+    recipients: "παραλήπτες",
+    threshold: "κατώφλι",
+    my_kegs_detailed: "Τα Βαρέλια μου",
+    account_settings: "Ρυθμίσεις",
+    alert_recipients: "Παραλήπτες",
+    email_recipients: "Email",
+    add: "Προσθήκη",
+    max_recipients: "Έως 5 παραλήπτες.",
+    telegram_hint: "IDs Telegram.",
+    alert_preferences: "Προτιμήσεις",
+    alert_low_keg: "Χαμηλό (<20%)",
+    alert_critical: "Κρίσιμο (<10%)",
+    alert_new_keg: "Νέο βαρέλι",
+    alert_temp: "Θερμοκρασία",
+    alert_offline: "ESP32 offline",
+    alert_cleaning: "Καθαρισμός",
+    opening_hours: "Ώρες Λειτουργίας",
+    schedule_hint: "Μηδενισμός στο άνοιγμα",
+    mon: "Δευτέρα",
+    tue: "Τρίτη",
+    wed: "Τετάρτη",
+    thu: "Πέμπτη",
+    fri: "Παρασκευή",
+    sat: "Σάββατο",
+    sun: "Κυριακή",
+    timezone: "Ζώνη Ώρας",
+    tap_number: "Κάνουλα",
+    beer_name: "Μπύρα",
+    co2_threshold: "CO₂",
+    beer_logo: "Λογότυπο",
+    logo_hint: "PNG/SVG μέγ 512KB.",
+    esp32_sensor: "ID Αισθητήρα",
+    esp32_display: "ID Οθόνης",
+    cancel: "Ακύρωση",
+    restaurant_name: "Όνομα",
+    city: "Πόλη",
+    country: "Χώρα",
+    owner_name: "Ιδιοκτήτης",
+    owner_email: "Email",
+    starter: "Starter",
+    pro: "Pro",
+    enterprise: "Enterprise",
+    interface_language: "Γλώσσα",
+    invite_hint: "Email πρόσκλησης θα σταλεί.",
+    create_invite: "Δημιουργία & Πρόσκληση",
+    first_name: "Όνομα",
+    last_name: "Επώνυμο",
+    create_user: "Δημιουργία",
+    account_status: "Κατάσταση",
+    manual_keg_change: "⚠ Χειροκίνητη αλλαγή",
+    manual_keg_hint: "Μόνο αν FOB δεν εντόπισε.",
+    log_manual: "Καταχώρηση",
+    saved: "Αποθηκεύτηκε",
+    test_sent: "Εστάλη",
+    refreshing: "Φόρτωση…",
+    suspended_ok: "Ανεστάλη",
+    activated_ok: "Ενεργοποιήθηκε",
+    user_enabled: "Ενεργοποιήθηκε",
+    user_created: "Δημιουργήθηκε",
+    alerts_cleared: "Διαγράφηκαν",
+    keg_added: "Προστέθηκε",
+    keg_logged: "Καταχωρήθηκε",
+    restaurant_created: "Δημιουργήθηκε",
+    report_generated: "Δημιουργήθηκε",
+    downloading: "Λήψη…",
+    upload_soon: "Σύντομα",
+    nav_settings_section: "Ρυθμίσεις",
+    nav_devices: "Συσκευές",
+    nav_beer_library: "Κατάλογος Μπυρών",
+    nav_billing: "Χρέωση",
+    nav_audit: "Αρχείο Ελέγχου",
+    nav_costs: "Κόστη & Έσοδα",
+    nav_forecast: "Πρόβλεψη",
+    nav_kiosk: "Λειτουργία Kiosk",
+    nav_calibration: "Βαθμονόμηση",
+    costs_sub: "Περιθώριο ανά κάνουλα, απώλειες και κερδοφορία",
+    revenue_today: "Έσοδα Σήμερα",
+    cost_today: "Κόστος Βαρελιού Σήμερα",
+    gross_margin: "Μικτό Περιθώριο",
+    waste_today: "Απώλειες Σήμερα",
+    profit_per_tap: "Κέρδος ανά Κάνουλα",
+    waste_trend: "Τάση Απωλειών (7 ημέρες)",
+    tap_economics: "Οικονομικά Κάνουλας",
+    configure_prices: "Ρύθμιση Τιμών",
+    forecast_sub: "Πρόβλεψη αδειάσματος βάσει ιστορικού κατανάλωσης",
+    forecast_title: "Πρόβλεψη AI",
+    forecast_desc: "Βάσει των τελευταίων 30 ημερών κατανάλωσης.",
+    weekly_pattern: "Εβδομαδιαίο Μοτίβο Κατανάλωσης",
+    calibration_sub: "Βαθμονόμηση παράγοντα K κάθε κάνουλας",
+    calib_warning: "Η βαθμονόμηση πρέπει να γίνει με μετρημένο δοχείο.",
+    kiosk_sub: "Πλήρης οθόνη για μπαρ ή κελάρι",
+    launch_fullscreen: "Εκκίνηση Πλήρους Οθόνης",
+    kiosk_theme: "Θέμα",
+    kiosk_columns: "Στήλες",
+    show_temp: "Εμφάνιση Θερμοκρασίας",
+    show_co2: "Εμφάνιση CO₂",
+    kiosk_preview: "Προεπισκόπηση",
+    billing_sub: "Διαχείριση συνδρομών, πληρωμών και τιμολογίων",
+    audit_sub: "Κάθε ενέργεια καταγράφεται με χρήστη και χρονική σήμανση"
+  }
 };
+</script>
+
+<script>
+console.log("🚀 BeerControl Runtime Initialized");
 
 /* ══════════════════════════════════════════
    MOCK DATA
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   APPLICATION LOGIC (Extended Functions)
+══════════════════════════════════════════ */
+console.log("🛠️ BeerControl Extended Logic Loading...");
+
+// Data stores
 const USERS={};
 const KEGS=[];
 const USER_KEGS=[];
-
-// SCHED is now empty by default, will be fetched from DB
 const SCHED = [];
 
-/* ══════════════════════════════════════════
-   CORE STATE
-══════════════════════════════════════════ */
-let lang='en', currentPage='', currentRole='', charts={};
-const t=k=>(TR[lang]&&TR[lang][k])||TR.en[k]||k;
+// Local aliases for core globals
+const t = window.t;
+
+// Hook called by Core Logic when session is verified
+window.initAppSupport = function() {
+  console.log("✨ Initializing Application Support");
+  try {
+    applyI18n();
+    buildKegGrids();
+    buildSchedule();
+    if (typeof initCharts === 'function') setTimeout(initCharts, 100);
+    if (typeof startMqttFeed === 'function') startMqttFeed();
+  } catch(e) {
+    console.error("❌ App Support Init Failed:", e);
+  }
+};
+
+// Hook called by Core Logic when navigation occurs
+window.onNav = function(pageId) {
+  try {
+    if(pageId==='userReports' && typeof initReportCharts === 'function') setTimeout(initReportCharts,120);
+    if(pageId==='userForecast' && typeof buildForecastPage === 'function') { 
+      setTimeout(()=>{ 
+        buildForecastPage(); 
+        if (typeof initForecastChart === 'function') initForecastChart(); 
+      }, 50); 
+    }
+    if(pageId==='adminBilling' && typeof initBillingChart === 'function') setTimeout(initBillingChart,100);
+    if(pageId==='userCosts' && typeof initCostCharts === 'function') setTimeout(initCostCharts,100);
+    if(pageId==='adminAudit' && typeof buildAuditLog === 'function') setTimeout(buildAuditLog,50);
+    if(pageId==='userCalibration' && typeof buildCalibration === 'function') setTimeout(buildCalibration,50);
+    if(pageId==='userKiosk' && typeof buildKioskPreview === 'function') { 
+      setTimeout(()=>{ 
+        buildKioskPreview(); 
+        if (typeof startKioskAutoRefresh === 'function') startKioskAutoRefresh(); 
+      }, 50); 
+    }
+  } catch(e) {
+    console.error("❌ Navigation Hook Failed:", e);
+  }
+};
 
 function setLang(l){
-  lang=l; localStorage.setItem('bc_lang',l);
+  window.lang=l; localStorage.setItem('bc_lang',l);
   const sel=document.getElementById('langSelect');
   if(sel) sel.value=l;
   applyI18n();
@@ -1912,126 +3253,6 @@ function applyI18n(){
   });
 }
 
-/* ══════════════════════════════════════════
-   LOGIN
-══════════════════════════════════════════ */
-async function doLogin(){
-  const email=document.getElementById('lg-email').value.trim().toLowerCase();
-  const pass=document.getElementById('lg-pass').value;
-  const errEl=document.getElementById('lg-err');
-  
-  const btn = document.getElementById('lg-btn');
-  const oldText = btn.textContent;
-  
-  if(!email || !pass) {
-    errEl.textContent = 'Please enter email and password';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  // Visual feedback
-  btn.disabled = true;
-  btn.textContent = 'Signing in...';
-  errEl.style.display = 'none';
-  document.getElementById('lg-email').classList.remove('err');
-
-  try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pass })
-    });
-    const d = await res.json();
-    if(!d.success){
-      btn.disabled = false;
-      btn.textContent = oldText;
-      errEl.textContent = d.error === 'invalid_credentials' ? 'Invalid username or password' : (t(d.error) || 'Login failed');
-      errEl.style.display = 'block';
-      document.getElementById('lg-email').classList.add('err');
-      return;
-    }
-    // Success - reload /app to get clean state
-    window.location.href = '/app';
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = oldText;
-    errEl.textContent = 'Network error — Is the server running?';
-    errEl.style.display = 'block';
-  }
-}
-
-async function checkSession(){
-  try {
-    const res = await fetch('/api/me');
-    const d = await res.json();
-    if(d.loggedIn){
-      const u = d.user;
-      document.getElementById('loginPage').style.display='none';
-      document.getElementById('app').style.display='block';
-      currentRole=u.role;
-      document.getElementById('av').textContent=u.name.charAt(0);
-      document.getElementById('uname').textContent=u.name;
-      document.getElementById('uemail').textContent=u.role==='admin'?u.email:u.restaurant;
-      document.getElementById('urole').textContent=u.role==='admin'?'Admin':t('active');
-      document.getElementById('urole').className='role-badge '+(u.role==='admin'?'admin':'user');
-      
-      if(u.role==='admin'){
-        document.getElementById('navAdmin').style.display='flex';
-        document.getElementById('navUser').style.display='none';
-        nav('adminDash',document.querySelector('#navAdmin .nav-item'));
-      } else {
-        document.getElementById('navAdmin').style.display='none';
-        document.getElementById('navUser').style.display='flex';
-        nav('userDash',document.querySelector('#navUser .nav-item'));
-      }
-      applyI18n();
-      buildKegGrids();
-      buildSchedule();
-      setTimeout(initCharts,100);
-      startMqttFeed();
-    } else {
-      document.getElementById('loginPage').style.display='flex';
-      document.getElementById('app').style.display='none';
-    }
-  } catch(e){
-    console.error('Session check failed', e);
-  }
-}
-
-// Check session on load
-window.addEventListener('DOMContentLoaded', checkSession);
-
-
-function doLogout(){
-  document.getElementById('app').style.display='none';
-  document.getElementById('loginPage').style.display='flex';
-  document.getElementById('lg-email').value='';
-  document.getElementById('lg-pass').value='';
-  document.getElementById('lg-err').style.display='none';
-}
-
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('loginPage').style.display!=='none')doLogin();});
-
-/* ══════════════════════════════════════════
-   NAVIGATION
-══════════════════════════════════════════ */
-function nav(pageId,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  const p=document.getElementById('page-'+pageId);
-  if(p) p.classList.add('active');
-  if(el) el.classList.add('active');
-  currentPage=pageId;
-  const titles={adminDash:t('nav_dashboard'),adminRestaurants:t('nav_restaurants'),adminKegs:t('nav_kegs'),adminUsers:t('nav_users'),adminAlerts:t('nav_alerts'),adminDevices:t('nav_devices'),adminMqtt:t('nav_mqtt'),adminRestaurantDetail:'Restaurant',adminBeerLibrary:t('nav_beer_library'),adminBilling:t('nav_billing'),adminAudit:t('nav_audit'),adminSettings:t('nav_settings'),userDash:t('nav_live'),userKegs:t('nav_kegs'),userReports:t('nav_reports'),userAlerts:t('nav_alerts'),userCosts:t('nav_costs'),userForecast:t('nav_forecast'),userKiosk:t('nav_kiosk'),userCalibration:t('nav_calibration'),userSettings:t('nav_settings')};
-  document.getElementById('topTitle').textContent=titles[pageId]||pageId;
-  if(pageId==='userReports')   setTimeout(initReportCharts,120);
-  if(pageId==='userForecast')  { setTimeout(()=>{ buildForecastPage(); setTimeout(initForecastChart,100); },50); }
-  if(pageId==='adminBilling')  setTimeout(initBillingChart,100);
-  if(pageId==='userCosts')     setTimeout(initCostCharts,100);
-  if(pageId==='adminAudit')    setTimeout(buildAuditLog,50);
-  if(pageId==='userCalibration') setTimeout(buildCalibration,50);
-  if(pageId==='userKiosk')     { setTimeout(()=>{ buildKioskPreview(); startKioskAutoRefresh(); },50); }
-}
 
 /* ══════════════════════════════════════════
    BUILD KEG GRIDS
