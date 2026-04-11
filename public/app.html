@@ -79,7 +79,7 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .role-badge.user{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,158,255,.25)}
 
 /* ── MAIN ── */
-.main{flex:1;height:100%;overflow-y:auto;background:var(--bg0);display:flex;flex-direction:column}
+.main{flex:1;height:100%;overflow-y:auto;background:var(--bg0);display:flex;flex-direction:column;align-items:stretch;width:100%}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(14,15,17,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0}
 .topbar-title{font-family:var(--fh);font-size:20px;font-weight:600;letter-spacing:.3px}
 .topbar-spacer{flex:1}
@@ -108,7 +108,7 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .btn-sm{padding:5px 10px;font-size:12px}
 
 /* ── PAGES ── */
-.page{padding:24px 28px;display:none}
+.page{padding:24px 28px;display:none;width:100%;flex:1}
 .page.active{display:block}
 
 /* ── GRIDS ── */
@@ -741,15 +741,15 @@ textarea{resize:vertical;min-height:80px}
   <div class="card mb16" style="margin-bottom:16px">
     <div class="card-body" style="padding:12px 18px">
       <div class="flex g12" style="align-items:center;flex-wrap:wrap">
-        <div style="position:relative;flex:1;min-width:180px">
+        <div style="position:relative;flex:1;max-width:560px;min-width:180px">
           <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3)">🔍</span>
           <input type="text" id="beerSearch" placeholder="Search beers…" oninput="filterBeers()" style="padding-left:32px;width:100%">
         </div>
-        <select id="beerStyleFilter" onchange="filterBeers()" style="font-size:13px;padding:7px 12px">
+        <select id="beerStyleFilter" onchange="filterBeers()" style="font-size:13px;padding:7px 12px;width:auto">
           <option value="">All Styles</option>
           <option>Lager</option><option>Ale</option><option>Stout</option><option>Wheat</option><option>IPA</option>
         </select>
-        <div id="beerCount" style="font-size:12px;color:var(--text3);font-family:var(--fm)"></div>
+        <div id="beerCount" style="font-size:12px;color:var(--text3);font-family:var(--fm);margin-left:auto"></div>
       </div>
     </div>
   </div>
@@ -785,23 +785,23 @@ textarea{resize:vertical;min-height:80px}
   <div class="g4 mb16" style="margin-bottom:16px">
     <div class="stat-card sc-red">
       <div class="stat-label">Devices Offline</div>
-      <div class="stat-val">2 <span>ESP32</span></div>
-      <div class="stat-sub down">Needs attention</div>
+      <div class="stat-val"><span id="alert-stat-offline">0</span> <span>ESP32</span></div>
+      <div class="stat-sub" id="alert-sub-offline">System stable</div>
     </div>
     <div class="stat-card sc-amber">
       <div class="stat-label">Payment Issues</div>
-      <div class="stat-val">1 <span>account</span></div>
-      <div class="stat-sub down">The Red Lion</div>
+      <div class="stat-val" id="alert-stat-payment">0</div>
+      <div class="stat-sub">All accounts active</div>
     </div>
     <div class="stat-card sc-green">
       <div class="stat-label">MQTT Broker</div>
-      <div class="stat-val" style="font-size:20px;padding-top:4px">Online</div>
-      <div class="stat-sub up">47 clients · 14d uptime</div>
+      <div class="stat-val" id="alert-stat-mqtt">Online</div>
+      <div class="stat-sub" id="alert-sub-mqtt">Live connection</div>
     </div>
     <div class="stat-card sc-blue">
       <div class="stat-label">OTA Pending</div>
-      <div class="stat-val">6 <span>devices</span></div>
-      <div class="stat-sub">v2.1.4 available</div>
+      <div class="stat-val" id="alert-stat-ota">0</div>
+      <div class="stat-sub">System up to date</div>
     </div>
   </div>
   <div class="card">
@@ -2008,9 +2008,18 @@ textarea{resize:vertical;min-height:80px}
 
   window.switchSettingsTab = function(tab, el) {
     document.querySelectorAll('.settings-view').forEach(v => v.style.display = 'none');
-    document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('set-' + tab).style.display = 'block';
+    ['general','email','telegram','mqtt','thresholds','styles','roles','plans'].forEach(t => {
+      const panel = document.getElementById('stab-' + t);
+      if(panel) panel.style.display = (t === tab) ? 'block' : 'none';
+    });
+    document.querySelectorAll('#settingsTabs .detail-tab').forEach(t => t.classList.remove('active'));
     if(el) el.classList.add('active');
+    
+    // Refresh lists if needed
+    if(tab==='styles')  { if(typeof renderStylesList==='function') renderStylesList(); if(typeof populateStyleSelects==='function') populateStyleSelects(); }
+    if(tab==='roles')   if(typeof renderRolesList==='function') renderRolesList();
+    if(tab==='plans')   if(typeof renderPlansList==='function') renderPlansList();
+    if(tab==='general') if(typeof renderLocationsList==='function') renderLocationsList();
   };
 
   window.clearAlerts = async function() {
