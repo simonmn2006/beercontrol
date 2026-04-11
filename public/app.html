@@ -479,23 +479,23 @@ textarea{resize:vertical;min-height:80px}
   <div class="g4 mb16">
     <div class="stat-card sc-amber">
       <div class="stat-label" data-i18n="active_restaurants">Active Restaurants</div>
-      <div class="stat-val">12 <span data-i18n="venues">venues</span></div>
-      <div class="stat-sub up">↑ 2 <span data-i18n="this_month">this month</span></div>
+      <div class="stat-val"><span id="dashVenues">...</span> <span data-i18n="venues">venues</span></div>
+      <div class="stat-sub up" id="dashVenuesSub">...</div>
     </div>
     <div class="stat-card sc-green">
       <div class="stat-label" data-i18n="kegs_online">Kegs Online</div>
-      <div class="stat-val">47 <span data-i18n="taps">taps</span></div>
-      <div class="stat-sub">3 <span data-i18n="offline">offline</span></div>
+      <div class="stat-val"><span id="dashTaps">...</span> <span data-i18n="taps">taps</span></div>
+      <div class="stat-sub" id="dashTapsSub">...</div>
     </div>
     <div class="stat-card sc-amber">
       <div class="stat-label" data-i18n="liters_today">Liters Poured Today</div>
-      <div class="stat-val">1,842 <span>L</span></div>
-      <div class="stat-sub up">↑ 12% <span data-i18n="vs_yesterday">vs yesterday</span></div>
+      <div class="stat-val"><span id="dashLiters">...</span> <span>L</span></div>
+      <div class="stat-sub up" id="dashLitersSub">...</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label" data-i18n="low_keg_alerts">Low Keg Alerts</div>
-      <div class="stat-val">3 <span data-i18n="kegs">kegs</span></div>
-      <div class="stat-sub down" data-i18n="needs_attention">Needs attention</div>
+      <div class="stat-val"><span id="dashAlerts">...</span> <span data-i18n="kegs">kegs</span></div>
+      <div class="stat-sub" id="dashAlertsSub">...</div>
     </div>
   </div>
   <div class="g2 mt16">
@@ -875,10 +875,10 @@ textarea{resize:vertical;min-height:80px}
     <div class="card"><div class="card-hdr"><span class="card-title" data-i18n="broker_status">Broker Status</span></div>
       <div class="card-body mono" style="font-size:12px;color:var(--text2);line-height:2.2">
         <div style="color:var(--text3)" id="mqttBrokerSettings">broker.keghero.io:1883</div>
-        <div><span data-i18n="clients">Clients</span>: <strong style="color:var(--text1)">47</strong></div>
-        <div><span data-i18n="messages_sec">Msg/sec</span>: <strong style="color:var(--green)">12.4</strong></div>
-        <div>Subscriptions: <strong style="color:var(--text1)">94</strong></div>
-        <div><span data-i18n="uptime">Uptime</span>: <strong style="color:var(--text1)">14d 6h 22m</strong></div>
+        <div><span data-i18n="clients">Clients</span>: <strong id="mqClients" style="color:var(--text1)">...</strong></div>
+        <div><span data-i18n="messages_sec">Msg/sec</span>: <strong id="mqMsgs" style="color:var(--green)">...</strong></div>
+        <div>Subscriptions: <strong id="mqSubs" style="color:var(--text1)">...</strong></div>
+        <div><span data-i18n="uptime">Uptime</span>: <strong id="mqUptime" style="color:var(--text1)">...</strong></div>
       </div>
     </div>
     <div class="card"><div class="card-hdr"><span class="card-title" data-i18n="active_topics">Active Topics</span></div>
@@ -920,7 +920,7 @@ textarea{resize:vertical;min-height:80px}
               <select><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option></select>
             </div>
           </div>
-          <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save</button></div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="savePlatformSettings()">Save</button></div>
         </div>
       </div>
       <div class="card"><div class="card-hdr"><span class="card-title">System Status</span></div>
@@ -1006,7 +1006,7 @@ textarea{resize:vertical;min-height:80px}
           <div class="form-group"><label class="fl" data-i18n="min_co2">Min CO₂ (bar)</label><input type="number" value="1.5" step="0.1"></div>
           <div class="form-group fg-full"><label class="fl" data-i18n="cleaning_interval">Line Cleaning Interval (days)</label><input type="number" value="14"></div>
         </div>
-        <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')" data-i18n="save">Save</button></div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="saveDefaultThresholds()">Save</button></div>
       </div>
     </div>
   </div>
@@ -1425,7 +1425,7 @@ textarea{resize:vertical;min-height:80px}
         <div style="font-size:12px;color:var(--amber);font-family:var(--fm);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px">Step 1 of 3 — Restaurant Details</div>
         <div class="fg">
           <div class="form-group fg-full"><label class="fl">Restaurant Name</label><input id="nr-name" placeholder="e.g. Bar Name"></div>
-          <div class="form-group"><label class="fl">Phone Number</label><input id="nr-phone" type="tel" placeholder="+00 00 000 00 00"></div>
+          <div class="form-group"><label class="fl">Phone Number</label><input id="nr-phone" type="tel" placeholder="+00 00 000 00 00" oninput="this.value = this.value.replace(/[^0-9+\s]/g, '')"></div>
           <div class="form-group"><label class="fl">City</label><input id="nr-city" placeholder="City"></div>
           <div class="form-group fg-full"><label class="fl">Street Address</label><input id="nr-address" placeholder="Street Address"></div>
           <div class="form-group"><label class="fl">Postal Code</label><input id="nr-postal" placeholder="00000"></div>
@@ -1460,7 +1460,7 @@ textarea{resize:vertical;min-height:80px}
         <div id="newRestTaps" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto"></div>
         <div class="form-actions" style="justify-content:space-between">
           <button class="btn btn-ghost" onclick="restStep(2)">← Back</button>
-          <button class="btn btn-primary" onclick="closeM('mAddRest');toast(t('restaurant_created'),'info')">✓ Create Restaurant</button>
+          <button class="btn btn-primary" onclick="finishAddRestaurant()">✓ Create Restaurant</button>
         </div>
       </div>
     </div>
@@ -1653,7 +1653,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label class="fl" data-i18n="first_name">First Name</label><input id="addUserFirst" placeholder="John"></div>
         <div class="form-group"><label class="fl" data-i18n="last_name">Last Name</label><input id="addUserLast" placeholder="Smith"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="email">Email</label><input id="addUserEmail" type="email" placeholder="john@example.com"></div>
-        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="addUserPhone" type="tel" placeholder="+1 555 000 0000"></div>
+        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="addUserPhone" type="tel" placeholder="+1 555 000 0000" oninput="this.value = this.value.replace(/[^0-9+\s]/g, '')"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="role">Role</label><select id="addUserRole"></select></div>
         <div class="form-group fg-full"><label class="fl">Restaurant</label><select id="addUserRest"><option value="">Select Restaurant...</option></select></div>
       </div>
@@ -1940,14 +1940,15 @@ textarea{resize:vertical;min-height:80px}
         document.getElementById('urole').textContent = u.role === 'admin' ? 'Admin' : window.t('active');
         document.getElementById('urole').className = 'role-badge ' + (u.role === 'admin' ? 'admin' : 'user');
         
+        const hashPage = window.location.hash.replace('#', '');
         if (u.role === 'admin') {
           document.getElementById('navAdmin').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
-          nav('adminDash', document.querySelector('#navAdmin .nav-item'));
+          nav(hashPage || 'adminDash');
         } else {
           document.getElementById('navAdmin').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
-          nav('userDash', document.querySelector('#navUser .nav-item'));
+          nav(hashPage || 'userDash');
         }
         
         if (typeof window.initAppSupport === 'function') window.initAppSupport();
@@ -1967,12 +1968,20 @@ textarea{resize:vertical;min-height:80px}
   }
 
   function nav(pageId, el) {
+    if (!pageId) return;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     const p = document.getElementById('page-' + pageId);
     if (p) p.classList.add('active');
+    
+    // Find nav item by data-page or onclick if el not provided
+    if (!el) {
+      el = document.querySelector(`.nav-item[onclick*="'${pageId}'"]`);
+    }
     if (el) el.classList.add('active');
+    
     window.currentPage = pageId;
+    window.location.hash = pageId; // For persistence on refresh
     
     const titles = {
       adminDash: window.t('nav_dashboard'), adminRestaurants: window.t('nav_restaurants'),
@@ -1990,6 +1999,9 @@ textarea{resize:vertical;min-height:80px}
     if (titleEl) titleEl.textContent = titles[pageId] || pageId;
     
     if (typeof window.onNav === 'function') window.onNav(pageId);
+    // Explicitly call builds if they exist
+    if (pageId === 'adminDash') updateDashStats();
+    if (pageId === 'adminMqtt') buildMqttPage();
   }
 
   window.addEventListener('DOMContentLoaded', checkSession);
@@ -4015,17 +4027,23 @@ function startKioskAutoRefresh(){
 let isDark = true;
 function toggleTheme(){
   isDark = !isDark;
-  document.documentElement.style.setProperty('--bg0', isDark?'#0e0f11':'#f4f3ef');
-  document.documentElement.style.setProperty('--bg1', isDark?'#141518':'#eceae3');
-  document.documentElement.style.setProperty('--bg2', isDark?'#1a1c20':'#e4e2da');
-  document.documentElement.style.setProperty('--bg3', isDark?'#21242a':'#d8d6ce');
-  document.documentElement.style.setProperty('--bg4', isDark?'#2a2e36':'#c8c6be');
-  document.documentElement.style.setProperty('--border', isDark?'#2e3240':'#b8b6ae');
-  document.documentElement.style.setProperty('--border2', isDark?'#3a3f50':'#a8a6a0');
-  document.documentElement.style.setProperty('--text1', isDark?'#eceef2':'#1a1c20');
-  document.documentElement.style.setProperty('--text2', isDark?'#9ba3b8':'#3a3f50');
-  document.documentElement.style.setProperty('--text3', isDark?'#5c6378':'#6c7080');
-  document.getElementById('themeBtn').textContent = isDark ? '☀ Light' : '🌙 Dark';
+  document.documentElement.style.setProperty('--bg0', isDark?'#0e0f11':'#ffffff');
+  document.documentElement.style.setProperty('--bg1', isDark?'#141518':'#f8f9fa');
+  document.documentElement.style.setProperty('--bg2', isDark?'#1a1c20':'#ffffff');
+  document.documentElement.style.setProperty('--bg3', isDark?'#21242a':'#f1f3f5');
+  document.documentElement.style.setProperty('--bg4', isDark?'#2a2e36':'#e9ecef');
+  document.documentElement.style.setProperty('--border', isDark?'#2e3240':'#dee2e6');
+  document.documentElement.style.setProperty('--border2', isDark?'#3a3f50':'#ced4da');
+  document.documentElement.style.setProperty('--text1', isDark?'#eceef2':'#212529');
+  document.documentElement.style.setProperty('--text2', isDark?'#9ba3b8':'#495057');
+  document.documentElement.style.setProperty('--text3', isDark?'#5c6378':'#adb5bd');
+  
+  // Custom button/card background fixes for light mode
+  const cards = document.querySelectorAll('.card, .stat-card, .keg-card, .login-box, .modal');
+  cards.forEach(c => c.style.backgroundColor = isDark ? '' : '#ffffff');
+  
+  const themeBtn = document.getElementById('themeBtn');
+  if(themeBtn) themeBtn.textContent = isDark ? '☀ Light' : '🌙 Dark';
 }
 
 // kick off forecast chart when nav goes there
@@ -4036,16 +4054,52 @@ const _navForecastPatch = nav;
    ORGANIZED ADMIN DATA & LOGIC
 ══════════════════════════════════════════ */
 
-// ── MASTER DATA ──
-const RESTAURANTS_DATA = [];
+// ── MASTER DATA (Moved and unified) ──
+const RESTAURANTS_DATA_DEFAULT = [];
+const RESTAURANTS_DATA = (()=>{ try{ const s=localStorage.getItem('bc_restaurants'); return s?JSON.parse(s):RESTAURANTS_DATA_DEFAULT; }catch(e){ return RESTAURANTS_DATA_DEFAULT; } })();
+function saveRestaurants(){ try{ localStorage.setItem('bc_restaurants', JSON.stringify(RESTAURANTS_DATA)); }catch(e){} }
 
-const USERS_DATA = [];
+const USERS_DATA_DEFAULT = [
+  {name:'Simon', email:'simon', phone:'', role:'Owner', active:true, lastLogin:'Today', rest:'System'}
+];
+const USERS_DATA = (()=>{ try{ const s=localStorage.getItem('bc_users'); return s?JSON.parse(s):USERS_DATA_DEFAULT; }catch(e){ return USERS_DATA_DEFAULT; } })();
+function saveUsers(){ try{ localStorage.setItem('bc_users', JSON.stringify(USERS_DATA)); }catch(e){} }
 
 const BEER_LIBRARY_DEFAULT = [];
 const BEER_LIBRARY = (()=>{
   try { const s = localStorage.getItem('bc_beer_library'); return s ? JSON.parse(s) : BEER_LIBRARY_DEFAULT; } catch(e){ return BEER_LIBRARY_DEFAULT; }
 })();
 function saveBeerLibrary(){ try{ localStorage.setItem('bc_beer_library', JSON.stringify(BEER_LIBRARY)); }catch(e){} }
+
+const DEVICES_DATA = [];
+const ALERTS_DATA = [];
+const AUDIT_LOG_DATA = [];
+const SCHED = [];
+
+function updateDashStats() {
+  const venuesCount = RESTAURANTS_DATA.length;
+  const tapsCount = RESTAURANTS_DATA.reduce((acc, r) => acc + (parseInt(r.taps)||0), 0);
+  
+  if (document.getElementById('dashVenues')) document.getElementById('dashVenues').textContent = venuesCount;
+  if (document.getElementById('dashVenuesSub')) document.getElementById('dashVenuesSub').textContent = venuesCount > 0 ? `Total managed` : 'No venues yet';
+  
+  if (document.getElementById('dashTaps')) document.getElementById('dashTaps').textContent = tapsCount;
+  if (document.getElementById('dashTapsSub')) document.getElementById('dashTapsSub').textContent = 'Live tracking';
+  
+  if (document.getElementById('dashLiters')) document.getElementById('dashLiters').textContent = '0.0';
+  if (document.getElementById('dashLitersSub')) document.getElementById('dashLitersSub').textContent = 'Today';
+  
+  if (document.getElementById('dashAlerts')) document.getElementById('dashAlerts').textContent = '0';
+  if (document.getElementById('dashAlertsSub')) document.getElementById('dashAlertsSub').textContent = 'System healthy';
+}
+
+function buildMqttPage() {
+  if (document.getElementById('mqClients')) document.getElementById('mqClients').textContent = '0';
+  if (document.getElementById('mqMsgs')) document.getElementById('mqMsgs').textContent = '0.0';
+  if (document.getElementById('mqSubs')) document.getElementById('mqSubs').textContent = '0';
+  if (document.getElementById('mqUptime')) document.getElementById('mqUptime').textContent = 'N/A';
+  if (document.getElementById('mqttLog')) document.getElementById('mqttLog').innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">No active data stream</div>';
+}
 
 let restFilter = 'all';
 let userStatusFilter = 'all';
@@ -4299,12 +4353,57 @@ function buildAssignPanel(){
     </div>`).join('');
 }
 
+function finishAddRestaurant(){
+  const name = document.getElementById('nr-name')?.value.trim();
+  const city = document.getElementById('nr-city')?.value.trim();
+  const taps = parseInt(document.getElementById('nr-taps')?.value || 0);
+  const plan = document.getElementById('nr-plan')?.value || 'starter';
+  const country = document.getElementById('nr-country')?.value.trim();
+  
+  if(!name) { toast('Restaurant name is required','error'); restStep(1); return; }
+  
+  const newId = Math.max(0, ...RESTAURANTS_DATA.map(r=>r.id)) + 1;
+  const newRest = {
+    id: newId,
+    name,
+    city: city || 'Unknown',
+    country: country || 'Unknown',
+    plan,
+    taps,
+    active: true,
+    emoji: '🏠',
+    renewal: 'Active',
+    kegs: []
+  };
+  
+  RESTAURANTS_DATA.push(newRest);
+  saveRestaurants();
+  
+  // Also create the first users from step 2
+  const userRows = document.getElementById('newRestUsers').querySelectorAll('.add-user-row');
+  userRows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const uName = (inputs[0]?.value||'').trim();
+    const uEmail = (inputs[1]?.value||'').trim();
+    const uRole = row.querySelector('select')?.value || 'Staff';
+    if(uName && uEmail) {
+      USERS_DATA.push({ name: uName, email: uEmail, role: uRole, rest: name, active: true, lastLogin: 'Never' });
+    }
+  });
+  saveUsers();
+  
+  closeM('mAddRest');
+  if(typeof renderRestaurantsList === 'function') renderRestaurantsList();
+  if(typeof updateDashStats === 'function') updateDashStats();
+  toast(name + ' created successfully ✓', 'success');
+}
+
 function switchKegTab(tab){
   document.getElementById('tab-library').classList.toggle('active', tab==='library');
   document.getElementById('tab-assign').classList.toggle('active',   tab==='assign');
   document.getElementById('panel-library').style.display = tab==='library'?'block':'none';
   document.getElementById('panel-assign').style.display  = tab==='assign' ?'block':'none';
-  if(tab==='assign') buildAssignPanel();
+  if(tab==='assign' && typeof buildAssignPanel === 'function') buildAssignPanel();
 }
 
 // ── ADD RESTAURANT MULTI-STEP ──
@@ -4381,14 +4480,7 @@ nav = function(pageId, el){
    DEVICE MANAGEMENT
 ══════════════════════════════════════════ */
 
-// ── DEVICE DATA ──
-const DEVICES_DATA = [];
-const RESTAURANTS_DATA = [];
-const USERS_DATA = [];
-const BEER_LIBRARY = [];
-const ALERTS_DATA = [];
-const AUDIT_LOG_DATA = [];
-const SCHED = [];
+// ── SECTION REMOVED (Moved to master data block) ──
 
 function buildDevicesPage(){
   const container = document.getElementById('devicesContainer');
@@ -5713,7 +5805,7 @@ setTimeout(()=>{
 ══════════════════════════════════════════ */
 
 // Master list of beer styles — used in Beer Library modal selects and filter
-let BEER_STYLES = [
+const BEER_STYLES_DEFAULT = [
   {id:1, name:'Lager',      desc:'Clean, crisp, bottom-fermented',          abv_min:4.0, abv_max:5.5},
   {id:2, name:'Pilsner',    desc:'Light, hoppy Lager variant',               abv_min:4.0, abv_max:5.5},
   {id:3, name:'Ale',        desc:'Top-fermented, broad category',            abv_min:4.5, abv_max:7.0},
@@ -5727,6 +5819,8 @@ let BEER_STYLES = [
   {id:11,name:'Red Ale',    desc:'Caramel malt with light hop bitterness',   abv_min:4.0, abv_max:6.0},
   {id:12,name:'Blonde Ale', desc:'Light, accessible, easy-drinking',         abv_min:4.0, abv_max:5.5},
 ];
+let BEER_STYLES = (()=>{ try{ const s=localStorage.getItem('bc_beer_styles'); return s?JSON.parse(s):BEER_STYLES_DEFAULT; }catch(e){ return BEER_STYLES_DEFAULT; } })();
+function saveBeerStyles(){ try{ localStorage.setItem('bc_beer_styles', JSON.stringify(BEER_STYLES)); }catch(e){} }
 
 // Populate all style selects in the DOM
 function populateStyleSelects(){
@@ -5777,6 +5871,7 @@ function saveNewStyle(){
   if(!name){ toast('Style name required','error'); return; }
   const newId = Math.max(...BEER_STYLES.map(s=>s.id)) + 1;
   BEER_STYLES.push({id:newId, name, desc:desc||'', abv_min:minA||0, abv_max:maxA||0});
+  saveBeerStyles();
   renderStylesList();
   populateStyleSelects();
   // clear form
@@ -5951,6 +6046,33 @@ function editPlan(id){
   p.name=name.trim(); p.price=parseInt(price)||0; p.maxTaps=parseInt(taps)||0; p.desc=desc||'';
   savePlans(); renderPlansList(); populatePlanSelects();
   toast('Plan updated','info');
+}
+
+function saveDefaultThresholds() {
+  const vals = {
+    low: document.querySelector('#stab-thresholds input[value="20"]')?.value,
+    crit: document.querySelector('#stab-thresholds input[value="10"]')?.value,
+    temp: document.querySelector('#stab-thresholds input[value="6"]')?.value,
+    co2: document.querySelector('#stab-thresholds input[value="1.5"]')?.value,
+    cleaning: document.querySelector('#stab-thresholds input[value="14"]')?.value
+  };
+  localStorage.setItem('bc_default_thresholds', JSON.stringify(vals));
+  toast('Default thresholds saved ✓', 'success');
+}
+
+function saveLocations(){
+  try {
+    localStorage.setItem('bc_locations', JSON.stringify(LOCATIONS));
+    toast('Display locations saved ✓', 'info');
+  } catch(e){}
+}
+
+function savePlatformSettings() {
+  const name = document.querySelector('#stab-general input[value="KegHero"]')?.value;
+  const email = document.querySelector('#stab-general input[value="support@beercontrol.io"]')?.value;
+  const lang = document.querySelector('#stab-general select')?.value;
+  localStorage.setItem('bc_platform_settings', JSON.stringify({ name, email, lang }));
+  toast('Platform settings saved ✓', 'success');
 }
 
 function deletePlan(id){
