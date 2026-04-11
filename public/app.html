@@ -1880,7 +1880,15 @@ textarea{resize:vertical;min-height:80px}
   }
 
   // UI Helpers
-  window.openM = function(id){document.getElementById(id)?.classList.add('open')};
+  window.openM = function(id){
+    document.getElementById(id)?.classList.add('open');
+    // Consolidated modal hooks
+    if(id==='mAddBeer'||id==='mEditBeer') setTimeout(() => { if(typeof populateStyleSelects==='function') populateStyleSelects(); }, 50);
+    if(id==='mAddRest') setTimeout(() => { if(typeof populatePlanSelects==='function') populatePlanSelects(); }, 50);
+    if(id==='mAddUser') setTimeout(() => { const s=document.getElementById('addUserRole'); if(s) s.innerHTML=getRoleOptions(); }, 50);
+    if(id==='mEditUser') setTimeout(() => { const s=document.getElementById('eu-role'); if(s&&!s.options.length) s.innerHTML=getRoleOptions(); }, 50);
+    if(id==='mEditDevice') setTimeout(() => { if(typeof populateLocationDropdown==='function') populateLocationDropdown('ed-loc'); }, 50);
+  };
   window.closeM = function(id){document.getElementById(id)?.classList.remove('open')};
   window.toast = function(msg,type='info'){
     const icons={info:'🍺',success:'✔',error:'⚠'};
@@ -1899,6 +1907,7 @@ textarea{resize:vertical;min-height:80px}
   };
 
   async function doLogin() {
+    console.log("Attempting login...");
     const email = document.getElementById('lg-email').value.trim().toLowerCase();
     const pass = document.getElementById('lg-pass').value;
     const errEl = document.getElementById('lg-err');
@@ -1921,7 +1930,9 @@ textarea{resize:vertical;min-height:80px}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass })
       });
+      console.log("Login response status:", res.status);
       const d = await res.json();
+      console.log("Login response body:", d);
       if (!d.success) {
         btn.disabled = false;
         btn.textContent = oldText;
@@ -1931,6 +1942,7 @@ textarea{resize:vertical;min-height:80px}
       }
       window.location.href = '/app';
     } catch (e) {
+      console.error("Login catch error:", e);
       btn.disabled = false;
       btn.textContent = oldText;
       errEl.textContent = 'Network error — Is the server running?';
@@ -1953,6 +1965,9 @@ textarea{resize:vertical;min-height:80px}
         document.getElementById('urole').textContent = u.role === 'admin' ? 'Admin' : window.t('active');
         document.getElementById('urole').className = 'role-badge ' + (u.role === 'admin' ? 'admin' : 'user');
         
+        // Initialize Data after successful login
+        if (typeof initData === 'function') await initData();
+
         const hashPage = window.location.hash.replace('#', '');
         if (u.role === 'admin') {
           document.getElementById('navAdmin').style.display = 'flex';
@@ -4095,27 +4110,27 @@ async function initData() {
     BEER_STYLES = styles || [];
     PLANS = plans || [];
     ROLES = roles || [];
-    BEER_LIBRARY = (beers || []).map(b => ({ ...b, assignedTo: [] })); // assignedTo calculated on frontend usually
-    LOCATIONS = locs.map(l => l.name) || [];
+    BEER_LIBRARY = (beers || []).map(b => ({ ...b, assignedTo: [] }));
+    LOCATIONS = (locs || []).map(l => l.name) || [];
     
     // Sync UI
     updateDashStats();
-    populatePlanSelects();
-    populateStyleSelects();
-    renderRestaurantsList();
-    renderUsersTable();
-    renderBeerLibraryGrid();
-    renderPlansList();
-    renderRolesList();
-    renderLocationsList();
+    if (typeof populatePlanSelects === 'function') populatePlanSelects();
+    if (typeof populateStyleSelects === 'function') populateStyleSelects();
+    if (typeof renderRestList === 'function') renderRestList();
+    if (typeof renderUsersTable === 'function') renderUsersTable();
+    if (typeof renderBeerLibraryGrid === 'function') renderBeerLibraryGrid();
+    if (typeof renderPlansList === 'function') renderPlansList();
+    if (typeof renderRolesList === 'function') renderRolesList();
+    if (typeof renderLocationsList === 'function') renderLocationsList();
   } catch (e) {
     console.error('Data init failed:', e);
-    toast('Error connecting to server','error');
   }
 }
 
 // Call init on load
-window.addEventListener('DOMContentLoaded', initData);
+// initData called inside checkSession after login
+
 
 // Compatibility stubs (mostly unused now)
 function saveRestaurants(){}
@@ -5099,17 +5114,8 @@ function deleteRestaurant(){
   });
 }
 
-// ── HOOK nav for devices ──
-const _prevNav3 = nav;
-nav = function(pageId, el){
-  _prevNav3(pageId, el);
-  if(pageId==='adminDevices') setTimeout(buildDevicesPage, 50);
-};
+// RESTAURANT MANAGEMENT — UNIFIED (nav hooks consolidated above)
 
-
-/* ══════════════════════════════════════════
-   RESTAURANT MANAGEMENT — UNIFIED
-══════════════════════════════════════════ */
 
 // RESTAURANTS_DATA removed in favor of RESTAURANTS_DATA from backend
 
@@ -5749,20 +5755,8 @@ function buildBeerLibraryPage(){
   renderBeerLibraryGrid();
 }
 
-// ── UPDATE nav() for new pages ──
-const _prevNav4 = nav;
-nav = function(pageId, el){
-  _prevNav4(pageId, el);
-  if(pageId==='adminRestaurants')       setTimeout(renderRestList, 50);
-  if(pageId==='adminBeerLibrary')       setTimeout(buildBeerLibraryPage, 50);
-  if(pageId==='adminRestaurantDetail')  { /* tabs handle rendering */ }
-};
+// BEER LIBRARY PAGE (nav hooks consolidated above)
 
-// Add to titles map dynamically
-const _dt = nav;
-setTimeout(()=>{
-  // patch titles for new pages
-}, 0);
 
 
 /* ══════════════════════════════════════════
@@ -6279,36 +6273,8 @@ async function addBeerToLibrary(){
   } catch(e){ toast('Error adding beer','error'); }
 }
 
-// ══════════════════════════════════════════
-// HOOK: populate styles when Beer modal opens
-// ══════════════════════════════════════════
-const _origOpenM = openM;
-openM = function(id){
-  _origOpenM(id);
-  if(id==='mAddBeer'||id==='mEditBeer') setTimeout(populateStyleSelects, 50);
-  if(id==='mAddRest') setTimeout(populatePlanSelects, 50);
-  if(id==='mAddUser')    setTimeout(()=>{ const s=document.getElementById('addUserRole'); if(s) s.innerHTML=getRoleOptions(); }, 50);
-  if(id==='mEditUser')   setTimeout(()=>{ const s=document.getElementById('eu-role'); if(s&&!s.options.length) s.innerHTML=getRoleOptions(); }, 50);
-  if(id==='mEditDevice') setTimeout(()=>{ populateLocationDropdown('ed-loc'); }, 50);
-};
+// System stats hooks consolidated above
 
-// ══════════════════════════════════════════
-// HOOK nav for settings
-// ══════════════════════════════════════════
-const _prevNav5 = nav;
-nav = function(pageId, el){
-  _prevNav5(pageId, el);
-  if(pageId==='adminSettings'){
-    // activate first tab
-    setTimeout(()=>{
-      switchSettingsTab('general', document.querySelector('#settingsTabs .detail-tab'));
-      loadAdminSettings();
-    }, 50);
-  }
-  if(pageId==='adminDash') {
-    updateSystemStats();
-  }
-};
 
 async function loadAdminSettings() {
   try {

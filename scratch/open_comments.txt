@@ -1,0 +1,66 @@
+11:/* ── RESET & VARS ── */
+30:/* ── LOGIN ── */
+35:/* .login-logo, .login-title, .login-sub removed per branding update */
+52:/* ── APP SHELL ── */
+56:/* ── SIDEBAR ── */
+59:/* .sb-icon, .sb-name, .sb-sub removed per branding update */
+77:/* ── MAIN ── */
+85:/* ── RESPONSIVE ── */
+98:/* ── BUTTONS ── */
+106:/* Validation Pulse */
+110:/* ── PAGES ── */
+114:/* ── GRIDS ── */
+119:/* ── STAT CARD ── */
+129:/* ── CARD ── */
+135:/* ── KEG CARD ── */
+161:/* ── TABLE ── */
+175:/* ── ALERTS ── */
+185:/* ── FORM ── */
+196:/* ── TAGS ── */
+204:/* ── MODAL ── */
+215:/* ── TOAST ── */
+221:/* ── LIVE DOT ── */
+225:/* ── TOGGLE ── */
+235:/* ── RECIPIENT PILLS ── */
+242:/* ── SECTION ── */
+247:/* ── SCHEDULE ── */
+252:/* ── FEED ── */
+260:/* ── REPORT STAT ── */
+265:/* ── UTILS ── */
+271:/* ── DATEPICKER ── */
+305:/* ── KEG PAGE TABS ── */
+310:/* ── MODAL STEPS ── */
+315:/* ── RESTAURANT EXPAND CARD ── */
+325:/* ── USER ROW IN RESTAURANT ── */
+330:/* ── BEER LIBRARY CARD ── */
+338:/* ── ADD USER ROW (in modal) ── */
+343:/* ── TAP ASSIGN ROW ── */
+347:/* ── FILTER BUTTON ACTIVE ── */
+350:/* ── RESTAURANT LIST CARD ── */
+358:/* ── DETAIL TAB ── */
+363:/* ── KEG ROW IN DETAIL ── */
+367:/* ── DEVICE ROW IN DETAIL ── */
+1490:              <input type="file" id="nb-logo-file" accept="image/*" style="display:none" onchange="previewLogo(this,'nb-logo-preview','nb-logo-data')">
+1551:              <input type="file" id="eb-logo-file" accept="image/*" style="display:none" onchange="previewLogo(this,'eb-logo-preview','eb-logo-data')">
+1849:  /* ══════════════════════════════════════════
+2086:  /* ══════════════════════════════════════════
+3263:/* ══════════════════════════════════════════
+3266:/* ══════════════════════════════════════════
+3342:/* ══════════════════════════════════════════
+3391:/* ══════════════════════════════════════════
+3408:/* ══════════════════════════════════════════
+3411:/* MODALS handled by Core Logic */
+3422:/* ══════════════════════════════════════════
+3439:/* ══════════════════════════════════════════
+3442:/* TOAST handled by Core Logic */
+3444:/* ══════════════════════════════════════════
+3467:/* ══════════════════════════════════════════
+3505:/* ══════════════════════════════════════════
+3514:/* ══════════════════════════════════════════
+3786:/* ══════════════════════════════════════════
+4077:/* ══════════════════════════════════════════
+4538:/* ══════════════════════════════════════════
+5110:/* ══════════════════════════════════════════
+5758:  if(pageId==='adminRestaurantDetail')  { /* tabs handle rendering */ }
+5768:/* ══════════════════════════════════════════
+5862:/* Settings navigation handled by Core Logic */
