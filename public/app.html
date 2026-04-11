@@ -1865,6 +1865,11 @@ textarea{resize:vertical;min-height:80px}
   let BEER_STYLES = [];
   let ROLES = [];
   let PLANS = [];
+  // Moved from later sections to avoid syntax errors
+  window.USERS = {};
+  window.KEGS = [];
+  window.USER_KEGS = [];
+  window.SCHED = [];
 
   function updateDashStats() {
     const venuesCount = RESTAURANTS_DATA.length;
@@ -1906,7 +1911,7 @@ textarea{resize:vertical;min-height:80px}
     return TR[window.lang][k] || TR.en[k] || k;
   };
 
-  async function doLogin() {
+  window.doLogin = async function() {
     console.log("Attempting login...");
     const email = document.getElementById('lg-email').value.trim().toLowerCase();
     const pass = document.getElementById('lg-pass').value;
@@ -1950,7 +1955,7 @@ textarea{resize:vertical;min-height:80px}
     }
   }
 
-  async function checkSession() {
+  window.checkSession = async function() {
     try {
       const res = await fetch('/api/me');
       const d = await res.json();
@@ -1989,13 +1994,13 @@ textarea{resize:vertical;min-height:80px}
     }
   }
 
-  function doLogout() {
+  window.doLogout = function() {
     fetch('/api/logout', { method: 'POST' }).finally(() => {
       window.location.href = '/login';
     });
   }
 
-  function nav(pageId, el) {
+  window.nav = function(pageId, el) {
     if (!pageId) return;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -3283,11 +3288,7 @@ console.log("🚀 KegHero Runtime Initialized");
 ══════════════════════════════════════════ */
 console.log("🛠️ KegHero Extended Logic Loading...");
 
-// Data stores
-const USERS={};
-const KEGS=[];
-const USER_KEGS=[];
-const SCHED = [];
+// Data stores (already initialized at the top)
 
 // Local aliases for core globals
 const t = window.t;
@@ -4145,7 +4146,7 @@ function saveBeerStyles(){}
 const DEVICES_DATA = [];
 const ALERTS_DATA = [];
 const AUDIT_LOG_DATA = [];
-const SCHED = [];
+
 
 
 function buildMqttPage() {

@@ -3,8 +3,8 @@ const { db } = require('./server/db');
 const bcrypt = require('bcryptjs');
 
 const users = [
-  // { name: 'Owner User', email: 'owner@cerveceria.es', pass: 'owner123', role: 'user', rest_id: 1 },
-  // { name: 'Manager User', email: 'manager@cerveceria.es', pass: 'manager123', role: 'user', rest_id: 1 }
+  { name: 'Owner User', email: 'owner@cerveceria.es', pass: 'owner123', role: 'user', rest_id: 1 },
+  { name: 'Manager User', email: 'manager@cerveceria.es', pass: 'manager123', role: 'user', rest_id: 1 }
 ];
 
 async function createUsers() {
