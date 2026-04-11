@@ -168,6 +168,14 @@ router.get('/alerts', async (req, res) => {
   }
 });
 
+router.post('/alerts/:id/resolve', async (req, res) => {
+  try {
+    await db.run("UPDATE alerts SET resolved=1 WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Resolve alert error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
 });
  
 router.post('/alerts/clear', async (req, res) => {
