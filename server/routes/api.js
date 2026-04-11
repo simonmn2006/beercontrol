@@ -168,12 +168,19 @@ router.get('/alerts', async (req, res) => {
   }
 });
 
-router.post('/alerts/:id/resolve', async (req, res) => {
+});
+ 
+router.post('/alerts/clear', async (req, res) => {
   try {
-    await db.run("UPDATE alerts SET resolved=1 WHERE id=?", [req.params.id]);
+    const user = req.session.user;
+    if (user.role === 'admin') {
+      await db.run("UPDATE alerts SET resolved=1 WHERE resolved=0");
+    } else {
+      await db.run("UPDATE alerts SET resolved=1 WHERE resolved=0 AND restaurant_id=?", [user.restaurant_id]);
+    }
     res.json({ success: true });
   } catch (err) {
-    console.error('Resolve alert error:', err);
+    console.error('Clear alerts error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });

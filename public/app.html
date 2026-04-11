@@ -377,7 +377,7 @@ textarea{resize:vertical;min-height:80px}
 <div id="loginPage">
 <div class="login-box">
   <div class="login-top">
-    <div class="login-logo">🍺</div>
+    <div class="login-logo"></div>
     <img src="/public/img/logo.png" alt="KegHero" style="max-height:80px;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto">
     <div class="login-title">KegHero</div>
     <div class="login-sub" id="lg-tagline">Draft Beer Management Platform</div>
@@ -416,7 +416,7 @@ textarea{resize:vertical;min-height:80px}
 <!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sb-logo">
-    <div class="sb-icon">🍺</div>
+    <div class="sb-icon"></div>
     <img src="/public/img/logo.png" alt="KegHero" style="height:32px;width:32px;border-radius:6px;object-fit:cover;margin-right:10px">
     <div><div class="sb-name">KegHero</div><div class="sb-sub">Draft Mgmt</div></div>
   </div>
@@ -426,7 +426,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="nav-item active" onclick="nav('adminDash',this)"><span class="nav-icon">◈</span><span data-i18n="nav_dashboard">Dashboard</span></div>
     <div class="nav-item" onclick="nav('adminRestaurants',this)"><span class="nav-icon">🏠</span><span data-i18n="nav_restaurants">Restaurants</span></div>
     <div class="sb-sect" data-i18n="nav_management">Management</div>
-    <div class="nav-item" onclick="nav('adminBeerLibrary',this)"><span class="nav-icon">🍺</span><span data-i18n="nav_beer_library">Beer Library</span></div>
+    <div class="nav-item" onclick="nav('adminBeerLibrary',this)"><span class="nav-icon">📦</span><span data-i18n="nav_beer_library">Beer Library</span></div>
     <div class="nav-item" onclick="nav('adminAlerts',this)"><span class="nav-icon">🔔</span><span data-i18n="nav_alerts">Alerts</span><span class="nav-badge">3</span></div>
     <div class="sb-sect" data-i18n="nav_system">System</div>
     <div class="nav-item" onclick="nav('adminMqtt',this)"><span class="nav-icon">⚡</span><span data-i18n="nav_mqtt">MQTT Monitor</span></div>
@@ -466,7 +466,7 @@ textarea{resize:vertical;min-height:80px}
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="topTitle">Dashboard</div>
-    <div class="mqtt-status"><div class="live-dot"></div><span class="mqtt-label">MQTT</span><span>broker.beercontrol.io:1883</span></div>
+    <div class="mqtt-status"><div class="live-dot" id="mqttDot"></div><span class="mqtt-label">MQTT</span><span id="mqttBroker">Connecting...</span></div>
     <div class="topbar-spacer"></div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="toast(t('refreshing'),'info')">↻ <span data-i18n="refresh">Refresh</span></button>
@@ -764,7 +764,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="sect-sub" data-i18n="admin_alerts_sub">Infrastructure &amp; connectivity issues only — keg/beer alerts go to restaurant users</div>
     </div>
     <div class="flex g8">
-      <button class="btn btn-ghost btn-sm" onclick="toast(t('alerts_cleared'),'info')" data-i18n="clear_all">Clear all</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearAlerts()" data-i18n="clear_all">Clear all</button>
     </div>
   </div>
   <!-- Alert type legend -->
@@ -815,13 +815,7 @@ textarea{resize:vertical;min-height:80px}
         <button class="btn btn-ghost btn-sm admin-al-btn" onclick="filterAdminAlerts('security',this)">Security</button>
       </div>
     </div>
-    <div id="adminAlertsContainer">
-      <div class="alert-row"><div class="al-icon al-red">⚡</div><div><div class="al-title">ESP32 sensor offline — Biergarten Munich · Tap #5</div><div class="al-sub" style="font-family:var(--fm);font-size:11px">Device: esp_bierg_tap5_s · No heartbeat for 8 min · Last seen: 15/03 10:34 · <span style="color:var(--blue);cursor:pointer" onclick="toast('Ping sent to device','info')">Ping device</span></div></div><div class="al-time">8m</div></div>
-      <div class="alert-row"><div class="al-icon al-red">⚡</div><div><div class="al-title">ESP32 display offline — La Cervecería · Tap #3</div><div class="al-sub" style="font-family:var(--fm);font-size:11px">Device: esp_cerv_tap3_d · No heartbeat for 22 min · <span style="color:var(--blue);cursor:pointer" onclick="toast('Ping sent','info')">Ping device</span> · <span style="color:var(--amber);cursor:pointer" onclick="toast('OTA forced','info')">Force OTA</span></div></div><div class="al-time">22m</div></div>
-      <div class="alert-row"><div class="al-icon al-amber">💳</div><div><div class="al-title">Payment failed — The Red Lion · Starter plan · €89/mo</div><div class="al-sub">Card ending 4892 declined · Retry scheduled in 3 days · Auto-suspend in 7 days · <span style="color:var(--blue);cursor:pointer" onclick="toast('Reminder sent','info')">Send reminder</span></div></div><div class="al-time">2h</div></div>
       <div id="sys-ota-alerts"></div>
-      <div class="alert-row"><div class="al-icon al-amber">🔒</div><div><div class="al-title">Account suspended — The Red Lion · Payment overdue 4 days</div><div class="al-sub">Auto-suspended by billing system · Reactivate after payment confirmed</div></div><div class="al-time">2d</div></div>
-      <div class="alert-row"><div class="al-icon al-blue">🔐</div><div><div class="al-title">Multiple failed logins — james@redlion.co.uk · 5 attempts</div><div class="al-sub">IP: 185.220.101.42 · Account temporarily locked for 30 min</div></div><div class="al-time">3h</div></div>
     </div>
   </div>
 </div>
@@ -881,7 +875,7 @@ textarea{resize:vertical;min-height:80px}
   <div class="g2">
     <div class="card"><div class="card-hdr"><span class="card-title" data-i18n="broker_status">Broker Status</span></div>
       <div class="card-body mono" style="font-size:12px;color:var(--text2);line-height:2.2">
-        <div style="color:var(--text3)">broker.beercontrol.io:1883</div>
+        <div style="color:var(--text3)" id="mqttBrokerSettings">broker.keghero.io:1883</div>
         <div><span data-i18n="clients">Clients</span>: <strong style="color:var(--text1)">47</strong></div>
         <div><span data-i18n="messages_sec">Msg/sec</span>: <strong style="color:var(--green)">12.4</strong></div>
         <div>Subscriptions: <strong style="color:var(--text1)">94</strong></div>
@@ -910,7 +904,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="detail-tab" onclick="switchSettingsTab('telegram',this)">✈ Telegram</div>
     <div class="detail-tab" onclick="switchSettingsTab('mqtt',this)">⚡ MQTT</div>
     <div class="detail-tab" onclick="switchSettingsTab('thresholds',this)">🔔 Thresholds</div>
-    <div class="detail-tab" onclick="switchSettingsTab('styles',this)">🍺 Beer Styles</div>
+    <div class="detail-tab" onclick="switchSettingsTab('styles',this)">📋 Beer Styles</div>
     <div class="detail-tab" onclick="switchSettingsTab('roles',this)">👤 Roles</div>
     <div class="detail-tab" onclick="switchSettingsTab('plans',this)">💳 Plans</div>
   </div>
@@ -2011,6 +2005,26 @@ textarea{resize:vertical;min-height:80px}
   window.openAddKegWizard = function(){ openM('mAddKeg'); };
   window.openAddUserWizard = function(){ openM('mAddUser'); };
   window.openAddDeviceWizard = function(){ openM('mAddDevice'); };
+
+  window.switchSettingsTab = function(tab, el) {
+    document.querySelectorAll('.settings-view').forEach(v => v.style.display = 'none');
+    document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('set-' + tab).style.display = 'block';
+    if(el) el.classList.add('active');
+  };
+
+  window.clearAlerts = async function() {
+    if(!confirm('Clear all active alerts?')) return;
+    try {
+      const res = await fetch('/api/alerts/clear', { method: 'POST' });
+      const d = await res.json();
+      if(d.success) {
+        toast(t('alerts_cleared'), 'success');
+        if (typeof window.buildAlertsPage === 'function') window.buildAlertsPage();
+        else if (typeof window.checkSession === 'function') window.checkSession();
+      }
+    } catch(e) { console.error('Clear alerts failed', e); }
+  };
 </script>
 
 <script id="translations">
@@ -3419,9 +3433,11 @@ function startMqttFeed(){
       el.prepend(line);
       if(el.children.length > 100) el.lastChild.remove();
     } else if (msg.type === 'status') {
-      const statusEl = document.querySelector('.mqtt-status span:last-child');
+      const statusEl = document.getElementById('mqttBroker');
+      const statusElSet = document.getElementById('mqttBrokerSettings');
       if (statusEl) statusEl.textContent = msg.data.broker;
-      const dot = document.querySelector('.live-dot');
+      if (statusElSet) statusElSet.textContent = msg.data.broker;
+      const dot = document.getElementById('mqttDot');
       if (dot) dot.style.background = msg.data.connected ? 'var(--green)' : 'var(--red)';
     }
   };
@@ -5789,18 +5805,7 @@ function deleteStyle(id){
 // ══════════════════════════════════════════
 // SETTINGS TABS
 // ══════════════════════════════════════════
-function switchSettingsTab(tab, el){
-  ['general','email','telegram','mqtt','thresholds','styles','roles','plans'].forEach(t=>{
-    const panel = document.getElementById('stab-'+t);
-    if(panel) panel.style.display = t===tab ? 'block' : 'none';
-  });
-  document.querySelectorAll('#settingsTabs .detail-tab').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  if(tab==='styles')  { renderStylesList(); populateStyleSelects(); }
-  if(tab==='roles')   renderRolesList();
-  if(tab==='plans')   renderPlansList();
-  if(tab==='general') renderLocationsList();
-}
+/* Settings navigation handled by Core Logic */
 
 function switchUserSettingsTab(tab, el){
   document.querySelectorAll('#userSettingsTabs .detail-tab').forEach(t=>t.classList.remove('active'));
