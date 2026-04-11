@@ -332,7 +332,7 @@ router.post('/payments/:id/send-email', async (req, res) => {
       to: payment.owner_email,
       subject: `Receipt for ${payment.restaurant_name} - ${payment.amount} ${payment.currency}`,
       html: `<h3>Hello ${payment.owner_name},</h3>
-             <p>This is a payment receipt for your subscription at <b>BeerControl</b>.</p>
+             <p>This is a payment receipt for your subscription at <b>KegHero</b>.</p>
              <p><b>Amount:</b> ${payment.amount} ${payment.currency}<br>
                 <b>Date:</b> ${payment.created_at}<br>
                 <b>Status:</b> ${payment.status.toUpperCase()}</p>

@@ -1,4 +1,4 @@
-# 🍺 BeerControl
+# 🍺 KegHero
 
 **Draft Beer Management Platform** — Real-time monitoring for restaurant keg systems via ESP32 + MQTT.
 

@@ -1,7 +1,8 @@
--- MariaDB / MySQL Schema for BeerControl
+-- MariaDB / MySQL Schema for KegHero
+-- Previous: BeerControl
 
-CREATE DATABASE IF NOT EXISTS beercontrol CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE beercontrol;
+CREATE DATABASE IF NOT EXISTS keghero CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE keghero;
 
 -- ──────────────────────────────────────────
 --  TABLES

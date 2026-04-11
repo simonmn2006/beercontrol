@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BeerControl — Live Preview</title>
+<title>KegHero — Live Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -378,7 +378,8 @@ textarea{resize:vertical;min-height:80px}
 <div class="login-box">
   <div class="login-top">
     <div class="login-logo">🍺</div>
-    <div class="login-title">BeerControl</div>
+    <img src="/public/img/logo.png" alt="KegHero" style="max-height:80px;margin-bottom:20px;display:block;margin-left:auto;margin-right:auto">
+    <div class="login-title">KegHero</div>
     <div class="login-sub" id="lg-tagline">Draft Beer Management Platform</div>
   </div>
   <div class="login-body">
@@ -416,7 +417,8 @@ textarea{resize:vertical;min-height:80px}
 <nav class="sidebar">
   <div class="sb-logo">
     <div class="sb-icon">🍺</div>
-    <div><div class="sb-name">BeerControl</div><div class="sb-sub">Draft Mgmt</div></div>
+    <img src="/public/img/logo.png" alt="KegHero" style="height:32px;width:32px;border-radius:6px;object-fit:cover;margin-right:10px">
+    <div><div class="sb-name">KegHero</div><div class="sb-sub">Draft Mgmt</div></div>
   </div>
 
   <div id="navAdmin">
@@ -919,7 +921,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="card"><div class="card-hdr"><span class="card-title">Platform</span></div>
         <div class="card-body">
           <div class="fg">
-            <div class="form-group fg-full"><label class="fl">Platform Name</label><input value="BeerControl"></div>
+            <div class="form-group fg-full"><label class="fl">Platform Name</label><input value="KegHero"></div>
             <div class="form-group fg-full"><label class="fl">Support Email</label><input value="support@beercontrol.io"></div>
             <div class="form-group fg-full"><label class="fl">Default Language</label>
               <select><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option></select>
@@ -1150,7 +1152,6 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
-<!-- ══ PAGE: ADMIN AUDIT LOG ══ -->
 <!-- ══ PAGE: ADMIN AUDIT LOG ══ -->
 <div class="page" id="page-adminAudit">
   <div class="sect-hdr">
@@ -1866,7 +1867,7 @@ textarea{resize:vertical;min-height:80px}
   /* ══════════════════════════════════════════
      CORE LOGIC (Authentication & Navigation)
   ══════════════════════════════════════════ */
-  console.log("🚀 BeerControl Core Logic Initialized");
+  console.log("🚀 KegHero Core Logic Initialized");
 
   // Global State
   window.lang = localStorage.getItem('bc_lang') || 'en';
@@ -1874,7 +1875,20 @@ textarea{resize:vertical;min-height:80px}
   window.currentRole = '';
   window.charts = {};
 
-  // Safe translation helper (handles cases where TR object fails to load)
+  // UI Helpers
+  window.openM = function(id){document.getElementById(id)?.classList.add('open')};
+  window.closeM = function(id){document.getElementById(id)?.classList.remove('open')};
+  window.toast = function(msg,type='info'){
+    const icons={info:'🍺',success:'✔',error:'⚠'};
+    const w=document.getElementById('toastWrap');
+    const el=document.createElement('div');
+    el.className=`toast ${type}`;
+    el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;
+    w.appendChild(el);
+    setTimeout(()=>el.remove(),3500);
+  };
+
+  // Safe translation helper
   window.t = function(k) {
     if (typeof TR === 'undefined' || !TR[window.lang]) return (typeof TR !== 'undefined' && TR.en && TR.en[k]) ? TR.en[k] : k;
     return TR[window.lang][k] || TR.en[k] || k;
@@ -1945,7 +1959,6 @@ textarea{resize:vertical;min-height:80px}
           nav('userDash', document.querySelector('#navUser .nav-item'));
         }
         
-        // Signal full application initialization
         if (typeof window.initAppSupport === 'function') window.initAppSupport();
       } else {
         document.getElementById('loginPage').style.display = 'flex';
@@ -1985,7 +1998,6 @@ textarea{resize:vertical;min-height:80px}
     const titleEl = document.getElementById('topTitle');
     if (titleEl) titleEl.textContent = titles[pageId] || pageId;
     
-    // Call extended navigation logic if available
     if (typeof window.onNav === 'function') window.onNav(pageId);
   }
 
@@ -1993,6 +2005,12 @@ textarea{resize:vertical;min-height:80px}
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
   });
+  // Wizard Openers (moved for reliability)
+  window.openAddRestaurantWizard = function(){ if(typeof restStep==='function') restStep(1); openM('mAddRest'); };
+  window.openAddBeerWizard = function(){ openM('mAddBeer'); };
+  window.openAddKegWizard = function(){ openM('mAddKeg'); };
+  window.openAddUserWizard = function(){ openM('mAddUser'); };
+  window.openAddDeviceWizard = function(){ openM('mAddDevice'); };
 </script>
 
 <script id="translations">
@@ -3173,7 +3191,7 @@ const TR = {
 </script>
 
 <script>
-console.log("🚀 BeerControl Runtime Initialized");
+console.log("🚀 KegHero Runtime Initialized");
 
 /* ══════════════════════════════════════════
    MOCK DATA
@@ -3181,7 +3199,7 @@ console.log("🚀 BeerControl Runtime Initialized");
 /* ══════════════════════════════════════════
    APPLICATION LOGIC (Extended Functions)
 ══════════════════════════════════════════ */
-console.log("🛠️ BeerControl Extended Logic Loading...");
+console.log("🛠️ KegHero Extended Logic Loading...");
 
 // Data stores
 const USERS={};
@@ -3323,8 +3341,7 @@ function buildSchedule(){
 /* ══════════════════════════════════════════
    MODALS
 ══════════════════════════════════════════ */
-function openM(id){document.getElementById(id)?.classList.add('open')}
-function closeM(id){document.getElementById(id)?.classList.remove('open')}
+/* MODALS handled by Core Logic */
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open')});
 document.addEventListener('click',e=>{
   if(!e.target.closest('#ak-beer-search')&&!e.target.closest('#ak-beer-dropdown')){
@@ -3355,15 +3372,7 @@ function addRcpt(type){
 /* ══════════════════════════════════════════
    TOAST
 ══════════════════════════════════════════ */
-function toast(msg,type='info'){
-  const icons={info:'🍺',success:'✔',error:'⚠'};
-  const w=document.getElementById('toastWrap');
-  const el=document.createElement('div');
-  el.className=`toast ${type}`;
-  el.innerHTML=`<span>${icons[type]}</span><span>${msg}</span>`;
-  w.appendChild(el);
-  setTimeout(()=>el.remove(),3500);
-}
+/* TOAST handled by Core Logic */
 
 /* ══════════════════════════════════════════
    CHARTS
@@ -3852,7 +3861,7 @@ function launchKiosk(){
   const cols = document.getElementById('kioskCols')?.value||3;
   const showTemp = document.getElementById('kioskShowTemp')?.checked;
   const showCo2 = document.getElementById('kioskShowCo2')?.checked;
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>BeerControl Kiosk</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>KegHero Kiosk</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>*{box-sizing:border-box;margin:0;padding:0}body{background:#0e0f11;color:#eceef2;font-family:'Barlow Condensed',sans-serif;padding:24px;min-height:100vh}
 h1{font-size:22px;margin-bottom:20px;opacity:.5;letter-spacing:2px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
@@ -3870,7 +3879,7 @@ h1{font-size:22px;margin-bottom:20px;opacity:.5;letter-spacing:2px;text-transfor
 .meta{font-size:13px;color:#5c6378;margin-top:6px}
 .updated{position:fixed;bottom:16px;right:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#2e3240}
 </style></head><body>
-<h1>🍺 BeerControl — Live Tap Status</h1>
+<h1>🍺 KegHero — Live Tap Status</h1>
 <div class="grid">${USER_KEGS.map(k=>{
   const pct=(k.rem/k.size*100).toFixed(0);
   const fc=pct<=10?'fill-red':pct<=20?'fill-amber':'fill-green';
@@ -3966,7 +3975,7 @@ function simulateDailyReport(){
 const TELEGRAM_CMDS = {
   '/status': () => {
     const lines = USER_KEGS.map(k=>`Tap #${k.tap} ${k.name}: ${k.rem.toFixed(1)}/${k.size}L (${(k.rem/k.size*100).toFixed(0)}%)`);
-    return '🍺 BeerControl Status\n' + lines.join('\n');
+    return '🍺 KegHero Status\n' + lines.join('\n');
   },
   '/alerts': () => '🔔 No active alerts.',
 };
@@ -4515,7 +4524,7 @@ function showDeviceConfig(){
   const code = document.getElementById('nd-config-code');
   if(!type){ if(code) code.textContent='// Select a device type above to generate config'; return; }
 
-  const config = type==='sensor' ? `// BeerControl ESP32 Sensor Config
+  const config = type==='sensor' ? `// KegHero ESP32 Sensor Config
 // Device: ${deviceId}
 // Generated: ${new Date().toLocaleDateString()}
 
@@ -4541,7 +4550,7 @@ function showDeviceConfig(){
 #define FLOW_KFACTOR   450  // pulses per liter (calibrate!)
 
 // Heartbeat every 30s
-#define HEARTBEAT_MS   30000` : `// BeerControl ESP32 Display Config
+#define HEARTBEAT_MS   30000` : `// KegHero ESP32 Display Config
 // Device: ${deviceId}
 // Generated: ${new Date().toLocaleDateString()}
 
@@ -4614,7 +4623,7 @@ function downloadDeviceScriptById(deviceId){
   const wifi = (r.wifi||[]).map((w,i)=>
     `#define WIFI_SSID_${i+1}     "${w.ssid}"\n#define WIFI_PASS_${i+1}     "${w.pass}"\n${w.hidden?`#define WIFI_HIDDEN_${i+1}  true`:''}`.trim()
   ).join('\n');
-  const script = `// BeerControl ESP32 Config — ${d.id}
+  const script = `// KegHero ESP32 Config — ${d.id}
 // Restaurant: ${r.name}
 // Generated: ${new Date().toLocaleDateString()}
 

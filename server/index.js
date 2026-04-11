@@ -23,7 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'beercontrol-dev-secret',
+  secret: process.env.SESSION_SECRET || 'keghero-dev-secret',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
@@ -61,7 +61,7 @@ app.get('/', (req, res) => {
 
 // ── Start ───────────────────────────────────
 app.listen(PORT, async () => {
-  console.log(`\n🍺  BeerControl running at http://localhost:${PORT}`);
+  console.log(`\n🍺  KegHero running at http://localhost:${PORT}`);
   console.log(`    Admin: admin / admin\n`);
   
   // Ensure default admin exists
