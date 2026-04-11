@@ -6,7 +6,7 @@ const session      = require('express-session');
 const cookieParser = require('cookie-parser');
 const path         = require('path');
 
-const { db }       = require('./db');
+const { db, runMigrations } = require('./db');
 const authRouter   = require('./routes/auth');
 const apiRouter    = require('./routes/api');
 const adminRouter  = require('./routes/admin');
@@ -62,6 +62,10 @@ app.get('/', (req, res) => {
 // ── Start ───────────────────────────────────
 app.listen(PORT, async () => {
   console.log(`\n🍺  KegHero running at http://localhost:${PORT}`);
+  
+  // Await migrations before anything else
+  await runMigrations();
+
   console.log(`    Admin: admin / admin\n`);
   
   // Ensure default admin exists

@@ -39,7 +39,39 @@ const db = {
 
 async function runMigrations() {
   try {
+    // ── Core Tables ─────────────────────────
+    console.log('◈ Checking core tables...');
+    await pool.query(`CREATE TABLE IF NOT EXISTS restaurants (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      city VARCHAR(255),
+      country VARCHAR(255),
+      language VARCHAR(10) DEFAULT 'en',
+      plan VARCHAR(50) DEFAULT 'starter',
+      active TINYINT DEFAULT 1,
+      renewal_date DATE,
+      phone VARCHAR(50),
+      address VARCHAR(255),
+      postal_code VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      restaurant_id INT,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      role VARCHAR(50) DEFAULT 'user',
+      language VARCHAR(10) DEFAULT 'en',
+      active TINYINT DEFAULT 1,
+      last_login DATETIME,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE SET NULL
+    )`);
+
     // ── Expansion Migrations ────────────────
+    console.log('◈ Checking expansion columns...');
     const [restCols] = await pool.query('SHOW COLUMNS FROM restaurants');
     const restColNames = restCols.map(c => c.Field);
     if (!restColNames.includes('phone')) await pool.query('ALTER TABLE restaurants ADD COLUMN phone VARCHAR(50)');
@@ -107,7 +139,7 @@ async function runMigrations() {
     )`);
     const [roleCount] = await pool.query('SELECT COUNT(*) as c FROM user_roles');
     if (roleCount[0].c === 0) {
-      const roles = [['Owner','Full access'],['Manager','Manage kegs'],['Staff','View taps']];
+      const roles = [['Owner','Full access'],['Manager','Manage kegs'],['Staff','Staff']];
       for (const r of roles) await pool.query('INSERT IGNORE INTO user_roles (name, description) VALUES (?,?)', r);
     }
 
@@ -126,16 +158,11 @@ async function runMigrations() {
         FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
       )
     `);
+    console.log('✅ All migrations complete.');
   } catch (e) {
-    if (e.code === 'ER_NO_SUCH_TABLE') {
-      console.log("ℹ️ Restaurants table not yet created. Run 'npm run setup' first.");
-    } else {
-      console.error("Migration error:", e.message);
-    }
+    console.error("Migration error:", e.message);
   }
 }
 
-// Do not block initialization, but run migrations
-runMigrations();
+module.exports = { pool, db, runMigrations };
 
-module.exports = { pool, db };
