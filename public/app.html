@@ -103,6 +103,10 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .btn-success{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,201,122,.25)}
 .btn-sm{padding:5px 10px;font-size:12px}
 
+/* Validation Pulse */
+.pulse-err { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(232,75,75,0.2); animation: pulse-red 0.8s ease-in-out; }
+@keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
 /* ── PAGES ── */
 .page{padding:24px 28px;display:none;width:100%;flex:1;flex-direction:column;margin:0 auto;max-width:1400px}
 .page.active{display:flex}
@@ -418,7 +422,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="nav-item" onclick="nav('adminRestaurants',this)"><span class="nav-icon">🏠</span><span data-i18n="nav_restaurants">Restaurants</span></div>
     <div class="sb-sect" data-i18n="nav_management">Management</div>
     <div class="nav-item" onclick="nav('adminBeerLibrary',this)"><span class="nav-icon">📦</span><span data-i18n="nav_beer_library">Beer Library</span></div>
-    <div class="nav-item" onclick="nav('adminAlerts',this)"><span class="nav-icon">🔔</span><span data-i18n="nav_alerts">Alerts</span><span class="nav-badge">3</span></div>
+    <div class="nav-item" onclick="nav('adminAlerts',this)"><span class="nav-icon">🔔</span><span data-i18n="nav_alerts">Alerts</span></div>
     <div class="sb-sect" data-i18n="nav_system">System</div>
     <div class="nav-item" onclick="nav('adminMqtt',this)"><span class="nav-icon">⚡</span><span data-i18n="nav_mqtt">MQTT Monitor</span></div>
     <div class="nav-item" onclick="nav('adminBilling',this)"><span class="nav-icon">💳</span><span data-i18n="nav_billing">Billing</span></div>
@@ -432,7 +436,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="nav-item" onclick="nav('userKegs',this)"><span class="nav-icon">🛢</span><span data-i18n="nav_kegs">My Kegs</span></div>
     <div class="sb-sect" data-i18n="nav_analytics">Analytics</div>
     <div class="nav-item" onclick="nav('userReports',this)"><span class="nav-icon">📊</span><span data-i18n="nav_reports">Reports</span></div>
-    <div class="nav-item" onclick="nav('userAlerts',this)"><span class="nav-icon">🔔</span><span data-i18n="nav_alerts">Alerts</span><span class="nav-badge">2</span></div>
+    <div class="nav-item" onclick="nav('userAlerts',this)"><span class="nav-icon">🔔</span><span data-i18n="nav_alerts">Alerts</span></div>
     <div class="nav-item" onclick="nav('userCosts',this)"><span class="nav-icon">💰</span><span data-i18n="nav_costs">Costs &amp; Revenue</span></div>
     <div class="nav-item" onclick="nav('userForecast',this)"><span class="nav-icon">🔮</span><span data-i18n="nav_forecast">Forecast</span></div>
     <div class="nav-item" onclick="nav('userKiosk',this)"><span class="nav-icon">📺</span><span data-i18n="nav_kiosk">Kiosk Mode</span></div>
@@ -873,10 +877,7 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
     <div class="card"><div class="card-hdr"><span class="card-title" data-i18n="active_topics">Active Topics</span></div>
-      <div class="card-body"><div style="background:var(--bg3);border-radius:var(--r);padding:12px;font-family:var(--fm);font-size:12px;color:var(--text2);line-height:2.1">
-        <div><span style="color:var(--amber)">+</span> cerveceria/keg/+/sensor</div>
         <div id="mqtt-topic-list"></div>
-      </div></div>
     </div>
   </div>
   <div class="card mt16">
@@ -1048,7 +1049,6 @@ textarea{resize:vertical;min-height:80px}
   <div id="stab-styles" style="display:none">
     <div class="sect-hdr">
       <div><div class="sect-title">Beer Styles</div><div class="sect-sub">These styles are available when creating beers in the library</div></div>
-      <button class="btn btn-primary" onclick="addBeerStyle()">+ Add Style</button>
     </div>
     <div class="g2">
       <div class="card">
@@ -4062,6 +4062,40 @@ const BEER_LIBRARY = (()=>{
 })();
 function saveBeerLibrary(){ try{ localStorage.setItem('bc_beer_library', JSON.stringify(BEER_LIBRARY)); }catch(e){} }
 
+const LOCATIONS_DEFAULT = ['Bar — main counter','Bar — secondary counter','Cellar','Manager office','Terrace'];
+const LOCATIONS = (()=>{ try{ const s=localStorage.getItem('bc_locations'); return s?JSON.parse(s):LOCATIONS_DEFAULT.slice(); }catch(e){ return LOCATIONS_DEFAULT.slice(); } })();
+function saveLocations(){ try{ localStorage.setItem('bc_locations', JSON.stringify(LOCATIONS)); }catch(e){} }
+
+const BEER_STYLES_DEFAULT = [
+  {id:1, name:'Lager', desc:'Clean, crisp, bottom-fermented', abv_min:4.0, abv_max:5.5},
+  {id:2, name:'Pilsner', desc:'Light, hoppy Lager variant', abv_min:4.0, abv_max:5.5},
+  {id:3, name:'Ale', desc:'Top-fermented, broad category', abv_min:4.5, abv_max:7.0},
+  {id:4, name:'Stout', desc:'Dark, roasted malt flavour', abv_min:4.0, abv_max:8.0},
+  {id:5, name:'Porter', desc:'Dark ale, slightly lighter than stout', abv_min:4.0, abv_max:7.0},
+  {id:6, name:'Wheat', desc:'Brewed with wheat, hazy and smooth', abv_min:4.0, abv_max:5.5},
+  {id:7, name:'IPA', desc:'India Pale Ale, heavily hopped', abv_min:5.5, abv_max:8.0},
+  {id:8, name:'Pale Ale', desc:'Balanced, hoppy and easy-drinking', abv_min:4.5, abv_max:6.0},
+  {id:10,name:'Sour Ale', desc:'Tart, acidic fermentation character', abv_min:3.5, abv_max:7.0},
+];
+let BEER_STYLES = (()=>{ try{ const s=localStorage.getItem('bc_beer_styles'); return s?JSON.parse(s):BEER_STYLES_DEFAULT; }catch(e){ return BEER_STYLES_DEFAULT; } })();
+function saveBeerStyles(){ try{ localStorage.setItem('bc_beer_styles', JSON.stringify(BEER_STYLES)); }catch(e){} }
+
+const ROLES_DEFAULT = [
+  {id:1, name:'Owner',   desc:'Full access to all restaurant settings and data'},
+  {id:2, name:'Manager', desc:'Manage kegs, users, alerts and reports'},
+  {id:3, name:'Staff',   desc:'View taps and log manual pours only'},
+];
+const ROLES = (()=>{ try{ const s=localStorage.getItem('bc_roles'); return s?JSON.parse(s):ROLES_DEFAULT; }catch(e){ return ROLES_DEFAULT; } })();
+function saveRoles(){ try{ localStorage.setItem('bc_roles', JSON.stringify(ROLES)); }catch(e){} }
+
+const PLANS_DEFAULT = [
+  {id:1, name:'Starter',    price:89,  maxTaps:4,  desc:'Up to 4 taps, email alerts'},
+  {id:2, name:'Pro',        price:189, maxTaps:12, desc:'Up to 12 taps, all alerts, reports'},
+  {id:3, name:'Enterprise', price:390, maxTaps:0,  desc:'Unlimited taps, priority support, SLA'},
+];
+const PLANS = (()=>{ try{ const s=localStorage.getItem('bc_plans'); return s?JSON.parse(s):PLANS_DEFAULT; }catch(e){ return PLANS_DEFAULT; } })();
+function savePlans(){ try{ localStorage.setItem('bc_plans', JSON.stringify(PLANS)); }catch(e){} }
+
 const DEVICES_DATA = [];
 const ALERTS_DATA = [];
 const AUDIT_LOG_DATA = [];
@@ -4402,6 +4436,21 @@ let newRestStep = 1;
 let newRestUserCount = 1;
 
 function restStep(step){
+  if(step > newRestStep && newRestStep === 1) {
+    const fields = ['nr-name','nr-phone','nr-city','nr-address','nr-postal','nr-country','nr-plan'];
+    let valid = true;
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if(!el || (!el.value.trim() && el.id !== 'nr-taps')) {
+        valid = false;
+        if(el) {
+          el.classList.add('pulse-err');
+          setTimeout(() => el.classList.remove('pulse-err'), 1000);
+        }
+      }
+    });
+    if(!valid) { toast('Please fill in all required fields','error'); return; }
+  }
   newRestStep = step;
   document.getElementById('mAddRestStep1').style.display = step===1?'block':'none';
   document.getElementById('mAddRestStep2').style.display = step===2?'block':'none';
@@ -4409,9 +4458,11 @@ function restStep(step){
   // Update step dots
   for(let i=1;i<=3;i++){
     const dot = document.getElementById('mstep'+i);
-    dot.classList.remove('active','done');
-    if(i===step) dot.classList.add('active');
-    else if(i<step) dot.classList.add('done');
+    if(dot) {
+      dot.classList.remove('active','done');
+      if(i===step) dot.classList.add('active');
+      else if(i<step) dot.classList.add('done');
+    }
   }
   if(step===2 && document.getElementById('newRestUsers').children.length===0) addNewRestUserRow();
   if(step===3) buildNewRestTaps();
@@ -4893,10 +4944,7 @@ function registerDevice(){
   buildDevicesPage();
 }
 
-// ── DISPLAY LOCATIONS ──
-const LOCATIONS_DEFAULT = ['Bar — main counter','Bar — secondary counter','Cellar','Manager office','Terrace'];
-const LOCATIONS = (()=>{ try{ const s=localStorage.getItem('bc_locations'); return s?JSON.parse(s):LOCATIONS_DEFAULT.slice(); }catch(e){ return LOCATIONS_DEFAULT.slice(); } })();
-function saveLocations(){ try{ localStorage.setItem('bc_locations',JSON.stringify(LOCATIONS)); }catch(e){} }
+// Display Locations Data moved to Master Block
 
 function renderLocationsList(){
   const el=document.getElementById('locations-list');
@@ -4905,7 +4953,7 @@ function renderLocationsList(){
   el.innerHTML=LOCATIONS.map((loc,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
       <span style="font-size:13px;color:var(--text1);flex:1">📍 ${loc}</span>
-      <button class="btn btn-danger btn-sm" onclick="deleteLocation(${i})">🗑</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteLocation(${i})">🗑</button>
     </div>`).join('');
 }
 
@@ -5912,13 +5960,7 @@ function switchUserSettingsTab(tab, el){
 // ══════════════════════════════════════════
 // ROLES
 // ══════════════════════════════════════════
-const ROLES_DEFAULT = [
-  {id:1, name:'Owner',   desc:'Full access to all restaurant settings and data'},
-  {id:2, name:'Manager', desc:'Manage kegs, users, alerts and reports'},
-  {id:3, name:'Staff',   desc:'View taps and log manual pours only'},
-];
-const ROLES = (()=>{ try{ const s=localStorage.getItem('bc_roles'); return s?JSON.parse(s):ROLES_DEFAULT; }catch(e){ return ROLES_DEFAULT; } })();
-function saveRoles(){ try{ localStorage.setItem('bc_roles', JSON.stringify(ROLES)); }catch(e){} }
+// Roles Data moved to Master Block
 
 function getRoleOptions(){
   return ROLES.map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
@@ -5978,15 +6020,7 @@ function deleteRole(id){
 }
 
 // ══════════════════════════════════════════
-// PLANS
-// ══════════════════════════════════════════
-const PLANS_DEFAULT = [
-  {id:1, name:'Starter',    price:89,  maxTaps:4,  desc:'Up to 4 taps, email alerts'},
-  {id:2, name:'Pro',        price:189, maxTaps:12, desc:'Up to 12 taps, all alerts, reports'},
-  {id:3, name:'Enterprise', price:390, maxTaps:0,  desc:'Unlimited taps, priority support, SLA'},
-];
-const PLANS = (()=>{ try{ const s=localStorage.getItem('bc_plans'); return s?JSON.parse(s):PLANS_DEFAULT; }catch(e){ return PLANS_DEFAULT; } })();
-function savePlans(){ try{ localStorage.setItem('bc_plans', JSON.stringify(PLANS)); }catch(e){} }
+// Plans Data moved to Master Block
 
 function renderPlansList(){
   const el  = document.getElementById('plansList');
@@ -6037,6 +6071,35 @@ function editPlan(id){
   p.name=name.trim(); p.price=parseInt(price)||0; p.maxTaps=parseInt(taps)||0; p.desc=desc||'';
   savePlans(); renderPlansList(); populatePlanSelects();
   toast('Plan updated','info');
+}
+
+function saveMqttSettings() {
+  const host = document.getElementById('ms-host')?.value;
+  const port = document.getElementById('ms-port')?.value;
+  const user = document.getElementById('ms-user')?.value;
+  const pass = document.getElementById('ms-pass')?.value;
+  localStorage.setItem('bc_mqtt_settings', JSON.stringify({ host, port, user, pass }));
+  toast('MQTT settings saved ✓', 'success');
+}
+
+async function testMqttSettings() {
+  const btn = document.getElementById('btn-mqtt-test');
+  if(!btn) return;
+  const oldText = btn.textContent;
+  btn.textContent = 'Testing...';
+  btn.disabled = true;
+  
+  try {
+    const res = await fetch('/api/admin/mqtt/test', { method:'POST' });
+    const data = await res.json();
+    if(data.status==='success') toast('Connection successful!', 'success');
+    else toast('Connection failed: ' + (data.message||'Unknown error'), 'error');
+  } catch(e) {
+    toast('Connection failed: Server offline', 'error');
+  } finally {
+    btn.textContent = oldText;
+    btn.disabled = false;
+  }
 }
 
 function saveDefaultThresholds() {
@@ -6317,54 +6380,5 @@ async function updateSystemStats() {
   } catch (e) { console.error('Update stats failed', e); }
 }
 
-async function testMqttSettings() {
-  const host = document.getElementById('ms-host').value;
-  const port = document.getElementById('ms-port').value;
-  const user = document.getElementById('ms-user').value;
-  const pass = document.getElementById('ms-pass').value;
-
-  const btn = document.getElementById('btn-mqtt-test');
-  btn.disabled = true;
-  const oldText = btn.textContent;
-  btn.textContent = 'Testing...';
-
-  try {
-    const res = await fetch('/api/admin/mqtt/test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ host, port, user, pass })
-    });
-    const d = await res.json();
-    if (d.success) toast(d.message, 'success');
-    else toast(d.message, 'error');
-  } catch (e) {
-    toast('Connection failed', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = oldText;
-  }
-}
-
-async function saveMqttSettings() {
-  const settings = {
-    mqtt_host: document.getElementById('ms-host').value,
-    mqtt_port: document.getElementById('ms-port').value,
-    mqtt_user: document.getElementById('ms-user').value,
-    mqtt_pass: document.getElementById('ms-pass').value
-  };
-
-  try {
-    const res = await fetch('/api/admin/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
-    });
-    const d = await res.json();
-    if (d.success) toast('MQTT Settings saved', 'success');
-    else toast('Failed to save', 'error');
-  } catch (e) {
-    toast('Error saving settings', 'error');
-  }
-}
 
 </script>
