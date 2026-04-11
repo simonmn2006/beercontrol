@@ -79,8 +79,8 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .role-badge.user{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,158,255,.25)}
 
 /* ── MAIN ── */
-.main{flex:1;height:100%;overflow-y:auto;background:var(--bg0);display:flex;flex-direction:column;align-items:stretch;width:100%}
-.topbar{position:sticky;top:0;z-index:50;background:rgba(14,15,17,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.main{flex:1;height:100%;overflow-y:auto;background:var(--bg0);display:flex;flex-direction:column;align-items:stretch;}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(14,15,17,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0;width:100%}
 .topbar-title{font-family:var(--fh);font-size:20px;font-weight:600;letter-spacing:.3px}
 .topbar-spacer{flex:1}
 .mqtt-status{display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--fm);color:var(--text3);padding:0 14px}
@@ -108,8 +108,8 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 .btn-sm{padding:5px 10px;font-size:12px}
 
 /* ── PAGES ── */
-.page{padding:24px 28px;display:none;width:100%;flex:1}
-.page.active{display:block}
+.page{padding:24px 28px;display:none;width:100%;flex:1;flex-direction:column;margin:0 auto;max-width:1400px}
+.page.active{display:flex}
 
 /* ── GRIDS ── */
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
@@ -741,7 +741,7 @@ textarea{resize:vertical;min-height:80px}
   <div class="card mb16" style="margin-bottom:16px">
     <div class="card-body" style="padding:12px 18px">
       <div class="flex g12" style="align-items:center;flex-wrap:wrap">
-        <div style="position:relative;flex:1;max-width:560px;min-width:180px">
+        <div style="position:relative;flex:1;max-width:600px;min-width:180px">
           <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3)">🔍</span>
           <input type="text" id="beerSearch" placeholder="Search beers…" oninput="filterBeers()" style="padding-left:32px;width:100%">
         </div>
@@ -816,7 +816,6 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
       <div id="sys-ota-alerts"></div>
-    </div>
   </div>
 </div>
 
@@ -947,7 +946,7 @@ textarea{resize:vertical;min-height:80px}
 
   <!-- TAB: Email -->
   <div id="stab-email" style="display:none">
-    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title" data-i18n="email_alerts">Email Alerts (SMTP)</span></div>
+  <div class="card" style="width:100% !important;max-width:1400px !important"><div class="card-hdr"><span class="card-title" data-i18n="email_alerts">Email Alerts (SMTP)</span></div>
       <div class="card-body">
         <div class="fg">
           <div class="form-group fg-full"><label class="fl" data-i18n="smtp_host">SMTP Host</label><input value="smtp.sendgrid.net"></div>
@@ -963,7 +962,7 @@ textarea{resize:vertical;min-height:80px}
 
   <!-- TAB: Telegram -->
   <div id="stab-telegram" style="display:none">
-    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title">Telegram Bot</span></div>
+    <div class="card" style="width:100% !important;max-width:1400px !important"><div class="card-hdr"><span class="card-title">Telegram Bot</span></div>
       <div class="card-body">
         <div class="fg">
           <div class="form-group fg-full"><label class="fl" data-i18n="bot_token">Bot Token</label><input type="password" value="7412369854:AAH••••••••••••••"></div>
@@ -979,7 +978,7 @@ textarea{resize:vertical;min-height:80px}
 
   <!-- TAB: MQTT -->
   <div id="stab-mqtt" style="display:none">
-    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title">MQTT Broker (Mosquitto)</span></div>
+    <div class="card" style="width:100% !important;max-width:1400px !important"><div class="card-hdr"><span class="card-title">MQTT Broker (Mosquitto)</span></div>
       <div class="card-body">
         <div class="fg">
           <div class="form-group fg-full"><label class="fl">Host</label><input id="ms-host" placeholder="localhost"></div>
@@ -997,7 +996,7 @@ textarea{resize:vertical;min-height:80px}
 
   <!-- TAB: Thresholds -->
   <div id="stab-thresholds" style="display:none">
-    <div class="card" style="max-width:480px"><div class="card-hdr"><span class="card-title" data-i18n="alert_thresholds">Default Alert Thresholds</span></div>
+    <div class="card" style="width:100%;max-width:800px"><div class="card-hdr"><span class="card-title" data-i18n="alert_thresholds">Default Alert Thresholds</span></div>
       <div class="card-body">
         <div style="font-size:12px;color:var(--text3);margin-bottom:14px">These are the platform defaults. Each restaurant can override them in their own settings.</div>
         <div class="fg">
@@ -1098,7 +1097,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="stat-card sc-red"><div class="stat-label">Overdue</div><div class="stat-val">0</div><div class="stat-sub">None</div></div>
     <div class="stat-card sc-blue"><div class="stat-label">Annual ARR</div><div class="stat-val">€ 0</div><div class="stat-sub">N/A</div></div>
   </div>
-  <div class="card">
+  <div class="card" style="width:100% !important;max-width:1400px !important">
     <div class="card-hdr"><span class="card-title">Subscriptions</span></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Restaurant</th><th>Plan</th><th>Amount/mo</th><th>Next Billing</th><th>Status</th><th>Payment</th><th>Actions</th></tr></thead>
@@ -1107,7 +1106,7 @@ textarea{resize:vertical;min-height:80px}
       </tbody>
     </table></div>
   </div>
-  <div class="card mt16">
+  <div class="card mt16" style="width:100% !important;max-width:1400px !important">
     <div class="card-hdr"><span class="card-title">Revenue Chart (12 months)</span></div>
     <div class="card-body"><div style="height:220px"><canvas id="chartBillingRevenue"></canvas></div></div>
   </div>
@@ -1155,9 +1154,9 @@ textarea{resize:vertical;min-height:80px}
       <button class="btn btn-ghost btn-sm" onclick="toast(t('downloading'),'info')">⤓ Export</button>
     </div>
   </div>
-  <div class="card">
+  <div class="card" style="width:100% !important;max-width:1400px !important">
     <div class="card-hdr">
-      <input type="text" placeholder="Search audit log…" style="max-width:280px;padding:6px 10px;font-size:13px">
+      <input type="text" placeholder="Search audit log…" style="max-width:480px;padding:6px 10px;font-size:13px">
       <div class="flex g8" style="margin-left:auto">
         <select style="font-size:13px;padding:6px 10px"><option>All Actions</option><option>Keg Changes</option><option>Settings</option><option>Logins</option><option>Alerts</option></select>
       </div>
@@ -1329,11 +1328,9 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
-</div>
-
-
-
-
+      </div>
+    </div>
+  </div>
 </div><!-- /app -->
 
 <!-- ══════════════════════════════════════════
