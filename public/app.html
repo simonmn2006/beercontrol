@@ -1416,7 +1416,7 @@ textarea{resize:vertical;min-height:80px}
         <div style="font-size:12px;color:var(--amber);font-family:var(--fm);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px">Step 1 of 3 — Restaurant Details</div>
         <div class="fg">
           <div class="form-group fg-full"><label class="fl">Restaurant Name</label><input id="nr-name" placeholder="e.g. Bar Name"></div>
-          <div class="form-group"><label class="fl">Phone Number</label><input id="nr-phone" type="tel" placeholder="+00 00 000 00 00" oninput="this.value = this.value.replace(/[^0-9+\s]/g, '')"></div>
+          <div class="form-group"><label class="fl">Phone Number</label><input id="nr-phone" type="tel" placeholder="Numbers only" oninput="this.value = this.value.replace(/[^0-9]/g, '')" required></div>
           <div class="form-group"><label class="fl">City</label><input id="nr-city" placeholder="City"></div>
           <div class="form-group fg-full"><label class="fl">Street Address</label><input id="nr-address" placeholder="Street Address"></div>
           <div class="form-group"><label class="fl">Postal Code</label><input id="nr-postal" placeholder="00000"></div>
@@ -1857,6 +1857,28 @@ textarea{resize:vertical;min-height:80px}
   window.currentRole = '';
   window.charts = {};
 
+  // ── MASTER DATA ──
+  let RESTAURANTS_DATA = [];
+  let USERS_DATA = [];
+  let BEER_LIBRARY = [];
+  let LOCATIONS = [];
+  let BEER_STYLES = [];
+  let ROLES = [];
+  let PLANS = [];
+
+  function updateDashStats() {
+    const venuesCount = RESTAURANTS_DATA.length;
+    const tapsCount = RESTAURANTS_DATA.reduce((acc, r) => acc + (parseInt(r.taps)||0), 0);
+    if (document.getElementById('dashVenues')) document.getElementById('dashVenues').textContent = venuesCount;
+    if (document.getElementById('dashVenuesSub')) document.getElementById('dashVenuesSub').textContent = venuesCount > 0 ? `Total managed` : 'No venues yet';
+    if (document.getElementById('dashTaps')) document.getElementById('dashTaps').textContent = tapsCount;
+    if (document.getElementById('dashTapsSub')) document.getElementById('dashTapsSub').textContent = 'Live tracking';
+    if (document.getElementById('dashLiters')) document.getElementById('dashLiters').textContent = '0.0';
+    if (document.getElementById('dashLitersSub')) document.getElementById('dashLitersSub').textContent = 'Today';
+    if (document.getElementById('dashAlerts')) document.getElementById('dashAlerts').textContent = '0';
+    if (document.getElementById('dashAlertsSub')) document.getElementById('dashAlertsSub').textContent = 'System healthy';
+  }
+
   // UI Helpers
   window.openM = function(id){document.getElementById(id)?.classList.add('open')};
   window.closeM = function(id){document.getElementById(id)?.classList.remove('open')};
@@ -1990,9 +2012,35 @@ textarea{resize:vertical;min-height:80px}
     if (titleEl) titleEl.textContent = titles[pageId] || pageId;
     
     if (typeof window.onNav === 'function') window.onNav(pageId);
-    // Explicitly call builds if they exist
-    if (pageId === 'adminDash') updateDashStats();
-    if (pageId === 'adminMqtt') buildMqttPage();
+    
+    // Explicitly call builds/refreshers for pages
+    setTimeout(() => {
+      if (pageId === 'adminDash') {
+        updateDashStats();
+        if (typeof updateSystemStats === 'function') updateSystemStats();
+      }
+      if (pageId === 'adminRestaurants') {
+        if (typeof buildRestaurantsPage === 'function') buildRestaurantsPage();
+        if (typeof renderRestList === 'function') renderRestList();
+      }
+      if (pageId === 'adminUsers')       if (typeof buildUsersPage === 'function') buildUsersPage();
+      if (pageId === 'adminKegs')        if (typeof buildBeerLibrary === 'function') buildBeerLibrary();
+      if (pageId === 'adminBeerLibrary') if (typeof buildBeerLibraryPage === 'function') buildBeerLibraryPage();
+      if (pageId === 'adminDevices')     if (typeof buildDevicesPage === 'function') buildDevicesPage();
+      if (pageId === 'adminMqtt')        if (typeof buildMqttPage === 'function') buildMqttPage();
+      if (pageId === 'adminAudit')       if (typeof buildAuditLog === 'function') buildAuditLog();
+      if (pageId === 'adminBilling')     if (typeof initBillingChart === 'function') initBillingChart();
+      if (pageId === 'adminSettings') {
+        if (typeof switchSettingsTab === 'function') {
+          switchSettingsTab('general', document.querySelector('#settingsTabs .detail-tab'));
+        }
+        if (typeof loadAdminSettings === 'function') loadAdminSettings();
+      }
+      if (pageId === 'userForecast')     if (typeof buildForecastPage === 'function') buildForecastPage();
+      if (pageId === 'userCalibration')  if (typeof buildCalibration === 'function') buildCalibration();
+      if (pageId === 'userKiosk')        if (typeof buildKioskPreview === 'function') buildKioskPreview();
+      if (pageId === 'userCosts')        if (typeof initCostCharts === 'function') initCostCharts();
+    }, 50);
   }
 
   window.addEventListener('DOMContentLoaded', checkSession);
@@ -2034,12 +2082,10 @@ textarea{resize:vertical;min-height:80px}
       }
     } catch(e) { console.error('Clear alerts failed', e); }
   };
-</script>
 
-<script id="translations">
-/* ══════════════════════════════════════════
-   TRANSLATIONS
-══════════════════════════════════════════ */
+  /* ══════════════════════════════════════════
+     TRANSLATIONS
+  ══════════════════════════════════════════ */
 const TR = {
   en: {
     tagline: "Draft Beer Management Platform",
@@ -3211,9 +3257,7 @@ const TR = {
     audit_sub: "Κάθε ενέργεια καταγράφεται με χρήστη και χρονική σήμανση"
   }
 };
-</script>
 
-<script>
 console.log("🚀 KegHero Runtime Initialized");
 
 /* ══════════════════════════════════════════
@@ -3919,17 +3963,6 @@ h1{font-size:22px;margin-bottom:20px;opacity:.5;letter-spacing:2px;text-transfor
   if(w){ w.document.write(html); w.document.close(); }
 }
 
-// ── EXTENDED nav() to handle new pages ──
-const _origNav = nav;
-nav = function(pageId, el){
-  _origNav(pageId, el);
-  if(pageId==='adminAudit')    { setTimeout(buildAuditLog,50); }
-  if(pageId==='adminBilling')  { setTimeout(()=>{ initBillingChart(); },100); }
-  if(pageId==='userForecast')  { setTimeout(buildForecastPage,50); }
-  if(pageId==='userCalibration'){ setTimeout(buildCalibration,50); }
-  if(pageId==='userKiosk')     { setTimeout(buildKioskPreview,50); }
-  if(pageId==='userCosts')     { setTimeout(initCostCharts,100); }
-};
 
 // ── NEW NAV TITLE MAP additions ──
 const _navTitles_extra = {
@@ -4045,78 +4078,60 @@ const _navForecastPatch = nav;
    ORGANIZED ADMIN DATA & LOGIC
 ══════════════════════════════════════════ */
 
-// ── MASTER DATA (Moved and unified) ──
-const RESTAURANTS_DATA_DEFAULT = [];
-const RESTAURANTS_DATA = (()=>{ try{ const s=localStorage.getItem('bc_restaurants'); return s?JSON.parse(s):RESTAURANTS_DATA_DEFAULT; }catch(e){ return RESTAURANTS_DATA_DEFAULT; } })();
-function saveRestaurants(){ try{ localStorage.setItem('bc_restaurants', JSON.stringify(RESTAURANTS_DATA)); }catch(e){} }
 
-const USERS_DATA_DEFAULT = [
-  {name:'Simon', email:'simon', phone:'', role:'Owner', active:true, lastLogin:'Today', rest:'System'}
-];
-const USERS_DATA = (()=>{ try{ const s=localStorage.getItem('bc_users'); return s?JSON.parse(s):USERS_DATA_DEFAULT; }catch(e){ return USERS_DATA_DEFAULT; } })();
-function saveUsers(){ try{ localStorage.setItem('bc_users', JSON.stringify(USERS_DATA)); }catch(e){} }
+async function initData() {
+  try {
+    const [rests, users, styles, plans, roles, locs, beers] = await Promise.all([
+      fetch('/api/admin/restaurants').then(r => r.json()),
+      fetch('/api/admin/users').then(r => r.json()),
+      fetch('/api/admin/styles').then(r => r.json()),
+      fetch('/api/admin/plans').then(r => r.json()),
+      fetch('/api/admin/roles').then(r => r.json()),
+      fetch('/api/admin/locations').then(r => r.json()),
+      fetch('/api/admin/library').then(r => r.json())
+    ]);
+    RESTAURANTS_DATA = rests || [];
+    USERS_DATA = users || [];
+    BEER_STYLES = styles || [];
+    PLANS = plans || [];
+    ROLES = roles || [];
+    BEER_LIBRARY = (beers || []).map(b => ({ ...b, assignedTo: [] })); // assignedTo calculated on frontend usually
+    LOCATIONS = locs.map(l => l.name) || [];
+    
+    // Sync UI
+    updateDashStats();
+    populatePlanSelects();
+    populateStyleSelects();
+    renderRestaurantsList();
+    renderUsersTable();
+    renderBeerLibraryGrid();
+    renderPlansList();
+    renderRolesList();
+    renderLocationsList();
+  } catch (e) {
+    console.error('Data init failed:', e);
+    toast('Error connecting to server','error');
+  }
+}
 
-const BEER_LIBRARY_DEFAULT = [];
-const BEER_LIBRARY = (()=>{
-  try { const s = localStorage.getItem('bc_beer_library'); return s ? JSON.parse(s) : BEER_LIBRARY_DEFAULT; } catch(e){ return BEER_LIBRARY_DEFAULT; }
-})();
-function saveBeerLibrary(){ try{ localStorage.setItem('bc_beer_library', JSON.stringify(BEER_LIBRARY)); }catch(e){} }
+// Call init on load
+window.addEventListener('DOMContentLoaded', initData);
 
-const LOCATIONS_DEFAULT = ['Bar — main counter','Bar — secondary counter','Cellar','Manager office','Terrace'];
-const LOCATIONS = (()=>{ try{ const s=localStorage.getItem('bc_locations'); return s?JSON.parse(s):LOCATIONS_DEFAULT.slice(); }catch(e){ return LOCATIONS_DEFAULT.slice(); } })();
-function saveLocations(){ try{ localStorage.setItem('bc_locations', JSON.stringify(LOCATIONS)); }catch(e){} }
+// Compatibility stubs (mostly unused now)
+function saveRestaurants(){}
+function saveUsers(){}
+function saveBeerLibrary(){}
+function saveLocations(){}
+function savePlans(){}
+function saveRoles(){}
+function saveBeerStyles(){}
 
-const BEER_STYLES_DEFAULT = [
-  {id:1, name:'Lager', desc:'Clean, crisp, bottom-fermented', abv_min:4.0, abv_max:5.5},
-  {id:2, name:'Pilsner', desc:'Light, hoppy Lager variant', abv_min:4.0, abv_max:5.5},
-  {id:3, name:'Ale', desc:'Top-fermented, broad category', abv_min:4.5, abv_max:7.0},
-  {id:4, name:'Stout', desc:'Dark, roasted malt flavour', abv_min:4.0, abv_max:8.0},
-  {id:5, name:'Porter', desc:'Dark ale, slightly lighter than stout', abv_min:4.0, abv_max:7.0},
-  {id:6, name:'Wheat', desc:'Brewed with wheat, hazy and smooth', abv_min:4.0, abv_max:5.5},
-  {id:7, name:'IPA', desc:'India Pale Ale, heavily hopped', abv_min:5.5, abv_max:8.0},
-  {id:8, name:'Pale Ale', desc:'Balanced, hoppy and easy-drinking', abv_min:4.5, abv_max:6.0},
-  {id:10,name:'Sour Ale', desc:'Tart, acidic fermentation character', abv_min:3.5, abv_max:7.0},
-];
-let BEER_STYLES = (()=>{ try{ const s=localStorage.getItem('bc_beer_styles'); return s?JSON.parse(s):BEER_STYLES_DEFAULT; }catch(e){ return BEER_STYLES_DEFAULT; } })();
-function saveBeerStyles(){ try{ localStorage.setItem('bc_beer_styles', JSON.stringify(BEER_STYLES)); }catch(e){} }
-
-const ROLES_DEFAULT = [
-  {id:1, name:'Owner',   desc:'Full access to all restaurant settings and data'},
-  {id:2, name:'Manager', desc:'Manage kegs, users, alerts and reports'},
-  {id:3, name:'Staff',   desc:'View taps and log manual pours only'},
-];
-const ROLES = (()=>{ try{ const s=localStorage.getItem('bc_roles'); return s?JSON.parse(s):ROLES_DEFAULT; }catch(e){ return ROLES_DEFAULT; } })();
-function saveRoles(){ try{ localStorage.setItem('bc_roles', JSON.stringify(ROLES)); }catch(e){} }
-
-const PLANS_DEFAULT = [
-  {id:1, name:'Starter',    price:89,  maxTaps:4,  desc:'Up to 4 taps, email alerts'},
-  {id:2, name:'Pro',        price:189, maxTaps:12, desc:'Up to 12 taps, all alerts, reports'},
-  {id:3, name:'Enterprise', price:390, maxTaps:0,  desc:'Unlimited taps, priority support, SLA'},
-];
-const PLANS = (()=>{ try{ const s=localStorage.getItem('bc_plans'); return s?JSON.parse(s):PLANS_DEFAULT; }catch(e){ return PLANS_DEFAULT; } })();
-function savePlans(){ try{ localStorage.setItem('bc_plans', JSON.stringify(PLANS)); }catch(e){} }
-
+// Supplemental Data
 const DEVICES_DATA = [];
 const ALERTS_DATA = [];
 const AUDIT_LOG_DATA = [];
 const SCHED = [];
 
-function updateDashStats() {
-  const venuesCount = RESTAURANTS_DATA.length;
-  const tapsCount = RESTAURANTS_DATA.reduce((acc, r) => acc + (parseInt(r.taps)||0), 0);
-  
-  if (document.getElementById('dashVenues')) document.getElementById('dashVenues').textContent = venuesCount;
-  if (document.getElementById('dashVenuesSub')) document.getElementById('dashVenuesSub').textContent = venuesCount > 0 ? `Total managed` : 'No venues yet';
-  
-  if (document.getElementById('dashTaps')) document.getElementById('dashTaps').textContent = tapsCount;
-  if (document.getElementById('dashTapsSub')) document.getElementById('dashTapsSub').textContent = 'Live tracking';
-  
-  if (document.getElementById('dashLiters')) document.getElementById('dashLiters').textContent = '0.0';
-  if (document.getElementById('dashLitersSub')) document.getElementById('dashLitersSub').textContent = 'Today';
-  
-  if (document.getElementById('dashAlerts')) document.getElementById('dashAlerts').textContent = '0';
-  if (document.getElementById('dashAlertsSub')) document.getElementById('dashAlertsSub').textContent = 'System healthy';
-}
 
 function buildMqttPage() {
   if (document.getElementById('mqClients')) document.getElementById('mqClients').textContent = '0';
@@ -4378,49 +4393,56 @@ function buildAssignPanel(){
     </div>`).join('');
 }
 
-function finishAddRestaurant(){
+async function finishAddRestaurant(){
   const name = document.getElementById('nr-name')?.value.trim();
   const city = document.getElementById('nr-city')?.value.trim();
   const taps = parseInt(document.getElementById('nr-taps')?.value || 0);
   const plan = document.getElementById('nr-plan')?.value || 'starter';
   const country = document.getElementById('nr-country')?.value.trim();
+  const phone = document.getElementById('nr-phone')?.value.trim();
+  const address = document.getElementById('nr-address')?.value.trim();
+  const postal_code = document.getElementById('nr-postal')?.value.trim();
   
   if(!name) { toast('Restaurant name is required','error'); restStep(1); return; }
   
-  const newId = Math.max(0, ...RESTAURANTS_DATA.map(r=>r.id)) + 1;
-  const newRest = {
-    id: newId,
-    name,
-    city: city || 'Unknown',
-    country: country || 'Unknown',
-    plan,
-    taps,
-    active: true,
-    emoji: '🏠',
-    renewal: 'Active',
-    kegs: []
-  };
-  
-  RESTAURANTS_DATA.push(newRest);
-  saveRestaurants();
-  
-  // Also create the first users from step 2
+  // Collect users
+  const users = [];
   const userRows = document.getElementById('newRestUsers').querySelectorAll('.add-user-row');
   userRows.forEach(row => {
-    const inputs = row.querySelectorAll('input');
-    const uName = (inputs[0]?.value||'').trim();
-    const uEmail = (inputs[1]?.value||'').trim();
+    const inputsList = row.querySelectorAll('input');
+    const uName = (inputsList[0]?.value||'').trim();
+    const uEmail = (inputsList[1]?.value||'').trim();
     const uRole = row.querySelector('select')?.value || 'Staff';
-    if(uName && uEmail) {
-      USERS_DATA.push({ name: uName, email: uEmail, role: uRole, rest: name, active: true, lastLogin: 'Never' });
-    }
+    if(uName && uEmail) users.push({ name: uName, email: uEmail, role: uRole });
   });
-  saveUsers();
-  
-  closeM('mAddRest');
-  if(typeof renderRestaurantsList === 'function') renderRestaurantsList();
-  if(typeof updateDashStats === 'function') updateDashStats();
-  toast(name + ' created successfully ✓', 'success');
+
+  const btn = document.querySelector('#mAddRestStep3 .btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
+  try {
+    const res = await fetch('/api/admin/restaurants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        name, city, country, plan, phone, address, postal_code,
+        owner_name: users[0]?.name, owner_email: users[0]?.email 
+      })
+    });
+    const data = await res.json();
+    if(data.success) {
+      toast(name + ' created successfully ✓', 'success');
+      closeM('mAddRest');
+      initData(); // Refresh all
+    } else {
+      toast('Error: ' + (data.error||'Unknown'), 'error');
+    }
+  } catch(e) {
+    toast('Connection error','error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✓ Create Restaurant';
+  }
 }
 
 function switchKegTab(tab){
@@ -4437,11 +4459,11 @@ let newRestUserCount = 1;
 
 function restStep(step){
   if(step > newRestStep && newRestStep === 1) {
-    const fields = ['nr-name','nr-phone','nr-city','nr-address','nr-postal','nr-country','nr-plan'];
+    const fields = ['nr-name','nr-phone','nr-city','nr-address','nr-postal','nr-country'];
     let valid = true;
     fields.forEach(id => {
       const el = document.getElementById(id);
-      if(!el || (!el.value.trim() && el.id !== 'nr-taps')) {
+      if(!el || !el.value.trim()) {
         valid = false;
         if(el) {
           el.classList.add('pulse-err');
@@ -4449,6 +4471,9 @@ function restStep(step){
         }
       }
     });
+    // Plan is always present so we just check if selected
+    if(!document.getElementById('nr-plan').value) valid = false;
+    
     if(!valid) { toast('Please fill in all required fields','error'); return; }
   }
   newRestStep = step;
@@ -4508,14 +4533,6 @@ function filterAdminAlerts(type, el){
   if(type!=='all') toast('Filtered: '+type,'info');
 }
 
-// ── HOOK nav() for new pages ──
-const _prevNav2 = nav;
-nav = function(pageId, el){
-  _prevNav2(pageId, el);
-  if(pageId==='adminRestaurants') setTimeout(buildRestaurantsPage, 50);
-  if(pageId==='adminUsers')       setTimeout(buildUsersPage, 50);
-  if(pageId==='adminKegs')        setTimeout(buildBeerLibrary, 50);
-};
 
 
 /* ══════════════════════════════════════════
@@ -4772,7 +4789,7 @@ function downloadDeviceConfigScript(){
 }
 
 function downloadDeviceScriptById(deviceId){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const d = r.devices.find(x=>x.id===deviceId);
   if(!d){ toast('Device not found','error'); return; }
@@ -4825,7 +4842,7 @@ ${d.type==='sensor'?`// ── Sensor Pins ────────────�
 }
 
 function openAddDeviceToRest(){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   // Reset form
   document.getElementById('nd-type').value='';
   document.getElementById('nd-sensor-fields').style.display='none';
@@ -4848,7 +4865,7 @@ function openAddDeviceToRest(){
 }
 
 function openEditDevice(deviceId){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const d = r.devices.find(x=>x.id===deviceId);
   if(!d) return;
@@ -4875,7 +4892,7 @@ function openEditDevice(deviceId){
 }
 
 function saveEditDevice(){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const devId = document.getElementById('ed-id')?.value;
   const d = r.devices.find(x=>x.id===devId);
@@ -4899,7 +4916,7 @@ function saveEditDevice(){
 }
 
 function deleteDevice(deviceId){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const d = r.devices.find(x=>x.id===deviceId);
   if(!d) return;
@@ -4917,7 +4934,7 @@ function registerDevice(){
   const id   = document.getElementById('nd-device-id')?.value;
   if(!rest||!type||!id){ toast('Please fill all required fields','error'); return; }
   // Add to current restaurant's device list
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(r){
     const newDev = {
       id, type,
@@ -5011,7 +5028,7 @@ function renderWifiList(r){
 }
 
 function addWifiNetwork(){
-  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r=RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   if(!r.wifi) r.wifi=[];
   r.wifi.push({ssid:'',pass:'',hidden:false});
@@ -5019,7 +5036,7 @@ function addWifiNetwork(){
 }
 
 function deleteWifiNetwork(idx){
-  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r=RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r||!r.wifi) return;
   showConfirm({icon:'📶',title:'Remove WiFi Network',message:'Remove this WiFi connection?',confirmLabel:'Remove',danger:true,
     onConfirm:()=>{ r.wifi.splice(idx,1); renderWifiList(r); }
@@ -5027,7 +5044,7 @@ function deleteWifiNetwork(idx){
 }
 
 function saveWifiNetworks(){
-  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r=RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   if(!r.wifi) r.wifi=[];
   document.querySelectorAll('[data-wifi]').forEach(el=>{
@@ -5042,7 +5059,7 @@ function saveWifiNetworks(){
 
 // ── DANGER ZONE ──
 function suspendRestaurant(){
-  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r=RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   showConfirm({
     icon:'🚫',title:'Suspend Restaurant',
@@ -5060,7 +5077,7 @@ function suspendRestaurant(){
 }
 
 function deleteRestaurant(){
-  const r=RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r=RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   showConfirm({
     icon:'🗑',title:'Delete Restaurant',
@@ -5072,8 +5089,8 @@ function deleteRestaurant(){
         message:`This is <b>irreversible</b>. All data for <b>${r.name}</b> will be gone forever. Are you absolutely sure?`,
         confirmLabel:'Delete Forever',danger:true,
         onConfirm:()=>{
-          const idx=RESTAURANTS_EXT.findIndex(x=>x.id===currentRestaurantId);
-          if(idx>-1) RESTAURANTS_EXT.splice(idx,1);
+          const idx=RESTAURANTS_DATA.findIndex(x=>x.id===currentRestaurantId);
+          if(idx>-1) RESTAURANTS_DATA.splice(idx,1);
           toast(r.name+' permanently deleted','error');
           nav('adminRestaurants',document.querySelector('#navAdmin .nav-item'));
         }
@@ -5094,99 +5111,8 @@ nav = function(pageId, el){
    RESTAURANT MANAGEMENT — UNIFIED
 ══════════════════════════════════════════ */
 
-// ── EXTENDED RESTAURANT DATA ──
-const RESTAURANTS_EXT = [
-  {
-    id:1, name:'La Cervecería', city:'Barcelona', country:'Spain',
-    emoji:'🍺', plan:'pro', active:true, renewal:'15/04/2026',
-    timezone:'Europe/Madrid', language:'es',
-    poured_today: 312, keg_changes_today: 2, active_taps: 4,
-    low_warning: 20, critical_alert: 10, temp_max: 6, co2_min: 1.5, cleaning_days: 14,
-    kegs:[
-      {tap:1, beer:'Moritz',       emoji:'🌊', size:50, rem:22.4, co2:2.2, temp:3.8, fob:false, online:true,  sensor_id:'cerv_keg1_s', display_id:'cerv_disp1'},
-      {tap:2, beer:'Estrella Damm',emoji:'⭐', size:30, rem:18.9, co2:2.5, temp:4.3, fob:false, online:true,  sensor_id:'cerv_keg2_s', display_id:'cerv_disp1'},
-      {tap:3, beer:'Heineken',     emoji:'🍺', size:50, rem:4.2,  co2:2.4, temp:4.1, fob:true,  online:true,  sensor_id:'cerv_keg3_s', display_id:'cerv_disp1'},
-      {tap:4, beer:'Voll-Damm',    emoji:'🔶', size:50, rem:38.2, co2:2.3, temp:4.0, fob:false, online:true,  sensor_id:'cerv_keg4_s', display_id:'cerv_disp1'},
-    ],
-    users:[
-      {name:'Simon',           email:'simon',                phone:'',               role:'Owner',   active:true,  lastLogin:'Today'},
-      {name:'Carlos Martínez', email:'carlos@cerveceria.es', phone:'+34 612 345 678', role:'Manager', active:true,  lastLogin:'Today 09:14'},
-      {name:'Ana García',      email:'ana@cerveceria.es',    phone:'+34 621 987 654', role:'Staff',   active:true,  lastLogin:'Today 08:02'},
-    ],
-    devices:[
-      {id:'cerv_keg1_s', type:'sensor',  keg:'Moritz',       tap:1, online:true,  fw:'v2.1.3', ip:'192.168.1.14', topic:'cerveceria_01/keg/1/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'cerv_keg2_s', type:'sensor',  keg:'Estrella Damm',tap:2, online:true,  fw:'v2.1.3', ip:'192.168.1.15', topic:'cerveceria_01/keg/2/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'cerv_keg3_s', type:'sensor',  keg:'Heineken',     tap:3, online:true,  fw:'v2.1.4', ip:'192.168.1.16', topic:'cerveceria_01/keg/3/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'cerv_keg4_s', type:'sensor',  keg:'Voll-Damm',    tap:4, online:true,  fw:'v2.1.3', ip:'192.168.1.17', topic:'cerveceria_01/keg/4/sensor',   sensors:{flow:true,temp:true,co2:false,fob:true}},
-      {id:'cerv_disp1',  type:'display', loc:'Bar — main',   tap:null,online:true,fw:'v2.1.3', ip:'192.168.1.18', topic:'cerveceria_01/display/bar_01', shows:'all'},
-    ],
-    activity:[
-      {icon:'⚠',text:'Heineken Tap #3 is critically low — 4.2L',time:'10:42',color:'var(--red)'},
-      {icon:'🛢',text:'Moritz Tap #1 — new keg started (FOB)',time:'09:15',color:'var(--green)'},
-      {icon:'📊',text:'Daily report generated — 287L poured',time:'00:00',color:'var(--text3)'},
-    ]
-  },
-  {
-    id:2, name:'Pub Dublin', city:'Dublin', country:'Ireland',
-    emoji:'🍻', plan:'pro', active:true, renewal:'02/05/2026',
-    timezone:'Europe/London', language:'en',
-    poured_today: 458, keg_changes_today: 3, active_taps: 2,
-    low_warning: 20, critical_alert: 10, temp_max: 6, co2_min: 1.5, cleaning_days: 14,
-    kegs:[
-      {tap:1, beer:'Guinness',      emoji:'⬛', size:50, rem:49.1, co2:1.2, temp:5.8, fob:false, online:true,  sensor_id:'pub_keg1_s', display_id:'pub_disp1'},
-      {tap:2, beer:'Guinness Extra',emoji:'🖤', size:50, rem:12.4, co2:1.8, temp:5.5, fob:false, online:false, sensor_id:'pub_keg2_s', display_id:'pub_disp1'},
-    ],
-    users:[
-      {name:"Sean O'Brien", email:'sean@pubdublin.ie', phone:'+353 87 123 4567', role:'Owner', active:true, lastLogin:'Today 08:30'},
-    ],
-    devices:[
-      {id:'pub_keg1_s', type:'sensor',  keg:'Guinness',       tap:1, online:true,  fw:'v2.1.3', ip:'10.0.0.11', topic:'pubdublin_01/keg/1/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'pub_keg2_s', type:'sensor',  keg:'Guinness Extra', tap:2, online:false, fw:'v2.0.9', ip:'—',         topic:'pubdublin_01/keg/2/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'pub_disp1',  type:'display', loc:'Bar — main',     tap:null,online:true,fw:'v2.1.3', ip:'10.0.0.13', topic:'pubdublin_01/display/bar_01', shows:'all'},
-    ],
-    activity:[
-      {icon:'⚡',text:'pub_keg2_s offline — no heartbeat for 22min',time:'10:18',color:'var(--red)'},
-      {icon:'🛢',text:'Guinness Tap #1 — new keg started',time:'08:44',color:'var(--green)'},
-    ]
-  },
-  {
-    id:3, name:'Biergarten Munich', city:'Munich', country:'Germany',
-    emoji:'🌿', plan:'enterprise', active:true, renewal:'01/06/2026',
-    timezone:'Europe/Berlin', language:'de',
-    poured_today: 621, keg_changes_today: 4, active_taps: 2,
-    low_warning: 20, critical_alert: 10, temp_max: 6, co2_min: 1.5, cleaning_days: 14,
-    kegs:[
-      {tap:1, beer:'Paulaner Helles', emoji:'🌾', size:50, rem:28.3, co2:2.1, temp:3.9, fob:false, online:true,  sensor_id:'bier_keg1_s', display_id:'bier_disp1'},
-      {tap:2, beer:'Weihenstephaner', emoji:'🏔', size:50, rem:41.2, co2:2.3, temp:4.0, fob:false, online:true,  sensor_id:'bier_keg2_s', display_id:'bier_disp1'},
-      {tap:3, beer:'Heineken',        emoji:'🍺', size:50, rem:3.1,  co2:2.4, temp:4.1, fob:true,  online:false, sensor_id:'bier_keg3_s', display_id:'bier_disp1'},
-    ],
-    users:[
-      {name:'Hans Weber',  email:'hans@biergarten.de',  phone:'+49 176 1234 5678', role:'Owner',   active:true,  lastLogin:'Yesterday'},
-      {name:'Klaus Müller',email:'klaus@biergarten.de', phone:'+49 160 9876 5432', role:'Manager', active:true,  lastLogin:'Today 07:15'},
-      {name:'Eva Braun',   email:'eva@biergarten.de',   phone:'+49 151 1111 2222', role:'Staff',   active:false, lastLogin:'3 days ago'},
-    ],
-    devices:[
-      {id:'bier_keg1_s', type:'sensor',  keg:'Paulaner Helles', tap:1, online:true,  fw:'v2.1.4', ip:'172.16.0.5', topic:'biergarten_01/keg/1/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'bier_keg2_s', type:'sensor',  keg:'Weihenstephaner', tap:2, online:true,  fw:'v2.1.4', ip:'172.16.0.6', topic:'biergarten_01/keg/2/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'bier_keg3_s', type:'sensor',  keg:'Heineken',        tap:3, online:false, fw:'v2.1.2', ip:'—',          topic:'biergarten_01/keg/3/sensor',   sensors:{flow:true,temp:true,co2:true,fob:true}},
-      {id:'bier_disp1',  type:'display', loc:'Bar — main',      tap:null,online:true,fw:'v2.1.4', ip:'172.16.0.8', topic:'biergarten_01/display/bar_01', shows:'all'},
-      {id:'bier_disp2',  type:'display', loc:'Bar — secondary', tap:null,online:true,fw:'v2.1.4', ip:'172.16.0.9', topic:'biergarten_01/display/bar_02', shows:'critical'},
-    ],
-    activity:[
-      {icon:'⚡',text:'bier_keg3_s offline — Heineken Tap #3',time:'10:05',color:'var(--red)'},
-      {icon:'🛢',text:'Paulaner Tap #1 — keg change logged',time:'09:30',color:'var(--green)'},
-    ]
-  },
-  {
-    id:4, name:'The Red Lion', city:'London', country:'UK',
-    emoji:'🔴', plan:'starter', active:false, renewal:'OVERDUE',
-    timezone:'Europe/London', language:'en',
-    poured_today: 0, keg_changes_today: 0, active_taps: 0,
-    low_warning: 20, critical_alert: 10, temp_max: 6, co2_min: 1.5, cleaning_days: 14,
-    kegs:[], users:[{name:'James Smith',email:'james@redlion.co.uk',phone:'+44 7700 900123',role:'Manager',active:false,lastLogin:'5 days ago'}],
-    devices:[], activity:[{icon:'💳',text:'Payment failed — account suspended',time:'2 days ago',color:'var(--red)'}]
-  },
-];
+// RESTAURANTS_DATA removed in favor of RESTAURANTS_DATA from backend
+
 
 let currentRestaurantId = null;
 let currentDetailTab = 'overview';
@@ -5198,7 +5124,7 @@ function renderRestList(){
   const q   = (document.getElementById('restSearch')?.value||'').toLowerCase();
   const el  = document.getElementById('restListGrid');
   if(!el) return;
-  let filtered = RESTAURANTS_EXT.filter(r=>{
+  let filtered = RESTAURANTS_DATA.filter(r=>{
     if(restFilter==='active'    && !r.active) return false;
     if(restFilter==='suspended' &&  r.active) return false;
     if(q && !r.name.toLowerCase().includes(q) && !r.city.toLowerCase().includes(q)) return false;
@@ -5263,7 +5189,7 @@ function setRestFilter(f,el){
 
 // ── OPEN RESTAURANT DETAIL ──
 function openRestaurantDetail(id){
-  const r = RESTAURANTS_EXT.find(x=>x.id===id);
+  const r = RESTAURANTS_DATA.find(x=>x.id===id);
   if(!r) return;
   currentRestaurantId = id;
 
@@ -5298,7 +5224,7 @@ function switchDetailTab(tab, el){
   document.querySelectorAll('.detail-tab').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
 
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = window._currentRest;
   if(!r) return;
 
   if(tab==='overview')  renderDetailOverview(r);
@@ -5321,7 +5247,7 @@ function setOverviewPeriod(days, btn){
 }
 
 function refreshOverview(){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(r) renderDetailOverview(r);
 }
 
@@ -5442,7 +5368,7 @@ function renderDetailKegs(r){
 }
 
 function openAddKegToRest(){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const nextTap = r.kegs.length ? Math.max(...r.kegs.map(k=>k.tap)) + 1 : 1;
   const restIn = document.getElementById('ak-rest');
@@ -5492,7 +5418,7 @@ function selectAkBeer(id){
 }
 
 function saveNewKeg(){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const beerId = parseInt(document.getElementById('ak-beer-id')?.value);
   if(!beerId){ toast('Please select a beer from the library','error'); return; }
@@ -5556,7 +5482,7 @@ function saveNewUser(){
   if(!email){ toast('Email is required','error');      return; }
   if(!role){  toast('Please select a role','error');   return; }
   const phone = document.getElementById('addUserPhone')?.value.trim()||'';
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(r) r.users.push({ name:first+' '+last, email, phone, role, active:true, lastLogin:'Never' });
   closeM('mAddUser');
   if(r) renderDetailUsers(r);
@@ -5564,7 +5490,7 @@ function saveNewUser(){
 }
 
 function openEditUser(idx){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r||!r.users[idx]) return;
   const u = r.users[idx];
   document.getElementById('eu-name').value  = u.name||'';
@@ -5578,7 +5504,7 @@ function openEditUser(idx){
 
 function saveEditUser(){
   const idx   = parseInt(document.getElementById('eu-idx')?.value);
-  const r     = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r     = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r||isNaN(idx)||!r.users[idx]) return;
   const name  = document.getElementById('eu-name')?.value.trim();
   const email = document.getElementById('eu-email')?.value.trim();
@@ -5594,7 +5520,7 @@ function saveEditUser(){
 }
 
 function deleteUser(idx){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r||!r.users[idx]) return;
   const u = r.users[idx];
   showConfirm({
@@ -5606,7 +5532,7 @@ function deleteUser(idx){
 }
 
 function toggleUserActive(idx){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r||!r.users[idx]) return;
   const u = r.users[idx];
   const willEnable = !u.active;
@@ -5625,7 +5551,7 @@ function toggleUserActive(idx){
 let currentEditKegTap = null;
 
 function openEditKeg(tap){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const k = r.kegs.find(x=>x.tap===tap);
   if(!k) return;
@@ -5685,7 +5611,7 @@ function selectEkBeer(id){
 }
 
 function saveEditKeg(){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const k = r.kegs.find(x=>x.tap===currentEditKegTap);
   if(!k) return;
@@ -5708,7 +5634,7 @@ function saveEditKeg(){
 }
 
 function deleteKeg(tap){
-  const r = RESTAURANTS_EXT.find(x=>x.id===currentRestaurantId);
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   const k = r.kegs.find(x=>x.tap===tap);
   if(!k) return;
@@ -5843,23 +5769,7 @@ setTimeout(()=>{
    BEER STYLES MANAGEMENT
 ══════════════════════════════════════════ */
 
-// Master list of beer styles — used in Beer Library modal selects and filter
-const BEER_STYLES_DEFAULT = [
-  {id:1, name:'Lager',      desc:'Clean, crisp, bottom-fermented',          abv_min:4.0, abv_max:5.5},
-  {id:2, name:'Pilsner',    desc:'Light, hoppy Lager variant',               abv_min:4.0, abv_max:5.5},
-  {id:3, name:'Ale',        desc:'Top-fermented, broad category',            abv_min:4.5, abv_max:7.0},
-  {id:4, name:'Stout',      desc:'Dark, roasted malt flavour',               abv_min:4.0, abv_max:8.0},
-  {id:5, name:'Porter',     desc:'Dark ale, slightly lighter than stout',    abv_min:4.0, abv_max:7.0},
-  {id:6, name:'Wheat',      desc:'Brewed with wheat, hazy and smooth',       abv_min:4.0, abv_max:5.5},
-  {id:7, name:'IPA',        desc:'India Pale Ale, heavily hopped',           abv_min:5.5, abv_max:8.0},
-  {id:8, name:'Pale Ale',   desc:'Balanced, hoppy and easy-drinking',        abv_min:4.5, abv_max:6.0},
-  {id:9, name:'Dark Ale',   desc:'Malty, rich dark top-fermented',           abv_min:4.5, abv_max:7.0},
-  {id:10,name:'Sour Ale',   desc:'Tart, acidic fermentation character',      abv_min:3.5, abv_max:7.0},
-  {id:11,name:'Red Ale',    desc:'Caramel malt with light hop bitterness',   abv_min:4.0, abv_max:6.0},
-  {id:12,name:'Blonde Ale', desc:'Light, accessible, easy-drinking',         abv_min:4.0, abv_max:5.5},
-];
-let BEER_STYLES = (()=>{ try{ const s=localStorage.getItem('bc_beer_styles'); return s?JSON.parse(s):BEER_STYLES_DEFAULT; }catch(e){ return BEER_STYLES_DEFAULT; } })();
-function saveBeerStyles(){ try{ localStorage.setItem('bc_beer_styles', JSON.stringify(BEER_STYLES)); }catch(e){} }
+// ── Master Data (Styles) handled by initData() ──
 
 // Populate all style selects in the DOM
 function populateStyleSelects(){
@@ -5902,22 +5812,26 @@ function addBeerStyle(){
   document.getElementById('newStyleName')?.focus();
 }
 
-function saveNewStyle(){
-  const name = document.getElementById('newStyleName')?.value.trim();
-  const desc = document.getElementById('newStyleDesc')?.value.trim();
-  const minA = parseFloat(document.getElementById('newStyleAbvMin')?.value||0);
-  const maxA = parseFloat(document.getElementById('newStyleAbvMax')?.value||0);
+async function saveNewStyle(){
+  const name  = document.getElementById('newStyleName')?.value.trim();
+  const desc  = document.getElementById('newStyleDesc')?.value.trim();
+  const min   = parseFloat(document.getElementById('newStyleAbvMin')?.value||0);
+  const max   = parseFloat(document.getElementById('newStyleAbvMax')?.value||0);
   if(!name){ toast('Style name required','error'); return; }
-  const newId = Math.max(...BEER_STYLES.map(s=>s.id)) + 1;
-  BEER_STYLES.push({id:newId, name, desc:desc||'', abv_min:minA||0, abv_max:maxA||0});
-  saveBeerStyles();
-  renderStylesList();
-  populateStyleSelects();
-  // clear form
-  ['newStyleName','newStyleDesc','newStyleAbvMin','newStyleAbvMax'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.value='';
-  });
-  toast(name + ' style added','info');
+  try {
+    const res = await fetch('/api/admin/styles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc||'', abv_min: min, abv_max: max })
+    });
+    if((await res.json()).success) {
+      initData();
+      ['newStyleName','newStyleDesc','newStyleAbvMin','newStyleAbvMax'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.value='';
+      });
+      toast(name + ' style added ✓','info');
+    }
+  } catch(e){ toast('Error saving style','error'); }
 }
 
 function editStyle(id){
@@ -5982,17 +5896,23 @@ function renderRolesList(){
     </div>`).join('');
 }
 
-function saveNewRole(){
+async function saveNewRole(){
   const name = document.getElementById('newRoleName')?.value.trim();
   const desc = document.getElementById('newRoleDesc')?.value.trim();
   if(!name){ toast('Role name is required','error'); return; }
-  if(ROLES.find(r=>r.name.toLowerCase()===name.toLowerCase())){ toast('Role already exists','error'); return; }
-  ROLES.push({id: Math.max(0,...ROLES.map(r=>r.id))+1, name, desc:desc||''});
-  saveRoles();
-  document.getElementById('newRoleName').value='';
-  document.getElementById('newRoleDesc').value='';
-  renderRolesList();
-  toast(name + ' role added','info');
+  try {
+    const res = await fetch('/api/admin/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc||'' })
+    });
+    if((await res.json()).success) {
+      initData();
+      document.getElementById('newRoleName').value='';
+      document.getElementById('newRoleDesc').value='';
+      toast(name + ' role added ✓','info');
+    }
+  } catch(e){ toast('Error saving role','error'); }
 }
 
 function editRole(id){
@@ -6047,18 +5967,26 @@ function populatePlanSelects(){
   });
 }
 
-function saveNewPlan(){
+async function saveNewPlan(){
   const name  = document.getElementById('newPlanName')?.value.trim();
   const price = parseInt(document.getElementById('newPlanPrice')?.value||0);
   const taps  = parseInt(document.getElementById('newPlanTaps')?.value||0);
   const desc  = document.getElementById('newPlanDesc')?.value.trim();
   if(!name){ toast('Plan name is required','error'); return; }
-  PLANS.push({id: Math.max(0,...PLANS.map(p=>p.id))+1, name, price, maxTaps:taps, desc:desc||''});
-  savePlans();
-  ['newPlanName','newPlanPrice','newPlanTaps','newPlanDesc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  renderPlansList();
-  populatePlanSelects();
-  toast(name + ' plan added','info');
+  
+  try {
+    const res = await fetch('/api/admin/plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, price, max_taps: taps, description: desc||'' })
+    });
+    const d = await res.json();
+    if(d.success) {
+      initData();
+      ['newPlanName','newPlanPrice','newPlanTaps','newPlanDesc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      toast(name + ' plan added','info');
+    }
+  } catch(e){ toast('Error saving plan','error'); }
 }
 
 function editPlan(id){
@@ -6073,13 +6001,20 @@ function editPlan(id){
   toast('Plan updated','info');
 }
 
-function saveMqttSettings() {
+async function saveMqttSettings() {
   const host = document.getElementById('ms-host')?.value;
   const port = document.getElementById('ms-port')?.value;
   const user = document.getElementById('ms-user')?.value;
   const pass = document.getElementById('ms-pass')?.value;
-  localStorage.setItem('bc_mqtt_settings', JSON.stringify({ host, port, user, pass }));
-  toast('MQTT settings saved ✓', 'success');
+  
+  try {
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mqtt_host: host, mqtt_port: port, mqtt_user: user, mqtt_pass: pass })
+    });
+    if((await res.json()).success) toast('MQTT settings saved ✓', 'success');
+  } catch(e) { toast('Error saving MQTT settings','error'); }
 }
 
 async function testMqttSettings() {
@@ -6102,31 +6037,54 @@ async function testMqttSettings() {
   }
 }
 
-function saveDefaultThresholds() {
+async function saveDefaultThresholds() {
   const vals = {
-    low: document.querySelector('#stab-thresholds input[value="20"]')?.value,
-    crit: document.querySelector('#stab-thresholds input[value="10"]')?.value,
-    temp: document.querySelector('#stab-thresholds input[value="6"]')?.value,
-    co2: document.querySelector('#stab-thresholds input[value="1.5"]')?.value,
-    cleaning: document.querySelector('#stab-thresholds input[value="14"]')?.value
+    alert_low_pct: document.querySelector('#stab-thresholds input[value="20"]')?.value,
+    alert_critical_pct: document.querySelector('#stab-thresholds input[value="10"]')?.value,
+    temp_max: document.querySelector('#stab-thresholds input[value="6"]')?.value,
+    co2_min: document.querySelector('#stab-thresholds input[value="1.5"]')?.value,
+    cleaning_days: document.querySelector('#stab-thresholds input[value="14"]')?.value
   };
-  localStorage.setItem('bc_default_thresholds', JSON.stringify(vals));
-  toast('Default thresholds saved ✓', 'success');
-}
-
-function saveLocations(){
   try {
-    localStorage.setItem('bc_locations', JSON.stringify(LOCATIONS));
-    toast('Display locations saved ✓', 'info');
-  } catch(e){}
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vals)
+    });
+    if((await res.json()).success) toast('Default thresholds saved ✓', 'success');
+  } catch(e){ toast('Error saving thresholds','error'); }
 }
 
-function savePlatformSettings() {
+async function addLocation(){
+  const n = document.getElementById('newLocationName')?.value.trim();
+  if(!n) return;
+  try {
+    const res = await fetch('/api/admin/locations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: n })
+    });
+    if((await res.json()).success) {
+      initData();
+      document.getElementById('newLocationName').value = '';
+      toast('Location added ✓', 'success');
+    }
+  } catch(e){ toast('Error saving location','error'); }
+}
+
+async function savePlatformSettings() {
   const name = document.querySelector('#stab-general input[value="KegHero"]')?.value;
   const email = document.querySelector('#stab-general input[value="support@beercontrol.io"]')?.value;
   const lang = document.querySelector('#stab-general select')?.value;
-  localStorage.setItem('bc_platform_settings', JSON.stringify({ name, email, lang }));
-  toast('Platform settings saved ✓', 'success');
+  
+  try {
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_name: name, admin_email: email, default_lang: lang })
+    });
+    if((await res.json()).success) toast('Platform settings saved ✓', 'success');
+  } catch(e){ toast('Error saving settings','error'); }
 }
 
 function deletePlan(id){
@@ -6211,7 +6169,7 @@ function openEditBeer(id){
   openM('mEditBeer');
 }
 
-function saveEditBeer(){
+async function saveEditBeer(){
   const id    = parseInt(document.getElementById('eb-id').value);
   const name  = document.getElementById('eb-name').value.trim();
   const style = document.getElementById('eb-style').value;
@@ -6223,16 +6181,19 @@ function saveEditBeer(){
   if(!style) { toast('Please select a style','error'); return; }
   const b = BEER_LIBRARY.find(x=>x.id===id);
   if(!b) return;
-  b.name   = name;
-  b.style  = style;
-  b.abv    = abv;
-  b.brand  = brand;
-  b.origin = origin;
-  if(logoData) b.logo = logoData;
-  saveBeerLibrary();
-  closeM('mEditBeer');
-  renderBeerLibraryGrid();
-  toast(name + ' updated ✓', 'info');
+
+  try {
+    const res = await fetch('/api/admin/library/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, style, abv, brand, origin, logo_data: logoData || b.logo_data, emoji: b.emoji })
+    });
+    if((await res.json()).success) {
+      closeM('mEditBeer');
+      initData();
+      toast(name + ' updated ✓', 'info');
+    }
+  } catch(e){ toast('Error updating beer','error'); }
 }
 
 function deleteBeerFromLibrary(){
@@ -6244,13 +6205,15 @@ function deleteBeerFromLibrary(){
     title: 'Delete Beer',
     message: `Are you sure you want to delete <strong>${b.name}</strong> from the library? This action cannot be undone.`,
     confirmLabel: 'Yes, Delete',
-    onConfirm: () => {
-      const idx = BEER_LIBRARY.indexOf(b);
-      BEER_LIBRARY.splice(idx, 1);
-      saveBeerLibrary();
-      closeM('mEditBeer');
-      renderBeerLibraryGrid();
-      toast(b.name + ' deleted', 'info');
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/library/' + b.id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          closeM('mEditBeer');
+          initData();
+          toast(b.name + ' deleted', 'info');
+        }
+      } catch(e){ toast('Error deleting beer','error'); }
     }
   });
 }
@@ -6292,25 +6255,28 @@ function previewLogo(input, previewId, dataId){
 }
 
 // Override addBeerToLibrary to use new simplified form
-function addBeerToLibrary(){
+async function addBeerToLibrary(){
   const name  = document.getElementById('nb-name')?.value.trim();
   const style = document.getElementById('nb-style')?.value;
   const abv   = parseFloat(document.getElementById('nb-abv')?.value||0);
   const logoData = document.getElementById('nb-logo-data')?.value;
   if(!name)  { toast('Beer name is required','error'); return; }
   if(!style) { toast('Please select a style','error'); return; }
-  const newId = Math.max(...BEER_LIBRARY.map(b=>b.id)) + 1;
-  const newBeer = {id:newId, name, style, abv, emoji:'🍺', assignedTo:[]};
-  if(logoData) newBeer.logo = logoData;
-  BEER_LIBRARY.push(newBeer);
-  saveBeerLibrary();
-  closeM('mAddBeer');
-  ['nb-name','nb-abv'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.value = id==='nb-abv'?'5.0':''; } });
-  const styleEl = document.getElementById('nb-style'); if(styleEl) styleEl.value='';
-  document.getElementById('nb-logo-data').value='';
-  document.getElementById('nb-logo-preview').textContent='🍺';
-  renderBeerLibraryGrid();
-  toast(name + ' added to library ✓','info');
+  
+  try {
+    const res = await fetch('/api/admin/library', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, style, abv, brand:'', origin:'', logo_data: logoData, emoji:'🍺' })
+    });
+    if((await res.json()).success) {
+      initData();
+      closeM('mAddBeer');
+      ['nb-name','nb-abv','nb-logo-data'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value = (id==='nb-abv'?'5.0':''); });
+      document.getElementById('nb-logo-preview').textContent='🍺';
+      toast(name + ' added to library ✓','info');
+    }
+  } catch(e){ toast('Error adding beer','error'); }
 }
 
 // ══════════════════════════════════════════

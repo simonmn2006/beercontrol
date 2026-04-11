@@ -23,13 +23,37 @@ router.get('/restaurants', async (req, res) => {
   }
 });
 
+router.get('/restaurants/:id', async (req, res) => {
+  try {
+    const r = await db.get("SELECT * FROM restaurants WHERE id=?", [req.params.id]);
+    if (!r) return res.status(404).json({ error: 'Not found' });
+    
+    // We don't have a devices table yet? Let's check. 
+    // Actually, looking at the schema in db.js, we have 'kegs' which have esp32_sensor_id and esp32_display_id.
+    // In the mock, 'devices' was a separate list.
+    // For now, let's just return an empty list or mock it until we add a devices table.
+    // Wait, let's check if there's a devices table in db.js.
+    
+    const [users, kegs, alerts] = await Promise.all([
+      db.all("SELECT id, name, email, phone, role, active, created_at FROM users WHERE restaurant_id=?", [r.id]),
+      db.all("SELECT * FROM kegs WHERE restaurant_id=? AND active=1 ORDER BY tap_number", [r.id]),
+      db.all("SELECT * FROM alerts WHERE restaurant_id=? ORDER BY created_at DESC LIMIT 20", [r.id])
+    ]);
+    
+    res.json({ ...r, users, kegs, activity: alerts, devices: [] });
+  } catch (err) {
+    console.error('Get restaurant detail error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 router.post('/restaurants', async (req, res) => {
   try {
-    const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password } = req.body;
+    const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password, phone, address, postal_code } = req.body;
     const r = await db.run(`
-      INSERT INTO restaurants (name,city,country,language,plan,renewal_date)
-      VALUES (?,?,?,?,?,?)
-    `, [name, city||'', country||'', language||'en', plan||'starter', renewal_date||null]);
+      INSERT INTO restaurants (name,city,country,language,plan,renewal_date,phone,address,postal_code)
+      VALUES (?,?,?,?,?,?,?,?,?)
+    `, [name, city||'', country||'', language||'en', plan||'starter', renewal_date||null, phone||'', address||'', postal_code||'']);
     
     if (owner_email && owner_name) {
       const hash = bcrypt.hashSync(owner_password || 'changeme123', 10);
@@ -355,6 +379,82 @@ router.put('/restaurants/:id/billing-settings', async (req, res) => {
     console.error('Update billing settings error:', err);
     res.status(500).json({ error: 'server_error' });
   }
+});
+
+// ── Master Data ───────────────────────────
+router.get('/library', async (req, res) => {
+  try { res.json(await db.all("SELECT * FROM beer_library ORDER BY name")); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/library', async (req, res) => {
+  try {
+    const { name, style, abv, brand, origin, logo_data, emoji } = req.body;
+    const r = await db.run("INSERT INTO beer_library (name, style, abv, brand, origin, logo_data, emoji) VALUES (?,?,?,?,?,?,?)",
+      [name, style, abv, brand, origin, logo_data, emoji||'🍺']);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.put('/library/:id', async (req, res) => {
+  try {
+    const { name, style, abv, brand, origin, logo_data, emoji } = req.body;
+    await db.run("UPDATE beer_library SET name=?, style=?, abv=?, brand=?, origin=?, logo_data=?, emoji=? WHERE id=?",
+      [name, style, abv, brand, origin, logo_data, emoji||'🍺', req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.delete('/library/:id', async (req, res) => {
+  try {
+    await db.run("DELETE FROM beer_library WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/styles', async (req, res) => {
+  try { res.json(await db.all("SELECT * FROM beer_styles ORDER BY name")); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/styles', async (req, res) => {
+  try {
+    const { name, description, abv_min, abv_max } = req.body;
+    const r = await db.run("INSERT INTO beer_styles (name, description, abv_min, abv_max) VALUES (?,?,?,?)", [name, description, abv_min, abv_max]);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/plans', async (req, res) => {
+  try { res.json(await db.all("SELECT * FROM plans ORDER BY price")); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/plans', async (req, res) => {
+  try {
+    const { name, price, max_taps, description } = req.body;
+    const r = await db.run("INSERT INTO plans (name, price, max_taps, description) VALUES (?,?,?,?)", [name, price, max_taps, description]);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/roles', async (req, res) => {
+  try { res.json(await db.all("SELECT * FROM user_roles ORDER BY id")); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/roles', async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    const r = await db.run("INSERT INTO user_roles (name, description) VALUES (?,?)", [name, description]);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/locations', async (req, res) => {
+  try { res.json(await db.all("SELECT * FROM display_locations ORDER BY name")); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/locations', async (req, res) => {
+  try {
+    const { name } = req.body;
+    const r = await db.run("INSERT INTO display_locations (name) VALUES (?)", [name]);
+    res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── System stats ─────────────────────────────
