@@ -28,7 +28,7 @@ body{background:var(--bg0);color:var(--text1);font-family:var(--fb);min-height:1
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
 /* ── LOGIN ── */
-#loginPage{position:fixed;inset:0;background:var(--bg0);display:flex;align-items:center;justify-content:center;z-index:500}
+#loginPage{position:fixed;inset:0;background:var(--bg0);display:none;align-items:center;justify-content:center;z-index:500}
 #loginPage::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.3}
 .login-box{position:relative;z-index:1;width:420px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.6)}
 .login-top{padding:32px 32px 24px;text-align:center;border-bottom:1px solid var(--border);background:linear-gradient(160deg,var(--bg3),var(--bg2))}
@@ -1991,6 +1991,8 @@ textarea{resize:vertical;min-height:80px}
       }
     } catch (e) {
       console.error('Core Logic: Session check failed', e);
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
     }
   }
 
@@ -4332,35 +4334,7 @@ function filterBeers(){
   renderBeerLibraryGrid();
 }
 
-function renderBeerLibraryGrid(){
-  const el = document.getElementById('beerLibraryGrid');
-  if(!el) return;
-  let filtered = BEER_LIBRARY.filter(b=>{
-    if(beerLibFilter && !b.name.toLowerCase().includes(beerLibFilter) && !b.brand.toLowerCase().includes(beerLibFilter)) return false;
-    if(beerStyleFilter_val && b.style!==beerStyleFilter_val) return false;
-    return true;
-  });
-  document.getElementById('beerCount').textContent = filtered.length + ' beers';
-  el.innerHTML = filtered.map(b=>`
-    <div class="beer-lib-card" onclick="openM('mAddBeer')">
-      ${b.assignedTo.length>0?`<div class="beer-assigned-count">${b.assignedTo.length} venue${b.assignedTo.length!==1?'s':''}</div>`:''}
-      <div class="fxc g12" style="margin-bottom:12px">
-        <div class="beer-lib-logo">${b.logo ? `<img src="${b.logo}" style="width:42px;height:42px;object-fit:contain;" onerror="this.parentElement.textContent='${b.emoji}'">` : b.emoji}</div>
-        <div>
-          <div class="beer-lib-name">${b.name}</div>
-          <div class="beer-lib-meta">${b.brand} · ${b.origin}</div>
-        </div>
-      </div>
-      <div class="flex g6" style="flex-wrap:wrap;margin-bottom:10px">
-        <span class="tag tg-blue">${b.style}</span>
-        <span class="tag tg-gray">${b.abv}% ABV</span>
-      </div>
-      ${b.assignedTo.length>0
-        ? `<div style="font-size:11px;color:var(--text3);font-family:var(--fm)">Assigned: ${b.assignedTo.join(', ')}</div>`
-        : `<div style="font-size:11px;color:var(--text3);font-family:var(--fm)">Not assigned to any venue</div>`}
-      <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:10px" onclick="event.stopPropagation();toast('Beer assigned to tap','info')">+ Assign to Tap</button>
-    </div>`).join('');
-}
+// Consolidating renderBeerLibraryGrid to the improved version at the end of the file
 
 function addBeerToLibrary(){
   const name = document.getElementById('nb-name')?.value.trim();
@@ -6282,7 +6256,7 @@ async function addBeerToLibrary(){
       body: JSON.stringify({ name, style, abv, brand:'', origin:'', logo_data: logoData, emoji:'🍺' })
     });
     if((await res.json()).success) {
-      initData();
+      await initData();
       closeM('mAddBeer');
       ['nb-name','nb-abv','nb-logo-data'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value = (id==='nb-abv'?'5.0':''); });
       document.getElementById('nb-logo-preview').textContent='🍺';
