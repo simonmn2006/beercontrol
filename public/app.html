@@ -219,7 +219,7 @@ textarea{resize:vertical;min-height:80px}
 .toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
 
 /* ── LIVE DOT ── */
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:pulse 2s infinite;flex-shrink:0}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,201,122,.5)}50%{box-shadow:0 0 0 5px rgba(34,201,122,0)}}
 
 /* ── TOGGLE ── */
@@ -6020,10 +6020,19 @@ async function testMqttSettings() {
   btn.disabled = true;
   
   try {
-    const res = await fetch('/api/admin/mqtt/test', { method:'POST' });
+    const host = document.getElementById('ms-host')?.value;
+    const port = document.getElementById('ms-port')?.value;
+    const user = document.getElementById('ms-user')?.value;
+    const pass = document.getElementById('ms-pass')?.value;
+
+    const res = await fetch('/api/admin/mqtt/test', { 
+      method:'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host, port, user, pass })
+    });
     const data = await res.json();
-    if(data.status==='success') toast('Connection successful!', 'success');
-    else toast('Connection failed: ' + (data.message||'Unknown error'), 'error');
+    if(data.success) toast('Connection successful!', 'success');
+    else toast('Connection failed: ' + (data.message || 'Unknown error'), 'error');
   } catch(e) {
     toast('Connection failed: Server offline', 'error');
   } finally {
