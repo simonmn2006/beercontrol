@@ -16,7 +16,19 @@ router.get('/restaurants', async (req, res) => {
       LEFT JOIN kegs  k ON k.restaurant_id=r.id AND k.active=1
       GROUP BY r.id ORDER BY r.name
     `);
-    res.json(rows);
+    
+    // Transform to match frontend expectations
+    const transformed = rows.map(r => ({
+      ...r,
+      devices: [], // To be implemented when devices table exists
+      kegs: new Array(r.keg_count || 0).fill({}),
+      users: new Array(r.user_count || 0).fill({}),
+      poured_today: 0,
+      renewal: r.renewal_date || 'N/A',
+      emoji: '🍺'
+    }));
+    
+    res.json(transformed);
   } catch (err) {
     console.error('Get restaurants error:', err);
     res.status(500).json({ error: 'server_error' });

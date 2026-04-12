@@ -5141,6 +5141,14 @@ function renderRestList(){
   if(cnt) cnt.textContent = filtered.length + ' restaurants';
 
   el.innerHTML = filtered.map(r => {
+    // Defensive checks for missing properties
+    r.devices = r.devices || [];
+    r.kegs = r.kegs || [];
+    r.users = r.users || [];
+    r.emoji = r.emoji || '🍺';
+    r.poured_today = r.poured_today || 0;
+    r.renewal = r.renewal || 'N/A';
+
     const offlineDevices = r.devices.filter(d=>!d.online).length;
     const planColor = {pro:'tg-amber',enterprise:'tg-blue',starter:'tg-gray'}[r.plan]||'tg-gray';
     return `
