@@ -8,11 +8,26 @@ echo "🚀 Starting KegHero Dashboard Kiosk Setup..."
 
 # 1. Update & Install Dependencies
 sudo apt update
-sudo apt install -y libgl1-mesa-dri libgles2-mesa-dev pkg-config
+sudo apt install -y cmake build-essential libsystemd-dev libinput-dev libudev-dev libgbm-dev libdrm-dev libegl-mesa0 libgles2-mesa-dev pkg-config
 
-# 2. Permissions Fix
+# 2. Build flutter-pi from Source (Recommended for stability)
+echo "📦 Building flutter-pi engine..."
+cd ~
+if [ ! -d "flutter-pi" ]; then
+    git clone https://github.com/ardera/flutter-pi.git
+fi
+cd flutter-pi
+mkdir -p build && cd build
+cmake ..
+make -j$(nproc)
+sudo make install
+
+# 3. Permissions Fix
 # Ensure the 'pi' user (or current user) has access to graphics hardware
 sudo usermod -a -G render,video $USER
+
+# 4. Create the Launcher Script
+LAUNCHER_PATH="/home/$USER/start_dashboard.sh"
 
 # Find flutter-pi binary
 if [ -f "/home/$USER/flutter-pi" ]; then
@@ -45,8 +60,5 @@ echo ""
 echo "🚀 Performance Tips for Bookworm + KMS:"
 echo "1. GPU Memory: In /boot/firmware/config.txt, set 'gpu_mem=256' or higher."
 echo "2. Permissions: You MUST reboot for hardware acceleration groups to take effect."
-echo "3. Engine: If you haven't installed flutter-pi yet, run:"
-echo "   sudo wget https://github.com/ardera/flutter-pi/releases/latest/download/flutter-pi -O /usr/local/bin/flutter-pi"
-echo "   sudo chmod +x /usr/local/bin/flutter-pi"
 echo ""
 echo "👉 After rebooting, run with: $LAUNCHER_PATH"
