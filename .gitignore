@@ -37,3 +37,5 @@ dashboard/.packages
 dashboard/.flutter-plugins
 dashboard/.flutter-plugins-dependencies
 dashboard/*.lock
+dashboard/pubspec.lock
+dashboard/.metadata
