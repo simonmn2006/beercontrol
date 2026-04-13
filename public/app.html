@@ -5179,30 +5179,50 @@ function setRestFilter(f,el){
 }
 
 // ── OPEN RESTAURANT DETAIL ──
-function openRestaurantDetail(id){
-  const r = RESTAURANTS_DATA.find(x=>x.id===id);
-  if(!r) return;
-  currentRestaurantId = id;
+// ── OPEN RESTAURANT DETAIL ──
+async function openRestaurantDetail(id){
+  try {
+    const res = await fetch('/api/admin/restaurants/' + id);
+    const r = await res.json();
+    if(!r || r.error) return;
 
-  // Update header
-  document.getElementById('detailRestName').textContent = r.emoji + '  ' + r.name;
-  document.getElementById('detailRestPlan').textContent = r.plan;
-  document.getElementById('detailRestStatus').innerHTML = `<span class="sp ${r.active?'sp-on':'sp-off'}" style="font-size:12px"><span class="sp-dot"></span>${r.active?t('active'):t('suspended')}</span>`;
+    // Update global list with fresh detail
+    const idx = RESTAURANTS_DATA.findIndex(x => x.id === id);
+    if(idx > -1) RESTAURANTS_DATA[idx] = r;
+    else RESTAURANTS_DATA.push(r);
 
-  // Populate settings tab fields
-  const setField = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val; };
-  setField('ds-name', r.name);
-  setField('ds-city', r.city);
-  setField('ds-country', r.country);
-  setField('ds-plan', r.plan);
-  setField('ds-tz', r.timezone);
-  setField('ds-lang', r.language);
-  const dpEl = document.getElementById('dpDetailRenewal');
-  if(dpEl && r.renewal !== 'OVERDUE') dpEl.value = r.renewal;
+    currentRestaurantId = id;
+    window._currentRest = r;
 
-  // Switch to detail page and overview tab
-  nav('adminRestaurantDetail', null);
-  switchDetailTab('overview', document.querySelector('#detailTabs .detail-tab'));
+    // Update header
+    document.getElementById('detailRestName').textContent = (r.emoji || '🍺') + '  ' + r.name;
+    document.getElementById('detailRestPlan').textContent = r.plan;
+    document.getElementById('detailRestStatus').innerHTML = `<span class="sp ${r.active?'sp-on':'sp-off'}" style="font-size:12px"><span class="sp-dot"></span>${r.active?t('active'):t('suspended')}</span>`;
+
+    // Populate settings tab fields
+    const setField = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val; };
+    setField('ds-name', r.name);
+    setField('ds-city', r.city);
+    setField('ds-country', r.country);
+    setField('ds-plan', r.plan);
+    setField('ds-tz', r.timezone);
+    setField('ds-lang', r.language);
+    const dpEl = document.getElementById('dpDetailRenewal');
+    if(dpEl && r.renewal !== 'OVERDUE') dpEl.value = r.renewal;
+
+    // Render all sub-views with fresh data
+    renderDetailOverview(r);
+    renderDetailKegs(r);
+    renderDetailUsers(r);
+    renderDetailDevices(r);
+
+    // Switch to detail page and overview tab
+    nav('adminRestaurantDetail', null);
+    switchDetailTab('overview', document.querySelector('#detailTabs .detail-tab'));
+  } catch (e) {
+    console.error('Failed to open restaurant detail:', e);
+    toast('Error loading restaurant data', 'error');
+  }
 }
 
 // ── DETAIL TABS ──
