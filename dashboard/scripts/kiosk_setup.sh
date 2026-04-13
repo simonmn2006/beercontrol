@@ -14,9 +14,12 @@ sudo apt install -y libgl1-mesa-dri libgles2-mesa-dev pkg-config
 # Ensure the 'pi' user (or current user) has access to graphics hardware
 sudo usermod -a -G render,video $USER
 
-# 3. Create the Launcher Script
-# We use /home/$USER/ to avoid issues when running this script with sudo
-LAUNCHER_PATH="/home/$USER/start_dashboard.sh"
+# Find flutter-pi binary
+if [ -f "/home/$USER/flutter-pi" ]; then
+    FLUTTER_PI_BIN="/home/$USER/flutter-pi"
+else
+    FLUTTER_PI_BIN="/usr/local/bin/flutter-pi"
+fi
 
 cat <<EOF > "$LAUNCHER_PATH"
 #!/bin/bash
@@ -25,7 +28,7 @@ cat <<EOF > "$LAUNCHER_PATH"
 # --vulkan: Use Vulkan backend for better shader performance on RPi 4
 # --enable-impeller: Experimental rendering engine for smoother animations
 # Note: Root/Sudo is often required for direct KMS access
-sudo /usr/local/bin/flutter-pi \\
+sudo $FLUTTER_PI_BIN \\
     --release \\
     --vulkan \\
     --enable-impeller \\
