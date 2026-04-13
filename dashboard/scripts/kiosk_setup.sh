@@ -2,52 +2,48 @@
 
 # KegHero Dashboard - Raspberry Pi 4 Kiosk Mode Setup
 # Designed for 720x1560 vertical display with hardware acceleration
+# Optimized for Raspberry Pi OS Bookworm (KMS/DRM)
 
 echo "🚀 Starting KegHero Dashboard Kiosk Setup..."
 
 # 1. Update & Install Dependencies
 sudo apt update
-sudo apt install -i xserver-xorg xinit x11-xserver-utils lightdm \
-     libgl1-mesa-dri libgles2-mesa-dev pkg-config -y
+sudo apt install -y libgl1-mesa-dri libgles2-mesa-dev pkg-config
 
-# 2. Build/Install flutter-pi (Native Embedder for RPi)
-# Note: This assumes you have the dashboard project on the Pi
-# git clone https://github.com/ardera/flutter-pi.git
-# cd flutter-pi && mkdir build && cd build
-# cmake .. && make -j$(nproc) && sudo make install
+# 2. Permissions Fix
+# Ensure the 'pi' user (or current user) has access to graphics hardware
+sudo usermod -a -G render,video $USER
 
-# 3. Configure Display Rotation (Vertical 720x1560)
-# Edit /boot/config.txt
-# display_hdmi_rotate=1 # 90 degrees
-# dtoverlay=vc4-kms-v3d # Ensure HW acceleration is on
+# 3. Create the Launcher Script
+# We use /home/$USER/ to avoid issues when running this script with sudo
+LAUNCHER_PATH="/home/$USER/start_dashboard.sh"
 
-# 4. Create Kiosk Script
-cat <<EOF > ~/start_dashboard.sh
+cat <<EOF > "$LAUNCHER_PATH"
 #!/bin/bash
-# Disable screen sleep
-xset s off
-xset s noblank
-xset -dpms
 
-# Start Flutter Dashboard in fullscreen (using flutter-pi optimized for KMS)
+# Start Flutter Dashboard in fullscreen on KMS
 # --vulkan: Use Vulkan backend for better shader performance on RPi 4
 # --enable-impeller: Experimental rendering engine for smoother animations
-/usr/local/bin/flutter-pi \
-    --release \
-    --vulkan \
-    --enable-impeller \
-    /home/pi/dashboard/asset_bundle
+# Note: Root/Sudo is often required for direct KMS access
+sudo /usr/local/bin/flutter-pi \\
+    --release \\
+    --vulkan \\
+    --enable-impeller \\
+    /home/$USER/dashboard/asset_bundle
 EOF
 
-chmod +x ~/start_dashboard.sh
+# Make launcher executable
+chmod +x "$LAUNCHER_PATH"
+# Ensure it's owned by the user
+chown $USER:$USER "$LAUNCHER_PATH"
 
-# 5. Enable Auto-Login & Auto-Start
-# Note: Use raspi-config to enable Console Auto-login
-# Add start_dashboard.sh to .bash_profile or create a systemd service
-
-echo "✅ Kiosk script created at ~/start_dashboard.sh"
+echo "✅ Kiosk launcher created at $LAUNCHER_PATH"
+echo ""
 echo "🚀 Performance Tips for Bookworm + KMS:"
-echo "1. GPU Memory: In /boot/firmware/config.txt, set 'gpu_mem=256' or higher for shader heavy apps."
-echo "2. Monitor Load: Use 'vcgencmd measure_temp' and 'top' to check for thermal throttling."
-echo "3. Impeller: If you notice glitches, remove '--enable-impeller' to fallback to Vulkan Skia."
-echo "👉 Run with '~/start_dashboard.sh' from the console."
+echo "1. GPU Memory: In /boot/firmware/config.txt, set 'gpu_mem=256' or higher."
+echo "2. Permissions: You MUST reboot for hardware acceleration groups to take effect."
+echo "3. Engine: If you haven't installed flutter-pi yet, run:"
+echo "   sudo wget https://github.com/ardera/flutter-pi/releases/latest/download/flutter-pi -O /usr/local/bin/flutter-pi"
+echo "   sudo chmod +x /usr/local/bin/flutter-pi"
+echo ""
+echo "👉 After rebooting, run with: $LAUNCHER_PATH"
