@@ -2,16 +2,18 @@
 
 # KegHero Dashboard - Raspberry Pi 4 Kiosk Mode Setup
 # Designed for 720x1560 vertical display with hardware acceleration
-# Optimized for Raspberry Pi OS Bookworm (KMS/DRM)
+# Optimized for Raspberry Pi OS Bookworm (KMS/DRM + VULKAN)
 
 echo "🚀 Starting KegHero Dashboard Kiosk Setup..."
 
-# 1. Update & Install Dependencies
+# 1. Update & Install Dependencies (including Vulkan Drivers)
 sudo apt update
-sudo apt install -y cmake build-essential libsystemd-dev libinput-dev libudev-dev libgbm-dev libdrm-dev libegl-mesa0 libgles2-mesa-dev pkg-config
+sudo apt install -y cmake build-essential libsystemd-dev libinput-dev libudev-dev libgbm-dev \
+     libdrm-dev libegl-mesa0 libgles2-mesa-dev pkg-config \
+     mesa-vulkan-drivers libvulkan-dev
 
-# 2. Build flutter-pi from Source (Recommended for stability)
-echo "📦 Building flutter-pi engine..."
+# 2. Build flutter-pi from Source (Enabling VULKAN for best performance)
+echo "📦 Building flutter-pi engine with Vulkan support..."
 cd ~
 if [ ! -d "flutter-pi" ]; then
     git clone https://github.com/ardera/flutter-pi.git
@@ -20,7 +22,11 @@ fi
 sudo chown -R $USER:$USER ~/flutter-pi
 cd flutter-pi
 mkdir -p build && cd build
-cmake ..
+
+# Configure with Vulkan enabled
+cmake .. -DENABLE_VULKAN=On -DVULKAN_DEBUG=OFF
+
+# Compile and Install
 make -j$(nproc)
 sudo make install
 
@@ -31,24 +37,15 @@ sudo usermod -a -G render,video $USER
 # 4. Create the Launcher Script
 LAUNCHER_PATH="/home/$USER/start_dashboard.sh"
 
-# Find flutter-pi binary
-if [ -f "/home/$USER/flutter-pi" ]; then
-    FLUTTER_PI_BIN="/home/$USER/flutter-pi"
-else
-    FLUTTER_PI_BIN="/usr/local/bin/flutter-pi"
-fi
-
 cat <<EOF > "$LAUNCHER_PATH"
 #!/bin/bash
 
 # Start Flutter Dashboard in fullscreen on KMS
-# --vulkan: Use Vulkan backend for better shader performance on RPi 4
-# --enable-impeller: Experimental rendering engine for smoother animations
-# Note: Root/Sudo is often required for direct KMS access
-sudo $FLUTTER_PI_BIN \\
+# --vulkan: Use Vulkan backend for high-performance shader physics
+# Note: Root/Sudo is required for direct KMS access
+sudo /usr/local/bin/flutter-pi \\
     --release \\
     --vulkan \\
-    --enable-impeller \\
     /home/$USER/dashboard/asset_bundle
 EOF
 
@@ -59,8 +56,9 @@ chown $USER:$USER "$LAUNCHER_PATH"
 
 echo "✅ Kiosk launcher created at $LAUNCHER_PATH"
 echo ""
-echo "🚀 Performance Tips for Bookworm + KMS:"
+echo "🚀 Performance Tips for Bookworm + KMS (Vulkan Mode):"
 echo "1. GPU Memory: In /boot/firmware/config.txt, set 'gpu_mem=256' or higher."
 echo "2. Permissions: You MUST reboot for hardware acceleration groups to take effect."
+echo "3. Engine: Compiled with -DENABLE_VULKAN=On for maximum smoothness."
 echo ""
 echo "👉 After rebooting, run with: $LAUNCHER_PATH"
