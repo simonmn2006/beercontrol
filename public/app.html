@@ -551,8 +551,6 @@ textarea{resize:vertical;min-height:80px}
     <span id="detailRestPlan" class="tag tg-amber" style="font-size:11px"></span>
     <span id="detailRestStatus"></span>
     <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn btn-ghost btn-sm" onclick="toast(t('saved'),'info')">✏ Edit</button>
-      <button class="btn btn-danger btn-sm" id="detailSuspendBtn" onclick="toast(t('suspended_ok'),'error')">🔒 Suspend</button>
     </div>
   </div>
 
@@ -670,6 +668,9 @@ textarea{resize:vertical;min-height:80px}
             <div class="form-group fg-full"><label class="fl">Restaurant Name</label><input id="ds-name"></div>
             <div class="form-group"><label class="fl">City</label><input id="ds-city"></div>
             <div class="form-group"><label class="fl">Country</label><input id="ds-country"></div>
+            <div class="form-group"><label class="fl">Phone Number</label><input id="ds-phone"></div>
+            <div class="form-group fg-full"><label class="fl">Street Address</label><input id="ds-address"></div>
+            <div class="form-group"><label class="fl">Postal Code</label><input id="ds-postal"></div>
             <div class="form-group"><label class="fl" data-i18n="plan">Plan</label>
               <select id="ds-plan"><option value="starter">Starter — €89/mo</option><option value="pro">Pro — €189/mo</option><option value="enterprise">Enterprise — €390/mo</option></select>
             </div>
@@ -680,20 +681,20 @@ textarea{resize:vertical;min-height:80px}
               <select id="ds-lang"><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option><option value="it">🇮🇹 Italiano</option><option value="el">🇬🇷 Ελληνικά</option></select>
             </div>
           </div>
-          <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Changes</button></div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="saveRestSettings()">Save Changes</button></div>
         </div>
       </div>
       <div class="card">
         <div class="card-hdr"><span class="card-title">Alert Thresholds</span></div>
         <div class="card-body">
           <div class="fg">
-            <div class="form-group"><label class="fl">Low Keg Warning (%)</label><input type="number" value="20"></div>
-            <div class="form-group"><label class="fl">Critical Alert (%)</label><input type="number" value="10"></div>
-            <div class="form-group"><label class="fl">Max Temperature (°C)</label><input type="number" value="6"></div>
-            <div class="form-group"><label class="fl">Min CO₂ (bar)</label><input type="number" value="1.5" step="0.1"></div>
-            <div class="form-group fg-full"><label class="fl">Line Cleaning Every (days)</label><input type="number" value="14"></div>
+            <div class="form-group"><label class="fl">Low Keg Warning (%)</label><input type="number" id="ds-low" value="20"></div>
+            <div class="form-group"><label class="fl">Critical Alert (%)</label><input type="number" id="ds-crit" value="10"></div>
+            <div class="form-group"><label class="fl">Max Temperature (°C)</label><input type="number" id="ds-tmax" value="6"></div>
+            <div class="form-group"><label class="fl">Min CO₂ (bar)</label><input type="number" id="ds-cmin" value="1.5" step="0.1"></div>
+            <div class="form-group fg-full"><label class="fl">Line Cleaning Every (days)</label><input type="number" id="ds-clean" value="14"></div>
           </div>
-          <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save</button></div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="saveRestSettings()">Save</button></div>
         </div>
       </div>
       <div class="card">
@@ -713,8 +714,8 @@ textarea{resize:vertical;min-height:80px}
         <div class="card-body">
           <div style="display:flex;flex-direction:column;gap:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--r)">
-              <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Suspend Restaurant</div><div style="font-size:12px;color:var(--text3)">All users lose access immediately. Requires double confirmation.</div></div>
-              <button class="btn btn-danger btn-sm" onclick="suspendRestaurant()">Suspend</button>
+              <div><div style="font-size:13px;font-weight:500;color:var(--text1)" id="dz-suspend-title">Suspend Restaurant</div><div style="font-size:12px;color:var(--text3)" id="dz-suspend-desc">All users lose access immediately. Requires double confirmation.</div></div>
+              <button class="btn btn-danger btn-sm" id="dz-suspend-btn" onclick="toggleRestaurantActive()">Suspend</button>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--r)">
               <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Delete Restaurant</div><div style="font-size:12px;color:var(--text3)">Permanently deletes all data — irreversible. Requires double confirmation.</div></div>
@@ -1958,15 +1959,22 @@ textarea{resize:vertical;min-height:80px}
         // Initialize Data after successful login
         if (typeof initData === 'function') await initData();
 
-        const hashPage = window.location.hash.replace('#', '');
+        // Hash deep linking
+        const hash = window.location.hash.replace('#', '');
+        const [page, id, tab] = hash.split('/');
+        
         if (u.role === 'admin') {
           document.getElementById('navAdmin').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
-          nav(hashPage || 'adminDash');
+          if (page === 'adminRestaurantDetail' && id) {
+            openRestaurantDetail(parseInt(id), tab);
+          } else {
+            nav(page || 'adminDash');
+          }
         } else {
           document.getElementById('navAdmin').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
-          nav(hashPage || 'userDash');
+          nav(page || 'userDash');
         }
         
         if (typeof window.initAppSupport === 'function') window.initAppSupport();
@@ -1981,13 +1989,27 @@ textarea{resize:vertical;min-height:80px}
     }
   }
 
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    const [page, id, tab] = hash.split('/');
+    if (page === 'adminRestaurantDetail' && id) {
+      if (!window._currentRest || window._currentRest.id !== parseInt(id)) {
+        openRestaurantDetail(parseInt(id), tab);
+      } else {
+        switchDetailTab(tab || 'overview');
+      }
+    } else if (page !== window.currentPage) {
+      nav(page);
+    }
+  });
+
   window.doLogout = function() {
     fetch('/api/logout', { method: 'POST' }).finally(() => {
       window.location.href = '/login';
     });
   }
 
-  window.nav = function(pageId, el) {
+  window.nav = function(pageId, el, id, tab) {
     if (!pageId) return;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -2001,7 +2023,12 @@ textarea{resize:vertical;min-height:80px}
     if (el) el.classList.add('active');
     
     window.currentPage = pageId;
-    window.location.hash = pageId; // For persistence on refresh
+    
+    // Construct rich hash: #page[/id][/tab]
+    let hash = pageId;
+    if (id) hash += '/' + id;
+    if (tab) hash += '/' + tab;
+    window.location.hash = hash;
     
     const titles = {
       adminDash: window.t('nav_dashboard'), adminRestaurants: window.t('nav_restaurants'),
@@ -5161,7 +5188,7 @@ function setRestFilter(f,el){
 
 // ── OPEN RESTAURANT DETAIL ──
 // ── OPEN RESTAURANT DETAIL ──
-async function openRestaurantDetail(id){
+async function openRestaurantDetail(id, tab){
   try {
     const res = await fetch('/api/admin/restaurants/' + id);
     const r = await res.json();
@@ -5181,13 +5208,30 @@ async function openRestaurantDetail(id){
     document.getElementById('detailRestStatus').innerHTML = `<span class="sp ${r.active?'sp-on':'sp-off'}" style="font-size:12px"><span class="sp-dot"></span>${r.active?t('active'):t('suspended')}</span>`;
 
     // Populate settings tab fields
-    const setField = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val; };
+    const setField = (id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
     setField('ds-name', r.name);
     setField('ds-city', r.city);
     setField('ds-country', r.country);
+    setField('ds-phone', r.phone);
+    setField('ds-address', r.address);
+    setField('ds-postal', r.postal_code);
     setField('ds-plan', r.plan);
     setField('ds-tz', r.timezone);
     setField('ds-lang', r.language);
+    
+    // Danger Zone
+    const dsBtn = document.getElementById('dz-suspend-btn');
+    if (dsBtn) {
+      if (r.active) {
+        dsBtn.textContent = 'Suspend';
+        dsBtn.className = 'btn btn-danger btn-sm';
+      } else {
+        dsBtn.textContent = 'Activate';
+        dsBtn.className = 'btn btn-success btn-sm';
+        dsBtn.style.background = 'var(--green)';
+      }
+    }
+
     const dpEl = document.getElementById('dpDetailRenewal');
     if(dpEl && r.renewal !== 'OVERDUE') dpEl.value = r.renewal;
 
@@ -5196,28 +5240,142 @@ async function openRestaurantDetail(id){
     renderDetailKegs(r);
     renderDetailUsers(r);
     renderDetailDevices(r);
+    renderDetailSchedule(r);
 
-    // Switch to detail page and overview tab
-    nav('adminRestaurantDetail', null);
-    switchDetailTab('overview', document.querySelector('#detailTabs .detail-tab'));
+    // Switch to detail page
+    nav('adminRestaurantDetail', null, id, tab || currentDetailTab);
+    switchDetailTab(tab || currentDetailTab, null, true);
   } catch (e) {
     console.error('Failed to open restaurant detail:', e);
     toast('Error loading restaurant data', 'error');
   }
 }
 
+async function saveRestSettings() {
+  const r = window._currentRest;
+  if (!r) return;
+
+  const data = {
+    name: document.getElementById('ds-name')?.value,
+    city: document.getElementById('ds-city')?.value,
+    country: document.getElementById('ds-country')?.value,
+    phone: document.getElementById('ds-phone')?.value,
+    address: document.getElementById('ds-address')?.value,
+    postal_code: document.getElementById('ds-postal')?.value,
+    plan: document.getElementById('ds-plan')?.value,
+    timezone: document.getElementById('ds-tz')?.value,
+    language: document.getElementById('ds-lang')?.value,
+    active: r.active
+  };
+
+  try {
+    const res = await fetch('/api/admin/restaurants/' + r.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if ((await res.json()).success) {
+      toast('Restaurant settings saved', 'success');
+      await openRestaurantDetail(r.id, 'settings');
+    }
+  } catch (e) {
+    toast('Failed to save settings', 'error');
+  }
+}
+
+async function toggleRestaurantActive() {
+  const r = window._currentRest;
+  if (!r) return;
+
+  const newState = !r.active;
+  const actionText = newState ? 'Activate' : 'Suspend';
+  const icon = newState ? '✅' : '🚫';
+
+  showConfirm({
+    icon: icon,
+    title: `${actionText} Restaurant`,
+    message: newState 
+      ? `Re-activate <b>${r.name}</b>? Users will regain access immediately.`
+      : `Suspend <b>${r.name}</b>? All users will immediately lose access.`,
+    confirmLabel: `Yes, ${actionText}`,
+    danger: !newState,
+    onConfirm: () => {
+      showConfirm({
+        icon: '⚠',
+        title: 'Final Confirmation',
+        message: `Are you sure you want to ${actionText.toLowerCase()} <b>${r.name}</b>?`,
+        confirmLabel: 'Confirm',
+        danger: !newState,
+        onConfirm: async () => {
+          try {
+            const endpoint = newState ? `/api/admin/restaurants/${r.id}/activate` : `/api/admin/restaurants/${r.id}/suspend`;
+            const res = await fetch(endpoint, { method: 'POST' });
+            if ((await res.json()).success) {
+              toast(`${r.name} ${newState ? 'activated' : 'suspended'}`, newState ? 'success' : 'error');
+              await openRestaurantDetail(r.id, 'settings');
+            }
+          } catch (e) {
+            toast('Action failed', 'error');
+          }
+        }
+      });
+    }
+  });
+}
+
+async function deleteRestaurant() {
+  const r = window._currentRest;
+  if (!r) return;
+
+  showConfirm({
+    icon: '🗑',
+    title: 'Delete Restaurant',
+    message: `Delete <b>${r.name}</b>? This will permanently remove ALL data.`,
+    confirmLabel: 'Yes, Delete',
+    danger: true,
+    onConfirm: () => {
+      showConfirm({
+        icon: '💀',
+        title: 'FINAL WARNING',
+        message: `This is <b>IRREVERSIBLE</b>. Everything related to <b>${r.name}</b> will be gone forever.`,
+        confirmLabel: 'DELETE FOREVER',
+        danger: true,
+        onConfirm: async () => {
+          try {
+            const res = await fetch('/api/admin/restaurants/' + r.id, { method: 'DELETE' });
+            if ((await res.json()).success) {
+              toast(`${r.name} deleted`, 'error');
+              nav('adminRestaurants');
+            }
+          } catch (e) {
+            toast('Deletion failed', 'error');
+          }
+        }
+      });
+    }
+  });
+}
+
 // ── DETAIL TABS ──
-function switchDetailTab(tab, el){
+function switchDetailTab(tab, el, skipHash){
   currentDetailTab = tab;
   ['overview','kegs','users','devices','settings'].forEach(t=>{
     const panel = document.getElementById('dtab-'+t);
     if(panel) panel.style.display = t===tab ? 'block' : 'none';
   });
   document.querySelectorAll('.detail-tab').forEach(b=>b.classList.remove('active'));
+  
+  if(!el) {
+    el = document.querySelector(`.detail-tab[onclick*="'${tab}'"]`);
+  }
   if(el) el.classList.add('active');
 
   const r = window._currentRest;
   if(!r) return;
+
+  if (!skipHash) {
+    nav('adminRestaurantDetail', null, r.id, tab);
+  }
 
   if(tab==='overview')  renderDetailOverview(r);
   if(tab==='kegs')      renderDetailKegs(r);
@@ -5765,17 +5923,49 @@ function renderDetailSchedule(r){
   if(!el) return;
   el.innerHTML = `
     <div style="font-size:12px;color:var(--text3);margin-bottom:14px;font-family:var(--fm)">${t('schedule_hint')}</div>
-    ${DEFAULT_HOURS.map((h,i)=>`
+    ${DAYS_KEYS.map((day,i)=>{
+      const saved = r.opening_hours ? JSON.parse(r.opening_hours) : null;
+      const h = (saved && saved[day]) || DEFAULT_HOURS[i];
+      return `
       <div class="sched-day">
-        <div class="day-name">${t(DAYS_KEYS[i])}</div>
+        <div class="day-name">${t(day)}</div>
         <label class="twrap" style="margin-right:8px"><span class="toggle"><input type="checkbox" id="sched-on-${i}" ${h.on?'checked':''} onchange="toggleSchedDay(${i})"><span class="tslider"></span></span></label>
-        <input type="time" id="sched-open-${i}" value="${h.open}" style="width:96px" ${h.on?'':'disabled'}>
+        <input type="time" id="sched-open-${i}" value="${h.open||''}" style="width:96px" ${h.on?'':'disabled'}>
         <span style="color:var(--text3);font-size:12px;margin:0 6px">→</span>
-        <input type="time" id="sched-close-${i}" value="${h.close}" style="width:96px" ${h.on?'':'disabled'}>
-      </div>`).join('')}
+        <input type="time" id="sched-close-${i}" value="${h.close||''}" style="width:96px" ${h.on?'':'disabled'}>
+      </div>`;
+    }).join('')}
     <div style="margin-top:14px">
-      <button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Schedule</button>
+      <button class="btn btn-primary" onclick="saveSchedule()">Save Schedule</button>
     </div>`;
+}
+
+async function saveSchedule() {
+  const r = window._currentRest;
+  if (!r) return;
+
+  const hours = {};
+  DAYS_KEYS.forEach((day, i) => {
+    hours[day] = {
+      on: document.getElementById('sched-on-' + i)?.checked,
+      open: document.getElementById('sched-open-' + i)?.value,
+      close: document.getElementById('sched-close-' + i)?.value
+    };
+  });
+
+  try {
+    const res = await fetch('/api/admin/restaurants/' + r.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...r, opening_hours: JSON.stringify(hours) })
+    });
+    if ((await res.json()).success) {
+      toast('Operating hours saved', 'success');
+      await openRestaurantDetail(r.id, 'settings');
+    }
+  } catch (e) {
+    toast('Failed to save schedule', 'error');
+  }
 }
 
 function toggleSchedDay(i){

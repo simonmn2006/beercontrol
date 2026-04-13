@@ -61,11 +61,13 @@ router.get('/restaurants/:id', async (req, res) => {
 
 router.post('/restaurants', async (req, res) => {
   try {
-    const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password, phone, address, postal_code } = req.body;
+    const { name, city, country, language, plan, renewal_date, owner_name, owner_email, owner_password, 
+            phone, address, postal_code, timezone, opening_hours } = req.body;
     const r = await db.run(`
-      INSERT INTO restaurants (name,city,country,language,plan,renewal_date,phone,address,postal_code)
-      VALUES (?,?,?,?,?,?,?,?,?)
-    `, [name, city||'', country||'', language||'en', plan||'starter', renewal_date||null, phone||'', address||'', postal_code||'']);
+      INSERT INTO restaurants (name,city,country,language,plan,renewal_date,phone,address,postal_code,timezone,opening_hours)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    `, [name, city||'', country||'', language||'en', plan||'starter', renewal_date||null, 
+        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'']);
     
     if (owner_email && owner_name) {
       const hash = bcrypt.hashSync(owner_password || 'changeme123', 10);
@@ -81,13 +83,38 @@ router.post('/restaurants', async (req, res) => {
 
 router.put('/restaurants/:id', async (req, res) => {
   try {
-    const { name, city, country, language, plan, renewal_date, active } = req.body;
+    const { name, city, country, language, plan, renewal_date, active, 
+            phone, address, postal_code, timezone, opening_hours } = req.body;
     await db.run(`
-      UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=? WHERE id=?
-    `, [name, city, country, language, plan, renewal_date, active?1:0, req.params.id]);
+      UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=?,
+      phone=?,address=?,postal_code=?,timezone=?,opening_hours=? WHERE id=?
+    `, [name, city, country, language, plan, renewal_date, active?1:0, 
+        phone, address, postal_code, timezone, opening_hours, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.delete('/restaurants/:id', async (req, res) => {
+  try {
+    // Check if restaurant exists
+    const r = await db.get("SELECT name FROM restaurants WHERE id=?", [req.params.id]);
+    if (!r) return res.status(404).json({ error: 'Not found' });
+    
+    // Delete associated data (cascade-like behavior if not set in DB)
+    // Most foreign keys are set to NULL or CASCADE, but let's be safe
+    await db.run("DELETE FROM keg_sessions WHERE restaurant_id=?", [req.params.id]);
+    await db.run("DELETE FROM kegs WHERE restaurant_id=?", [req.params.id]);
+    await db.run("DELETE FROM users WHERE restaurant_id=?", [req.params.id]);
+    await db.run("DELETE FROM alerts WHERE restaurant_id=?", [req.params.id]);
+    await db.run("DELETE FROM payments WHERE restaurant_id=?", [req.params.id]);
+    await db.run("DELETE FROM restaurants WHERE id=?", [req.params.id]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete restaurant error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });

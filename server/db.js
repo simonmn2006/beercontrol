@@ -53,6 +53,8 @@ async function runMigrations() {
       phone VARCHAR(50),
       address VARCHAR(255),
       postal_code VARCHAR(50),
+      timezone VARCHAR(50) DEFAULT 'Europe/Madrid',
+      opening_hours TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
@@ -78,6 +80,8 @@ async function runMigrations() {
     if (!restColNames.includes('phone')) await pool.query('ALTER TABLE restaurants ADD COLUMN phone VARCHAR(50)');
     if (!restColNames.includes('address')) await pool.query('ALTER TABLE restaurants ADD COLUMN address VARCHAR(255)');
     if (!restColNames.includes('postal_code')) await pool.query('ALTER TABLE restaurants ADD COLUMN postal_code VARCHAR(50)');
+    if (!restColNames.includes('timezone')) await pool.query("ALTER TABLE restaurants ADD COLUMN timezone VARCHAR(50) DEFAULT 'Europe/Madrid'");
+    if (!restColNames.includes('opening_hours')) await pool.query('ALTER TABLE restaurants ADD COLUMN opening_hours TEXT');
     
     const [userCols] = await pool.query('SHOW COLUMNS FROM users');
     const userColNames = userCols.map(c => c.Field);
