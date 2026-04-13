@@ -470,7 +470,7 @@ textarea{resize:vertical;min-height:80px}
   </div>
 
 <!-- ══ PAGE: ADMIN DASHBOARD ══ -->
-<div class="page active" id="page-adminDash">
+<div class="page" id="page-adminDash">
   <div class="g4 mb16">
     <div class="stat-card sc-amber">
       <div class="stat-label" data-i18n="active_restaurants">Active Restaurants</div>
@@ -3406,17 +3406,7 @@ function buildKegGrids(){
   if(ud) ud.innerHTML=USER_KEGS.map(k=>kegCard(k,true)).join('');
 }
 
-function openEditKeg(id){
-  const k=KEGS.find(x=>x.id===id)||USER_KEGS.find(x=>x.id===id);
-  if(!k) return;
-  document.getElementById('editKegTitle').textContent=k.name+' · Tap #'+k.tap;
-  document.getElementById('ek-rem').textContent=k.rem.toFixed(1)+'L';
-  document.getElementById('ek-temp').textContent=k.temp+'°C';
-  document.getElementById('ek-co2').textContent=k.co2;
-  document.getElementById('ek-name').value=k.name;
-  document.getElementById('ek-size').value=k.size;
-  openM('mEditKeg');
-}
+
 
 /* ══════════════════════════════════════════
    SCHEDULE
@@ -5265,6 +5255,8 @@ async function saveRestSettings() {
     plan: document.getElementById('ds-plan')?.value,
     timezone: document.getElementById('ds-tz')?.value,
     language: document.getElementById('ds-lang')?.value,
+    renewal_date: r.renewal_date,
+    opening_hours: r.opening_hours,
     active: r.active
   };
 
@@ -5719,14 +5711,13 @@ function toggleUserActive(idx){
 }
 
 // ── KEG EDIT / DELETE ──
-let currentEditKegTap = null;
 
-function openEditKeg(tap){
+function openEditKeg(id){
   const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
-  const k = r.kegs.find(x=>x.tap===tap || x.tap_number===tap);
+  const k = r.kegs.find(x=>x.id===id);
   if(!k) return;
-  currentEditKegTap = tap;
+  currentEditKegId = id;
   document.getElementById('ek-id').value = k.id;
   document.getElementById('ek-rest').value = r.name;
   document.getElementById('ek-tap').value  = k.tap_number || k.tap;

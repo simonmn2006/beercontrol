@@ -88,8 +88,8 @@ router.put('/restaurants/:id', async (req, res) => {
     await db.run(`
       UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=?,
       phone=?,address=?,postal_code=?,timezone=?,opening_hours=? WHERE id=?
-    `, [name, city, country, language, plan, renewal_date, active?1:0, 
-        phone, address, postal_code, timezone, opening_hours, req.params.id]);
+    `, [name||null, city||'', country||'', language||'en', plan||'starter', renewal_date||null, active?1:0, 
+        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'', req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update restaurant error:', err);
