@@ -152,7 +152,7 @@ class KegGlassPainter extends CustomPainter {
     canvas.drawRRect(rrect, paint);
     
     // Reflections
-    final reflectionShader = const ui.Gradient.linear(
+    final reflectionShader = ui.Gradient.linear(
         Offset(0, 0),
         Offset(1, 1),
         [
