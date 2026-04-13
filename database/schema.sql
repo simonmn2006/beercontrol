@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   role          VARCHAR(50) DEFAULT 'user',
   language      VARCHAR(10) DEFAULT 'en',
+  phone         VARCHAR(50),
   active        TINYINT DEFAULT 1,
   last_login    DATETIME,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

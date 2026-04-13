@@ -64,6 +64,7 @@ async function runMigrations() {
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(50) DEFAULT 'user',
       language VARCHAR(10) DEFAULT 'en',
+      phone VARCHAR(50),
       active TINYINT DEFAULT 1,
       last_login DATETIME,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -77,6 +78,10 @@ async function runMigrations() {
     if (!restColNames.includes('phone')) await pool.query('ALTER TABLE restaurants ADD COLUMN phone VARCHAR(50)');
     if (!restColNames.includes('address')) await pool.query('ALTER TABLE restaurants ADD COLUMN address VARCHAR(255)');
     if (!restColNames.includes('postal_code')) await pool.query('ALTER TABLE restaurants ADD COLUMN postal_code VARCHAR(50)');
+    
+    const [userCols] = await pool.query('SHOW COLUMNS FROM users');
+    const userColNames = userCols.map(c => c.Field);
+    if (!userColNames.includes('phone')) await pool.query('ALTER TABLE users ADD COLUMN phone VARCHAR(50)');
 
     // Beer Styles
     await pool.query(`CREATE TABLE IF NOT EXISTS beer_styles (
