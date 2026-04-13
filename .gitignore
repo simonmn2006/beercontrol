@@ -29,13 +29,3 @@ Thumbs.db
 # Uploads (logo files stored locally)
 public/uploads/
 
-# Flutter-specific
-dashboard/.dart_tool/
-dashboard/build/
-dashboard/.pub-cache/
-dashboard/.packages
-dashboard/.flutter-plugins
-dashboard/.flutter-plugins-dependencies
-dashboard/*.lock
-dashboard/pubspec.lock
-dashboard/.metadata
