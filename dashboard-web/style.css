@@ -1,0 +1,312 @@
+:root {
+    --bg-color: #0d1117;
+    --neon-orange: #ff8c00;
+    --neon-gold: #ffd700;
+    --neon-blue: #00d2ff;
+    --neon-red: #ff3e3e;
+    --text-main: #ffffff;
+    --text-dim: rgba(255, 255, 255, 0.6);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    overflow: hidden;
+    width: 720px;
+    height: 1560px;
+}
+
+.dashboard-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 60px 40px;
+    background: radial-gradient(circle at center, #161b22 0%, #0d1117 100%);
+}
+
+/* Header Gauges */
+.gauges-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 250px;
+}
+
+.gauge-label {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+}
+
+.gauge-display {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.circular-gauge {
+    width: 100%;
+    height: 100%;
+    transform: rotate(135deg);
+}
+
+.gauge-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 8;
+    stroke-dasharray: 212; /* partial circle */
+    stroke-linecap: round;
+}
+
+.gauge-progress {
+    fill: none;
+    stroke: var(--neon-orange);
+    stroke-width: 8;
+    stroke-dasharray: 212;
+    stroke-dashoffset: 212;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+    filter: drop-shadow(0 0 8px var(--neon-orange));
+}
+
+.gauge-value {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateY(10px);
+}
+
+.gauge-value span {
+    font-size: 52px;
+    font-weight: 900;
+}
+
+.gauge-value small {
+    font-size: 16px;
+    color: var(--text-dim);
+    margin-top: -5px;
+}
+
+.gauge-status {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #4ade80;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4ade80;
+    box-shadow: 0 0 10px #4ade80;
+}
+
+/* Temperature Section */
+.temp-display {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+}
+
+.temp-display #temp-value {
+    font-size: 72px;
+    font-weight: 900;
+    color: #b0e0e6;
+    text-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+}
+
+.temp-display .unit {
+    font-size: 24px;
+    font-weight: 800;
+    margin-top: 15px;
+    margin-left: 5px;
+}
+
+.temp-icon {
+    position: absolute;
+    margin-top: 90px;
+    color: var(--neon-blue);
+    opacity: 0.3;
+}
+
+.ice-icon {
+    width: 100px;
+    height: 100px;
+    filter: drop-shadow(0 0 15px var(--neon-blue));
+}
+
+/* Keg Section */
+.keg-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+.keg-glass {
+    position: relative;
+    width: 400px;
+    height: 650px;
+    border-radius: 60px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.keg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.05) 5%,
+        rgba(255, 255, 255, 0.1) 10%,
+        rgba(255, 255, 255, 0) 25%,
+        rgba(255, 255, 255, 0.05) 90%,
+        rgba(255, 255, 255, 0.1) 95%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.keg-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#beer-logo {
+    width: 100%;
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
+}
+
+/* Flow Footer */
+.flow-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.flow-info {
+    text-align: center;
+}
+
+.flow-info .label {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+}
+
+.flow-rate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.tap-icon {
+    font-size: 50px;
+    filter: drop-shadow(0 0 10px var(--neon-gold));
+}
+
+#flow-value {
+    font-size: 90px;
+    font-weight: 900;
+}
+
+.flow-rate .unit {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-top: 25px;
+}
+
+.sub-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-top: -10px;
+}
+
+/* Alert Bar */
+.alert-bar {
+    width: 600px;
+    background: rgba(31, 11, 11, 0.8);
+    border: 2px solid var(--neon-red);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 0 20px rgba(255, 62, 62, 0.2);
+    animation: pulse-border 2s infinite alternate;
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 5px;
+}
+
+.alert-icon { font-size: 24px; }
+.alert-text {
+    font-size: 16px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.alert-detail {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes pulse-border {
+    from { box-shadow: 0 0 10px rgba(255, 62, 62, 0.2); border-color: rgba(255, 62, 62, 0.5); }
+    to { box-shadow: 0 0 25px rgba(255, 62, 62, 0.4); border-color: rgba(255, 62, 62, 1); }
+}
