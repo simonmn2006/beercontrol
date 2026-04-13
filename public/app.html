@@ -1369,10 +1369,11 @@ textarea{resize:vertical;min-height:80px}
   <div class="modal" style="width:560px">
     <div class="modal-hdr"><span style="font-size:20px">✏</span><div class="modal-title">Edit Keg</div><button class="modal-x" onclick="closeM('mEditKeg')">✕</button></div>
     <div class="modal-body">
+      <input type="hidden" id="ek-id">
       <div class="fg">
         <div class="form-group fg-full"><label class="fl">Restaurant</label><input id="ek-rest" readonly style="background:var(--bg4);color:var(--text2);cursor:default"></div>
-        <div class="form-group"><label class="fl">Tap Number</label><input id="ek-tap" readonly style="background:var(--bg4);color:var(--text2);cursor:default"></div>
-        <div class="form-group"><label class="fl">Keg Size (L)</label><select id="ek-size"><option>20</option><option>30</option><option>50</option></select></div>
+        <div class="form-group"><label class="fl">Tap Number</label><input id="ek-tap" type="number"></div>
+        <div class="form-group"><label class="fl">Keg Size (L)</label><select id="ek-size"><option value="20">20L</option><option value="30">30L</option><option value="50">50L</option></select></div>
         <div class="form-group fg-full">
           <label class="fl">Beer</label>
           <div style="position:relative">
@@ -1396,7 +1397,13 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label class="fl">ESP32 Sensor ID</label><input type="text" id="ek-sensor" placeholder="e.g. tap1_sensor"></div>
         <div class="form-group"><label class="fl">ESP32 Display ID</label><input type="text" id="ek-display" placeholder="e.g. bar_main"></div>
       </div>
-      <div class="form-actions"><button class="btn btn-primary" onclick="saveEditKeg()">Save Changes</button><button class="btn btn-ghost" onclick="closeM('mEditKeg')">Cancel</button></div>
+      <div class="form-actions" style="justify-content:space-between">
+        <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(232,75,75,.3)" onclick="deleteKegWrapper()">🗑 Delete Keg</button>
+        <div class="flex g8">
+          <button class="btn btn-primary" onclick="saveEditKeg()">Save Changes</button>
+          <button class="btn btn-ghost" onclick="closeM('mEditKeg')">Cancel</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1611,33 +1618,7 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
-<!-- Edit Keg -->
-<div class="modal-overlay" id="mEditKeg">
-  <div class="modal">
-    <div class="modal-hdr"><span style="font-size:20px">🛢</span><div class="modal-title" id="editKegTitle">Keg Details</div><button class="modal-x" onclick="closeM('mEditKeg')">✕</button></div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
-        <div class="rep-stat"><div class="rep-val" style="font-size:22px" id="ek-rem">0.0L</div><div class="rep-lbl" data-i18n="remaining">Remaining</div></div>
-        <div class="rep-stat"><div class="rep-val" style="font-size:22px" id="ek-temp">0.0°C</div><div class="rep-lbl" data-i18n="temp">Temp</div></div>
-        <div class="rep-stat"><div class="rep-val" style="font-size:22px" id="ek-co2">0.0</div><div class="rep-lbl">CO₂ bar</div></div>
-      </div>
-      <div class="fg">
-        <div class="form-group"><label class="fl" data-i18n="beer_name">Beer Name</label><input id="ek-name" value=""></div>
-        <div class="form-group"><label class="fl" data-i18n="keg_size">Keg Size (L)</label><input id="ek-size" type="number" value="50"></div>
-        <div class="form-group"><label class="fl" data-i18n="low_warning">Low Alert (%)</label><input type="number" value="20"></div>
-        <div class="form-group"><label class="fl" data-i18n="critical_alert">Critical Alert (%)</label><input type="number" value="10"></div>
-        <div class="form-group"><label class="fl" data-i18n="max_temp">Max Temp (°C)</label><input type="number" value="6" step="0.5"></div>
-        <div class="form-group"><label class="fl" data-i18n="min_co2">Min CO₂ (bar)</label><input type="number" value="1.5" step="0.1"></div>
-      </div>
-      <div style="margin-top:16px;padding:14px;background:var(--red-dim);border:1px solid rgba(232,75,75,.2);border-radius:var(--r)">
-        <div style="font-size:13px;color:var(--red);font-weight:500;margin-bottom:4px" data-i18n="manual_keg_change">⚠ Manual keg change</div>
-        <div style="font-size:12px;color:var(--text3)" data-i18n="manual_keg_hint">Use only if FOB sensor didn't detect the change.</div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="closeM('mEditKeg');toast(t('keg_logged'),'info')" data-i18n="log_manual">Log Manual Keg Change</button>
-      </div>
-      <div class="form-actions"><button class="btn btn-primary" onclick="closeM('mEditKeg');toast(t('saved'),'info')" data-i18n="save">Save</button><button class="btn btn-ghost" onclick="closeM('mEditKeg')" data-i18n="cancel">Cancel</button></div>
-    </div>
-  </div>
-</div>
+
 
 <!-- Add User -->
 <div class="modal-overlay" id="mAddUser">
@@ -5373,9 +5354,9 @@ function renderDetailKegs(r){
           </div>
         </div>
         <div class="flex g6" style="flex-shrink:0">
-          <button class="btn btn-ghost btn-sm" onclick="openEditKeg(${tap})">✏</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditKeg(${k.id})">✏</button>
           <button class="btn btn-ghost btn-sm" onclick="showConfirm({icon:'🛢',title:'New Keg',message:'Is this a new <b>${beer}</b> keg?',onConfirm:()=>toast('New keg session started','info')})">🛢 New Keg</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteKeg(${tap})">🗑</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteKeg(${k.id})">🗑</button>
         </div>
       </div>
     </div>`;
@@ -5585,9 +5566,10 @@ let currentEditKegTap = null;
 function openEditKeg(tap){
   const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
-  const k = r.kegs.find(x=>x.tap===tap);
+  const k = r.kegs.find(x=>x.tap===tap || x.tap_number===tap);
   if(!k) return;
   currentEditKegTap = tap;
+  document.getElementById('ek-id').value = k.id;
   document.getElementById('ek-rest').value = r.name;
   document.getElementById('ek-tap').value  = k.tap_number || k.tap;
   const sizeEl = document.getElementById('ek-size');
@@ -5651,12 +5633,15 @@ function selectEkBeer(id){
 async function saveEditKeg(){
   const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
-  const k = r.kegs.find(x=>x.tap_number===currentEditKegTap || x.tap===currentEditKegTap);
+  
+  const id = document.getElementById('ek-id').value;
+  const k = r.kegs.find(x=>x.id == id);
   if(!k) return;
   
   const beerName = document.getElementById('ek-beer-search')?.value.trim();
   
   const payload = {
+    tap_number: parseInt(document.getElementById('ek-tap')?.value)||k.tap_number||k.tap,
     beer_name: beerName || k.beer_name || k.beer,
     keg_size_liters: parseInt(document.getElementById('ek-size')?.value)||k.keg_size_liters,
     temp_max_c: parseFloat(document.getElementById('ek-temp')?.value)||k.temp_max_c,
@@ -5668,7 +5653,7 @@ async function saveEditKeg(){
   };
 
   try {
-    const res = await fetch('/api/admin/kegs/' + k.id, {
+    const res = await fetch('/api/admin/kegs/' + id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -5681,17 +5666,32 @@ async function saveEditKeg(){
   } catch(e) { toast('Error updating keg','error'); }
 }
 
-function deleteKeg(tap){
+async function deleteKeg(id){
   const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
-  const k = r.kegs.find(x=>x.tap===tap);
+  const k = r.kegs.find(x=>x.id == id);
   if(!k) return;
+
   showConfirm({
     icon:'🗑', title:'Delete Keg',
-    message:`Remove <b>${k.beer}</b> from Tap #${k.tap}? This cannot be undone.`,
+    message:`Remove <b>${k.beer_name || k.beer}</b> from Tap #${k.tap_number || k.tap}? This cannot be undone.`,
     confirmLabel:'Delete Keg', danger:true,
-    onConfirm:()=>{ r.kegs=r.kegs.filter(x=>x.tap!==tap); renderDetailKegs(r); toast('Keg removed from Tap #'+tap,'error'); }
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/kegs/' + id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          closeM('mEditKeg');
+          await openRestaurantDetail(r.id);
+          toast('Keg deleted successfully','success');
+        }
+      } catch(e) { toast('Error deleting keg','error'); }
+    }
   });
+}
+
+function deleteKegWrapper(){
+  const id = document.getElementById('ek-id').value;
+  if(id) deleteKeg(id);
 }
 
 // ── DEVICES TAB ──

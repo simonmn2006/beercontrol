@@ -226,15 +226,26 @@ router.post('/kegs', async (req, res) => {
 
 router.put('/kegs/:id', async (req, res) => {
   try {
-    const { beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
+    const { tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
             co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
-    await db.run(`UPDATE kegs SET beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
+    await db.run(`UPDATE kegs SET tap_number=?,beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
       co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=? WHERE id=?`,
-      [beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
+      [tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update keg error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.delete('/kegs/:id', async (req, res) => {
+  try {
+    // Soft delete by setting active=0
+    await db.run("UPDATE kegs SET active=0 WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete keg error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });
