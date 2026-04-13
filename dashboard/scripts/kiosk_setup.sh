@@ -16,6 +16,8 @@ cd ~
 if [ ! -d "flutter-pi" ]; then
     git clone https://github.com/ardera/flutter-pi.git
 fi
+# Ensure ownership is correct to avoid CMake permission errors
+sudo chown -R $USER:$USER ~/flutter-pi
 cd flutter-pi
 mkdir -p build && cd build
 cmake ..
