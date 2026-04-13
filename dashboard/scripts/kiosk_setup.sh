@@ -29,9 +29,14 @@ xset s off
 xset s noblank
 xset -dpms
 
-# Start Flutter Dashboard in fullscreen (using flutter-pi for performance)
-# Replace /path/to/project/build/flutter_assets with actual path
-/usr/local/bin/flutter-pi --release /home/pi/dashboard/asset_bundle
+# Start Flutter Dashboard in fullscreen (using flutter-pi optimized for KMS)
+# --vulkan: Use Vulkan backend for better shader performance on RPi 4
+# --enable-impeller: Experimental rendering engine for smoother animations
+/usr/local/bin/flutter-pi \
+    --release \
+    --vulkan \
+    --enable-impeller \
+    /home/pi/dashboard/asset_bundle
 EOF
 
 chmod +x ~/start_dashboard.sh
@@ -41,5 +46,8 @@ chmod +x ~/start_dashboard.sh
 # Add start_dashboard.sh to .bash_profile or create a systemd service
 
 echo "✅ Kiosk script created at ~/start_dashboard.sh"
-echo "👉 Make sure to enable hardware acceleration in raspi-config (Advanced Options > GL Driver > V36 Full KMS)"
+echo "🚀 Performance Tips for Bookworm + KMS:"
+echo "1. GPU Memory: In /boot/firmware/config.txt, set 'gpu_mem=256' or higher for shader heavy apps."
+echo "2. Monitor Load: Use 'vcgencmd measure_temp' and 'top' to check for thermal throttling."
+echo "3. Impeller: If you notice glitches, remove '--enable-impeller' to fallback to Vulkan Skia."
 echo "👉 Run with '~/start_dashboard.sh' from the console."
