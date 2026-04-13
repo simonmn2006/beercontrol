@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -99,5 +100,4 @@ class MqttService with ChangeNotifier {
   }
 }
 
-// Add missing math import for simulation
-import 'dart:math' as math;
+}

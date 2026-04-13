@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import '../services/mqtt_service.dart';
 
@@ -151,24 +152,23 @@ class KegGlassPainter extends CustomPainter {
     canvas.drawRRect(rrect, paint);
     
     // Reflections
-    final reflectionPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withOpacity(0.4),
-          Colors.white.withOpacity(0.0),
-          Colors.white.withOpacity(0.2),
+    final reflectionShader = const ui.Gradient.linear(
+        Offset(0, 0),
+        Offset(1, 1),
+        [
+          Color(0x66FFFFFF),
+          Color(0x00FFFFFF),
+          Color(0x33FFFFFF),
         ],
-        stops: const [0.1, 0.5, 0.9],
-      ).createShader(rect);
+        [0.1, 0.5, 0.9],
+      );
       
     canvas.drawRRect(
         RRect.fromRectAndRadius(
             Rect.fromLTWH(10, 10, size.width - 20, size.height - 20),
             const Radius.circular(55)
         ),
-        Paint()..shader = reflectionPaint..style = PaintingStyle.stroke..strokeWidth = 10
+        Paint()..shader = reflectionShader..style = PaintingStyle.stroke..strokeWidth = 10
     );
     
     // Keg Metal Rings (Top/Bottom/Handle)

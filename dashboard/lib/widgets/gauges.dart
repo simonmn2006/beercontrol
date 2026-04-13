@@ -218,7 +218,10 @@ class TemperatureGauge extends StatelessWidget {
             ),
             const Positioned(
                 bottom: -40,
-                child: Icon(Icons.ac_unit, color: Colors.blueAccent, size: 80, opacity: 0.3,)
+                child: Opacity(
+                  opacity: 0.3,
+                  child: Icon(Icons.ac_unit, color: Colors.blueAccent, size: 80),
+                )
             )
           ],
         ),
