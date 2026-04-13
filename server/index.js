@@ -86,6 +86,12 @@ app.listen(PORT, async () => {
 
   // Start MQTT Service
   require('./mqtt').init();
+  require('./mqttLogic'); // Initialize logic engine
+});
+
+// ── Display Dashboard (Raspi) ───────────────
+app.get('/display/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'display.html'));
 });
 
 module.exports = app;

@@ -112,6 +112,24 @@ class MqttService extends EventEmitter {
       broker: this.currentConfig ? `${this.currentConfig.host}:${this.currentConfig.port || 1883}` : 'Not configured'
     };
   }
+
+  /**
+   * Publish a message to the MQTT broker
+   * @param {string} topic 
+   * @param {Object|string} data 
+   * @param {Object} options 
+   */
+  publish(topic, data, options = { qos: 1, retain: true }) {
+    if (!this.client || !this.isConnected) {
+      console.error('⚠️ MQTT: Cannot publish, client not connected');
+      return false;
+    }
+    const payload = (typeof data === 'object') ? JSON.stringify(data) : data.toString();
+    this.client.publish(topic, payload, options, (err) => {
+      if (err) console.error(`❌ MQTT Publish Error [${topic}]:`, err.message);
+    });
+    return true;
+  }
 }
 
 const mqttService = new MqttService();

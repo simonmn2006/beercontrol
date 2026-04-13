@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KegHero | Live Display</title>
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --panel: rgba(20, 20, 25, 0.85);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #e0e0e0;
+      --amber: #f59e0b;
+      --blue: #3b82f6;
+      --red: #ef4444;
+      --green: #10b981;
+      --fm: 'Inter', -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--fm);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(30,30,40,1) 0%, rgba(10,10,12,1) 100%),
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    /* Brushing effect */
+    body::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.03) 50%, transparent 55%);
+      background-size: 200% 200%;
+      animation: brush 10s infinite linear;
+      pointer-events: none;
+    }
+
+    @keyframes brush {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      max-width: 600px; /* Tablet / Raspi portrait */
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 20px;
+      gap: 30px;
+    }
+
+    /* TOP STATS */
+    .top-stats {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .stat-box {
+      width: 45%;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    }
+
+    /* GAUGE STYLES */
+    .gauge-ring {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto;
+    }
+
+    .gauge-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .gauge-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 10; }
+    .gauge-val {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dasharray 1s ease-out;
+    }
+
+    .stat-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-num { font-size: 32px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stat-unit { font-size: 12px; color: var(--text); opacity: 0.6; margin-top: -2px; }
+
+    /* CENTER KEG SECTION */
+    .keg-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .keg-glow {
+      position: absolute;
+      width: 300px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%);
+      filter: blur(40px);
+      z-index: 0;
+      animation: pulse-glow 4s infinite ease-in-out;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .keg-glass {
+      position: relative;
+      width: 240px;
+      height: 380px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-radius: 40px 40px 40px 40px;
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(2px);
+      overflow: hidden;
+      box-shadow: 
+        inset 0 0 40px rgba(0,0,0,0.5),
+        0 20px 60px rgba(0,0,0,0.8);
+      z-index: 1;
+    }
+
+    .keg-liquid {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, #8b4513, #f59e0b);
+      transition: height 2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 30px rgba(245,158,11,0.3);
+    }
+
+    .keg-liquid::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 30px;
+      background: rgba(255,255,255,0.4);
+      filter: blur(10px);
+      animation: wave 3s infinite ease-in-out;
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .keg-bubbles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .bubble {
+      position: absolute;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      bottom: 10px;
+      animation: rise 5s infinite ease-in;
+    }
+
+    @keyframes rise {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      20% { opacity: 0.5; }
+      100% { transform: translateY(-400px) scale(1.5); opacity: 0; }
+    }
+
+    .beer-logo {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 140px;
+      height: 140px;
+      background: rgba(0,0,0,0.4);
+      border: 2px solid var(--amber);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      z-index: 10;
+      box-shadow: 0 0 30px rgba(245,158,11,0.4);
+    }
+
+    .logo-img { max-width: 80%; max-height: 80%; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+    .beer-name-badge {
+      position: absolute;
+      bottom: -15px;
+      background: var(--amber);
+      color: #000;
+      font-size: 14px;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      text-transform: uppercase;
+    }
+
+    /* FLOW RATE SECTION */
+    .bottom-section {
+      text-align: center;
+    }
+
+    .flow-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .flow-value {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .flow-icon { font-size: 40px; filter: drop-shadow(0 0 10px var(--amber)); }
+    .flow-num { font-size: 64px; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+    .flow-unit { font-size: 14px; text-align: left; opacity: 0.6; line-height: 1; }
+
+    /* ALERT BAR */
+    .alert-bar {
+      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.2), transparent);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 12px 20px;
+      border-radius: 50px;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      animation: alert-pulse 2s infinite ease-in-out;
+      display: none; /* hidden by default */
+    }
+
+    @keyframes alert-pulse {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); }
+      50% { border-color: rgba(239, 68, 68, 0.8); background: rgba(239, 68, 68, 0.3); }
+    }
+
+    .alert-text { font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--red); }
+
+    /* TRANSITIONS */
+    .fade-in { animation: fadeIn 0.8s ease-out forwards; opacity: 0; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+  </style>
+</head>
+<body>
+
+<div class="container fade-in" id="mainContainer">
+  <div class="top-stats">
+    <div class="stat-box">
+      <div class="stat-label">CO2 Pressure</div>
+      <div class="gauge-ring">
+        <svg class="gauge-svg" viewBox="0 0 140 140">
+          <circle class="gauge-bg" cx="70" cy="70" r="60"></circle>
+          <circle id="gaugeCo2" class="gauge-val" cx="70" cy="70" r="60" stroke="var(--amber)" stroke-dasharray="0 377"></circle>
+        </svg>
+        <div class="stat-value">
+          <div class="stat-num" id="valCo2">--</div>
+          <div class="stat-unit">PSI</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-label">Temperature</div>
+      <div class="gauge-ring">
+        <svg class="gauge-svg" viewBox="0 0 140 140">
+          <circle class="gauge-bg" cx="70" cy="70" r="60"></circle>
+          <circle id="gaugeTemp" class="gauge-val" cx="70" cy="70" r="60" stroke="var(--blue)" stroke-dasharray="0 377"></circle>
+        </svg>
+        <div class="stat-value">
+          <div class="stat-num" id="valTemp">--</div>
+          <div class="stat-unit">°C</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="keg-container">
+    <div class="keg-glow" id="kegGlow"></div>
+    <div class="keg-glass">
+      <div class="keg-liquid" id="liquidLevel" style="height: 0%;"></div>
+      <div class="keg-bubbles" id="bubblePool"></div>
+    </div>
+    <div class="beer-logo">
+      <div id="logoContainer" class="logo-img">🍺</div>
+      <div class="beer-name-badge" id="beerName">Waiting...</div>
+    </div>
+  </div>
+
+  <div class="bottom-section">
+    <div class="flow-label">Active Flow Rate</div>
+    <div class="flow-value">
+      <div class="flow-icon">🚰</div>
+      <div class="flow-num" id="valFlow">0.00</div>
+      <div class="flow-unit">LITERS <br> PER MIN</div>
+    </div>
+
+    <div class="alert-bar" id="alertBar">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text" id="alertText">LOW LEVEL - PLEASE REPLACE SOON!</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DISPLAY_ID = window.location.pathname.split('/').pop();
+  let currentKegIndex = 0;
+  let allKegs = [];
+  let updateInterval = null;
+
+  // UI Elements
+  const elLevel = document.getElementById('liquidLevel');
+  const elBeerName = document.getElementById('beerName');
+  const elLogo = document.getElementById('logoContainer');
+  const elCo2Num = document.getElementById('valCo2');
+  const elTempNum = document.getElementById('valTemp');
+  const elFlowNum = document.getElementById('valFlow');
+  const elGaugeCo2 = document.getElementById('gaugeCo2');
+  const elGaugeTemp = document.getElementById('gaugeTemp');
+  const elAlert = document.getElementById('alertBar');
+  const elAlertText = document.getElementById('alertText');
+  const elGlow = document.getElementById('kegGlow');
+
+  function updateGauge(circle, value, max) {
+    const circumference = 377;
+    const offset = circumference - (value / max) * circumference;
+    circle.style.strokeDasharray = `${circumference - Math.max(0, offset)} ${circumference}`;
+  }
+
+  function renderKeg(keg) {
+    if (!keg) return;
+
+    // Transition effect
+    document.getElementById('mainContainer').style.opacity = '0';
+    setTimeout(() => {
+      // Data updates
+      elBeerName.textContent = keg.beer_name;
+      elLevel.style.height = `${keg.remaining_pct}%`;
+      
+      // Values
+      elCo2Num.textContent = (keg.current_co2 || 0).toFixed(1);
+      elTempNum.textContent = (keg.current_temp || 0).toFixed(1);
+      elFlowNum.textContent = (keg.current_flow || 0).toFixed(2);
+
+      // Gauges
+      updateGauge(elGaugeCo2, keg.current_co2 || 0, 3); // Max 3 bar/unit
+      updateGauge(elGaugeTemp, keg.current_temp || 0, 15); // Max 15C
+
+      // Logo
+      if (keg.logo_path) {
+        elLogo.innerHTML = `<img src="${keg.logo_path}" style="width:100%;height:100%;object-fit:contain">`;
+      } else {
+        elLogo.textContent = '🍺';
+      }
+
+      // Alerts
+      if (keg.remaining_pct < (keg.alert_low_pct || 20)) {
+        elAlert.style.display = 'flex';
+        elAlertText.textContent = `LOW LEVEL - ${Math.round(keg.remaining_liters)}L REMAINING`;
+      } else {
+        elAlert.style.display = 'none';
+      }
+
+      // Glow color based on temp
+      const t = keg.current_temp || 0;
+      if (t > 7) elGlow.style.background = 'radial-gradient(circle, rgba(239,68,68,0.2) 0%, transparent 70%)';
+      else if (t < 4) elGlow.style.background = 'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)';
+      else elGlow.style.background = 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)';
+
+      document.getElementById('mainContainer').style.opacity = '1';
+    }, 400);
+  }
+
+  // Carousel Logic
+  function startCarousel() {
+    if (updateInterval) clearInterval(updateInterval);
+    if (allKegs.length <= 1) return;
+
+    updateInterval = setInterval(() => {
+      currentKegIndex = (currentKegIndex + 1) % allKegs.length;
+      renderKeg(allKegs[currentKegIndex]);
+    }, 8000); // 8 seconds per keg
+  }
+
+  // ── Bubbles ──
+  function createBubbles() {
+    const container = document.getElementById('bubblePool');
+    setInterval(() => {
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      const size = Math.random() * 6 + 2;
+      bubble.style.width = size + 'px';
+      bubble.style.height = size + 'px';
+      bubble.style.left = Math.random() * 100 + '%';
+      bubble.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      container.appendChild(bubble);
+      setTimeout(() => bubble.remove(), 5000);
+    }, 400);
+  }
+
+  // ── Real-time Connection ──
+  function initStream() {
+    const source = new EventSource('/api/mqtt/stream');
+    source.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'message') {
+        const topic = msg.data.topic;
+        const data = msg.data.data;
+
+        // Check if this is the display bundle for our ID
+        if (topic === `keghero/display/${DISPLAY_ID}/kegs`) {
+          allKegs = data.kegs || [];
+          if (allKegs.length > 0) {
+            renderKeg(allKegs[currentKegIndex] || allKegs[0]);
+            startCarousel();
+          }
+        }
+      }
+    };
+  }
+
+  // Initial setup
+  createBubbles();
+  initStream();
+  
+  // Also perform an initial fetch in case MQTT is quiet
+  async function fetchInitial() {
+    try {
+      // We don't have a direct endpoint yet, but we can hit /api/dashboard
+      // and filter or wait for first MQTT sync.
+      // For now, let's just show a friendly message.
+      elBeerName.textContent = "Connecting to ${DISPLAY_ID}...";
+    } catch(e) {}
+  }
+  fetchInitial();
+
+</script>
+</body>
+</html>
