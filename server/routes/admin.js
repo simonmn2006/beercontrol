@@ -430,6 +430,15 @@ router.post('/styles', async (req, res) => {
     const { name, description, abv_min, abv_max } = req.body;
     const r = await db.run("INSERT INTO beer_styles (name, description, abv_min, abv_max) VALUES (?,?,?,?)", [name, description, abv_min, abv_max]);
     res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { 
+    if(e.code === 'ER_DUP_ENTRY') res.status(400).json({ error: 'This style already exists' });
+    else res.status(500).json({ error: e.message }); 
+  }
+});
+router.delete('/styles/:id', async (req, res) => {
+  try {
+    await db.run("DELETE FROM beer_styles WHERE id=?", [req.params.id]);
+    res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -442,6 +451,15 @@ router.post('/plans', async (req, res) => {
     const { name, price, max_taps, description } = req.body;
     const r = await db.run("INSERT INTO plans (name, price, max_taps, description) VALUES (?,?,?,?)", [name, price, max_taps, description]);
     res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { 
+    if(e.code === 'ER_DUP_ENTRY') res.status(400).json({ error: 'Plan name already exists' });
+    else res.status(500).json({ error: e.message }); 
+  }
+});
+router.delete('/plans/:id', async (req, res) => {
+  try {
+    await db.run("DELETE FROM plans WHERE id=?", [req.params.id]);
+    res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -454,6 +472,15 @@ router.post('/roles', async (req, res) => {
     const { name, description } = req.body;
     const r = await db.run("INSERT INTO user_roles (name, description) VALUES (?,?)", [name, description]);
     res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { 
+    if(e.code === 'ER_DUP_ENTRY') res.status(400).json({ error: 'Role already exists' });
+    else res.status(500).json({ error: e.message }); 
+  }
+});
+router.delete('/roles/:id', async (req, res) => {
+  try {
+    await db.run("DELETE FROM user_roles WHERE id=?", [req.params.id]);
+    res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -466,6 +493,15 @@ router.post('/locations', async (req, res) => {
     const { name } = req.body;
     const r = await db.run("INSERT INTO display_locations (name) VALUES (?)", [name]);
     res.json({ success: true, id: r.lastInsertRowid });
+  } catch (e) { 
+    if(e.code === 'ER_DUP_ENTRY') res.status(400).json({ error: 'Location already exists' });
+    else res.status(500).json({ error: e.message }); 
+  }
+});
+router.delete('/locations/:id', async (req, res) => {
+  try {
+    await db.run("DELETE FROM display_locations WHERE id=?", [req.params.id]);
+    res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -4114,7 +4114,7 @@ async function initData() {
     PLANS = plans || [];
     ROLES = roles || [];
     BEER_LIBRARY = (beers || []).map(b => ({ ...b, assignedTo: [] }));
-    LOCATIONS = (locs || []).map(l => l.name) || [];
+    LOCATIONS = locs || [];
     
     // Sync UI
     updateDashStats();
@@ -4139,9 +4139,7 @@ async function initData() {
 function saveRestaurants(){}
 function saveUsers(){}
 function saveBeerLibrary(){}
-function saveLocations(){}
-function savePlans(){}
-function saveRoles(){}
+// Empty stubs removed
 function saveBeerStyles(){}
 
 // Supplemental Data
@@ -4957,28 +4955,28 @@ function renderLocationsList(){
   const el=document.getElementById('locations-list');
   if(!el) return;
   if(!LOCATIONS.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px">No locations yet.</div>'; return; }
-  el.innerHTML=LOCATIONS.map((loc,i)=>`
+  el.innerHTML=LOCATIONS.map(loc=>`
     <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
-      <span style="font-size:13px;color:var(--text1);flex:1">📍 ${loc}</span>
-      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteLocation(${i})">🗑</button>
+      <span style="font-size:13px;color:var(--text1);flex:1">📍 ${loc.name}</span>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteLocation(${loc.id})">🗑</button>
     </div>`).join('');
 }
 
-function addLocation(){
-  const inp=document.getElementById('new-location-input');
-  if(!inp) return;
-  const val=inp.value.trim();
-  if(!val){ toast('Enter a location name','error'); return; }
-  LOCATIONS.push(val);
-  saveLocations();
-  inp.value='';
-  renderLocationsList();
-  toast('Location added','info');
-}
+// addLocation consolidated below
 
-function deleteLocation(idx){
-  showConfirm({icon:'🗑',title:'Delete Location',message:`Remove <b>${LOCATIONS[idx]}</b>?`,confirmLabel:'Delete',danger:true,
-    onConfirm:()=>{ LOCATIONS.splice(idx,1); saveLocations(); renderLocationsList(); toast('Location removed','error'); }
+function deleteLocation(id){
+  const loc = LOCATIONS.find(x=>x.id===id);
+  if(!loc) return;
+  showConfirm({icon:'🗑',title:'Delete Location',message:`Remove <b>${loc.name}</b>?`,confirmLabel:'Delete',danger:true,
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/locations/' + id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          initData();
+          toast('Location removed','info');
+        }
+      } catch(e){ toast('Error deleting location','error'); }
+    }
   });
 }
 
@@ -5827,10 +5825,20 @@ function deleteStyle(id){
     toast(`Cannot delete — ${inUse.length} beer(s) use this style`,'error');
     return;
   }
-  BEER_STYLES = BEER_STYLES.filter(x=>x.id!==id);
-  renderStylesList();
-  populateStyleSelects();
-  toast('Style deleted','info');
+  showConfirm({
+    icon: '📋', title: 'Delete Style',
+    message: `Remove <b>${s.name}</b> style?`,
+    confirmLabel: 'Delete',
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/styles/' + id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          initData();
+          toast(s.name + ' style deleted', 'info');
+        }
+      } catch(e){ toast('Error deleting style','error'); }
+    }
+  });
 }
 
 // ══════════════════════════════════════════
@@ -5912,7 +5920,15 @@ function deleteRole(id){
     icon:'👤', title:'Delete Role',
     message:`Are you sure you want to delete the <strong>${r.name}</strong> role?`,
     confirmLabel:'Yes, Delete',
-    onConfirm:()=>{ ROLES.splice(ROLES.indexOf(r),1); saveRoles(); renderRolesList(); toast(r.name+' deleted','info'); }
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/roles/' + id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          initData();
+          toast(r.name+' deleted','info');
+        }
+      } catch(e){ toast('Error deleting role','error'); }
+    }
   });
 }
 
@@ -6080,7 +6096,15 @@ function deletePlan(id){
     icon:'💳', title:'Delete Plan',
     message:`Are you sure you want to delete the <strong>${p.name}</strong> plan? Restaurants currently on this plan will not be affected.`,
     confirmLabel:'Yes, Delete',
-    onConfirm:()=>{ PLANS.splice(PLANS.indexOf(p),1); savePlans(); renderPlansList(); populatePlanSelects(); toast(p.name+' deleted','info'); }
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/plans/' + id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          initData();
+          toast(p.name+' deleted','info');
+        }
+      } catch(e){ toast('Error deleting plan','error'); }
+    }
   });
 }
 
