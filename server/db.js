@@ -82,6 +82,7 @@ async function runMigrations() {
     if (!restColNames.includes('postal_code')) await pool.query('ALTER TABLE restaurants ADD COLUMN postal_code VARCHAR(50)');
     if (!restColNames.includes('timezone')) await pool.query("ALTER TABLE restaurants ADD COLUMN timezone VARCHAR(50) DEFAULT 'Europe/Madrid'");
     if (!restColNames.includes('opening_hours')) await pool.query('ALTER TABLE restaurants ADD COLUMN opening_hours TEXT');
+    if (!restColNames.includes('wifi')) await pool.query('ALTER TABLE restaurants ADD COLUMN wifi TEXT');
     
     const [userCols] = await pool.query('SHOW COLUMNS FROM users');
     const userColNames = userCols.map(c => c.Field);
@@ -151,6 +152,65 @@ async function runMigrations() {
       const roles = [['Owner','Full access'],['Manager','Manage kegs'],['Staff','Staff']];
       for (const r of roles) await pool.query('INSERT IGNORE INTO user_roles (name, description) VALUES (?,?)', r);
     }
+
+    // ── Keg Management Tables ───────────────
+    console.log('◈ Checking keg management tables...');
+    await pool.query(`CREATE TABLE IF NOT EXISTS kegs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      restaurant_id INT NOT NULL,
+      tap_number INT NOT NULL,
+      beer_name VARCHAR(255) NOT NULL,
+      logo_path VARCHAR(255),
+      keg_size_liters DOUBLE NOT NULL DEFAULT 50,
+      remaining_liters DOUBLE,
+      esp32_sensor_id VARCHAR(255),
+      esp32_display_id VARCHAR(255),
+      co2_min_bar DOUBLE DEFAULT 1.5,
+      temp_max_c DOUBLE DEFAULT 6.0,
+      alert_low_pct INT DEFAULT 20,
+      alert_critical_pct INT DEFAULT 10,
+      fob_active TINYINT DEFAULT 0,
+      online TINYINT DEFAULT 0,
+      current_temp DOUBLE,
+      current_co2 DOUBLE,
+      current_flow DOUBLE DEFAULT 0,
+      active TINYINT DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
+    )`);
+
+    // Ensure logo_path exists in case table was created from old schema
+    const [kegCols] = await pool.query('SHOW COLUMNS FROM kegs');
+    const kegColNames = kegCols.map(c => c.Field);
+    if (!kegColNames.includes('logo_path')) {
+      await pool.query('ALTER TABLE kegs ADD COLUMN logo_path VARCHAR(255)');
+      console.log('  + Added column: kegs.logo_path');
+    }
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS keg_sessions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      keg_id INT NOT NULL,
+      restaurant_id INT NOT NULL,
+      started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ended_at DATETIME,
+      total_poured DOUBLE DEFAULT 0,
+      keg_size DOUBLE NOT NULL,
+      FOREIGN KEY (keg_id) REFERENCES kegs(id)
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS pour_events (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      keg_id INT NOT NULL,
+      restaurant_id INT NOT NULL,
+      session_id INT,
+      liters DOUBLE NOT NULL,
+      flow_rate DOUBLE,
+      temp DOUBLE,
+      co2 DOUBLE,
+      recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (keg_id) REFERENCES kegs(id),
+      FOREIGN KEY (session_id) REFERENCES keg_sessions(id)
+    )`);
 
     // Create payments table (Original logic)
     await pool.query(`
