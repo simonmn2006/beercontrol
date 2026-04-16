@@ -4110,7 +4110,11 @@ async function initData() {
     BEER_STYLES = styles || [];
     PLANS = plans || [];
     ROLES = roles || [];
-    BEER_LIBRARY = (beers || []).map(b => ({ ...b, assignedTo: [] }));
+    BEER_LIBRARY = (beers || []).map(b => ({ 
+      ...b, 
+      logo: b.logo_data || b.logo_path || '', // Map backend logo_data to front-end logo
+      assignedTo: [] 
+    }));
     LOCATIONS = locs || [];
     
     // Sync UI
@@ -5483,7 +5487,11 @@ function renderDetailKegs(r){
     return `
     <div class="keg-detail-row">
       <div style="display:flex;align-items:flex-start;gap:16px">
-        <div style="width:48px;height:48px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${k.emoji||'🍺'}</div>
+        <div style="width:48px;height:48px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">
+          ${k.logo_path || k.logo || k.logo_data
+            ? `<img src="${k.logo_path || k.logo || k.logo_data}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.textContent='${k.emoji||'🍺'}'">`
+            : `${k.emoji||'🍺'}`}
+        </div>
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
             <span style="font-family:var(--fh);font-size:16px;font-weight:600">${beer}</span>
@@ -5557,6 +5565,8 @@ function selectAkBeer(id){
   const logoRow = document.getElementById('ak-logo-row');
   const logoPrev = document.getElementById('ak-logo-preview');
   const nameDisp = document.getElementById('ak-beer-name-display');
+  // Store logo path in a temporary data attribute or hidden input
+  document.getElementById('ak-beer-id').dataset.logo = b.logo || '';
   logoRow.style.display = '';
   nameDisp.textContent = b.name + (b.style ? ' · ' + b.style : '');
   logoPrev.innerHTML = b.logo
@@ -5579,6 +5589,7 @@ async function saveNewKeg(){
     tap_number: tap,
     beer_name: beer.name,
     keg_size_liters: size,
+    logo_path: document.getElementById('ak-beer-id').dataset.logo || null,
     temp_max_c: parseFloat(document.getElementById('ak-temp')?.value)||6,
     co2_min_bar: parseFloat(document.getElementById('ak-co2')?.value)||1.5,
     alert_low_pct: parseInt(document.getElementById('ak-low')?.value)||20,
@@ -5805,6 +5816,8 @@ function selectEkBeer(id){
   if(!b) return;
   document.getElementById('ek-beer-search').value = b.name;
   document.getElementById('ek-beer-id').value = id;
+  // Store logo path in a temporary data attribute or hidden input
+  document.getElementById('ek-beer-id').dataset.logo = b.logo || '';
   document.getElementById('ek-beer-dropdown').style.display = 'none';
   document.getElementById('ek-beer-name-display').textContent = b.name+(b.style?' · '+b.style:'');
   document.getElementById('ek-logo-preview').innerHTML = b.logo
@@ -5826,6 +5839,7 @@ async function saveEditKeg(){
     tap_number: parseInt(document.getElementById('ek-tap')?.value)||k.tap_number||k.tap,
     beer_name: beerName || k.beer_name || k.beer,
     keg_size_liters: parseInt(document.getElementById('ek-size')?.value)||k.keg_size_liters,
+    logo_path: document.getElementById('ek-beer-id').dataset.logo || k.logo_path || null,
     temp_max_c: parseFloat(document.getElementById('ek-temp')?.value)||k.temp_max_c,
     co2_min_bar: parseFloat(document.getElementById('ek-co2')?.value)||k.co2_min_bar,
     alert_low_pct: parseInt(document.getElementById('ek-low')?.value)||k.alert_low_pct,
