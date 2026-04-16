@@ -160,7 +160,7 @@ async function runMigrations() {
       restaurant_id INT NOT NULL,
       tap_number INT NOT NULL,
       beer_name VARCHAR(255) NOT NULL,
-      logo_path VARCHAR(255),
+      logo_path LONGTEXT,
       keg_size_liters DOUBLE NOT NULL DEFAULT 50,
       remaining_liters DOUBLE,
       esp32_sensor_id VARCHAR(255),
@@ -179,12 +179,19 @@ async function runMigrations() {
       FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
     )`);
 
-    // Ensure logo_path exists in case table was created from old schema
+    // Ensure logo_path exists and is long enough
     const [kegCols] = await pool.query('SHOW COLUMNS FROM kegs');
     const kegColNames = kegCols.map(c => c.Field);
     if (!kegColNames.includes('logo_path')) {
-      await pool.query('ALTER TABLE kegs ADD COLUMN logo_path VARCHAR(255)');
-      console.log('  + Added column: kegs.logo_path');
+      await pool.query('ALTER TABLE kegs ADD COLUMN logo_path LONGTEXT');
+      console.log('  + Added column: kegs.logo_path (LONGTEXT)');
+    } else {
+      // Check if it's varchar and upgrade it
+      const logoCol = kegCols.find(c => c.Field === 'logo_path');
+      if (logoCol.Type.toLowerCase().includes('varchar')) {
+        await pool.query('ALTER TABLE kegs MODIFY COLUMN logo_path LONGTEXT');
+        console.log('  + Upgraded column: kegs.logo_path to LONGTEXT');
+      }
     }
 
     await pool.query(`CREATE TABLE IF NOT EXISTS keg_sessions (
