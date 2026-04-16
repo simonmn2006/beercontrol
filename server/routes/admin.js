@@ -236,6 +236,13 @@ router.post('/kegs', async (req, res) => {
   try {
     const { restaurant_id, tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
             co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
+
+    // Check if tap number is already in use
+    const existing = await db.get("SELECT id FROM kegs WHERE restaurant_id=? AND tap_number=? AND active=1", [restaurant_id, tap_number]);
+    if (existing) {
+      return res.status(400).json({ error: 'This tap number is already in use in this restaurant.' });
+    }
+
     const r = await db.run(`
       INSERT INTO kegs (restaurant_id,tap_number,beer_name,keg_size_liters,remaining_liters,
         esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct)
@@ -255,6 +262,18 @@ router.put('/kegs/:id', async (req, res) => {
   try {
     const { tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
             co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct } = req.body;
+
+    // We need restaurant_id to check uniqueness
+    const keg = await db.get("SELECT restaurant_id FROM kegs WHERE id=?", [req.params.id]);
+    if (!keg) return res.status(404).json({ error: 'Not found' });
+
+    // Check if tap number is already in use by ANOTHER keg
+    const existing = await db.get("SELECT id FROM kegs WHERE restaurant_id=? AND tap_number=? AND active=1 AND id != ?", 
+      [keg.restaurant_id, tap_number, req.params.id]);
+    if (existing) {
+      return res.status(400).json({ error: 'This tap number is already in use in this restaurant.' });
+    }
+
     await db.run(`UPDATE kegs SET tap_number=?,beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
       co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=? WHERE id=?`,
       [tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,

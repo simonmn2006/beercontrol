@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS kegs (
   id              INT AUTO_INCREMENT PRIMARY KEY,
   restaurant_id   INT NOT NULL,
-  tap_number      INT NOT NULL,
+  tap_number      INT NOT NULL,          -- Must be unique per restaurant_id (active = 1)
   beer_name       VARCHAR(255) NOT NULL,
   logo_path       VARCHAR(255),
   keg_size_liters DOUBLE NOT NULL DEFAULT 50,

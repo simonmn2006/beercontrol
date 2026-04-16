@@ -1632,7 +1632,6 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group fg-full"><label class="fl" data-i18n="email">Email</label><input id="addUserEmail" type="email" placeholder="john@example.com"></div>
         <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="addUserPhone" type="tel" placeholder="+1 555 000 0000" oninput="this.value = this.value.replace(/[^0-9+\s]/g, '')"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="role">Role</label><select id="addUserRole"></select></div>
-        <div class="form-group fg-full"><label class="fl">Restaurant</label><select id="addUserRest"><option value="">Select Restaurant...</option></select></div>
       </div>
       <div style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);margin-bottom:16px">
         🔐 A temporary password will be auto-generated and emailed to this user. They must set a new password on first login.
@@ -4310,12 +4309,7 @@ function renderUsersTable(){
   }
 }
 
-function openAddUserModal(presetRest){
-  // Pre-fill restaurant in the Add User modal
-  const sel = document.querySelector('#mAddUser select');
-  if(sel && presetRest){
-    for(let opt of sel.options){ if(opt.value===presetRest||opt.text===presetRest){ sel.value=opt.value; break; } }
-  }
+function openAddUserModal(){
   openM('mAddUser');
 }
 
