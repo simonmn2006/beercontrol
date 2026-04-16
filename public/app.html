@@ -5589,10 +5589,13 @@ async function saveNewKeg(){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if((await res.json()).success) {
+    const data = await res.json();
+    if(data.success) {
       closeM('mAddKeg');
       await openRestaurantDetail(r.id); // Refresh data
       toast('Keg added — Tap #'+tap+' · '+beer.name,'info');
+    } else if (data.error) {
+      toast(data.error, 'error');
     }
   } catch(e) { toast('Error adding keg','error'); }
 }
@@ -5801,10 +5804,13 @@ async function saveEditKeg(){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if((await res.json()).success) {
+    const data = await res.json();
+    if(data.success) {
       closeM('mEditKeg');
       await openRestaurantDetail(r.id); // Refresh data
       toast('Keg updated ✓','info');
+    } else if (data.error) {
+      toast(data.error, 'error');
     }
   } catch(e) { toast('Error updating keg','error'); }
 }
@@ -5822,10 +5828,13 @@ async function deleteKeg(id){
     onConfirm: async () => {
       try {
         const res = await fetch('/api/admin/kegs/' + id, { method: 'DELETE' });
-        if((await res.json()).success) {
+        const data = await res.json();
+        if(data.success) {
           closeM('mEditKeg');
           await openRestaurantDetail(r.id);
           toast('Keg deleted successfully','success');
+        } else if (data.error) {
+          toast(data.error, 'error');
         }
       } catch(e) { toast('Error deleting keg','error'); }
     }
