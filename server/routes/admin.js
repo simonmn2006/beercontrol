@@ -84,12 +84,12 @@ router.post('/restaurants', async (req, res) => {
 router.put('/restaurants/:id', async (req, res) => {
   try {
     const { name, city, country, language, plan, renewal_date, active, 
-            phone, address, postal_code, timezone, opening_hours } = req.body;
+            phone, address, postal_code, timezone, opening_hours, wifi } = req.body;
     await db.run(`
       UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=?,
-      phone=?,address=?,postal_code=?,timezone=?,opening_hours=? WHERE id=?
+      phone=?,address=?,postal_code=?,timezone=?,opening_hours=?,wifi=? WHERE id=?
     `, [name||null, city||'', country||'', language||'en', plan||'starter', renewal_date||null, active?1:0, 
-        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'', req.params.id]);
+        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'', wifi||null, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update restaurant error:', err);
@@ -156,10 +156,10 @@ router.get('/users', async (req, res) => {
 
 router.post('/users', async (req, res) => {
   try {
-    const { name, email, password, role, restaurant_id, language } = req.body;
+    const { name, email, password, role, restaurant_id, language, phone } = req.body;
     const hash = bcrypt.hashSync(password || 'changeme123', 10);
-    const r = await db.run("INSERT INTO users (name,email,password_hash,role,restaurant_id,language) VALUES (?,?,?,?,?,?)",
-      [name, email, hash, role||'user', restaurant_id||null, language||'en']);
+    const r = await db.run("INSERT INTO users (name,email,password_hash,role,restaurant_id,language,phone) VALUES (?,?,?,?,?,?,?)",
+      [name, email, hash, role||'user', restaurant_id||null, language||'en', phone||'']);
     res.json({ success: true, id: r.lastInsertRowid });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -173,9 +173,9 @@ router.post('/users', async (req, res) => {
 
 router.put('/users/:id', async (req, res) => {
   try {
-    const { name, email, role, restaurant_id, language, active } = req.body;
-    await db.run("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=? WHERE id=?",
-      [name, email, role, restaurant_id||null, language||'en', active?1:0, req.params.id]);
+    const { name, email, role, restaurant_id, language, active, phone } = req.body;
+    await db.run("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=?,phone=? WHERE id=?",
+      [name, email, role, restaurant_id||null, language||'en', active?1:0, phone||'', req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update user error:', err);
@@ -211,6 +211,16 @@ router.post('/users/:id/enable', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Enable user error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.delete('/users/:id', async (req, res) => {
+  try {
+    await db.run("DELETE FROM users WHERE id=?", [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete user error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });

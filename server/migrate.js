@@ -23,6 +23,18 @@ async function migrate() {
       await pool.query('ALTER TABLE restaurants ADD COLUMN postal_code VARCHAR(50)');
       console.log('  + Added column: postal_code');
     }
+    if (!colNames.includes('timezone')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN timezone VARCHAR(100) DEFAULT "Europe/Madrid"');
+      console.log('  + Added column: timezone');
+    }
+    if (!colNames.includes('opening_hours')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN opening_hours TEXT');
+      console.log('  + Added column: opening_hours');
+    }
+    if (!colNames.includes('wifi')) {
+      await pool.query('ALTER TABLE restaurants ADD COLUMN wifi TEXT');
+      console.log('  + Added column: wifi');
+    }
 
     // 2. Create beer_styles table
     console.log('◈ Creating beer_styles table...');

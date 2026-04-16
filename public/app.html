@@ -668,7 +668,7 @@ textarea{resize:vertical;min-height:80px}
             <div class="form-group fg-full"><label class="fl">Restaurant Name</label><input id="ds-name"></div>
             <div class="form-group"><label class="fl">City</label><input id="ds-city"></div>
             <div class="form-group"><label class="fl">Country</label><input id="ds-country"></div>
-            <div class="form-group"><label class="fl">Phone Number</label><input id="ds-phone"></div>
+            <div class="form-group"><label class="fl">Phone Number</label><input id="ds-phone" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
             <div class="form-group fg-full"><label class="fl">Street Address</label><input id="ds-address"></div>
             <div class="form-group"><label class="fl">Postal Code</label><input id="ds-postal"></div>
             <div class="form-group"><label class="fl" data-i18n="plan">Plan</label>
@@ -1626,7 +1626,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label class="fl" data-i18n="first_name">First Name</label><input id="addUserFirst" placeholder="John"></div>
         <div class="form-group"><label class="fl" data-i18n="last_name">Last Name</label><input id="addUserLast" placeholder="Smith"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="email">Email</label><input id="addUserEmail" type="email" placeholder="john@example.com"></div>
-        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="addUserPhone" type="tel" placeholder="+1 555 000 0000" oninput="this.value = this.value.replace(/[^0-9+\s]/g, '')"></div>
+        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="addUserPhone" type="tel" placeholder="Numbers only" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="form-group fg-full"><label class="fl" data-i18n="role">Role</label><select id="addUserRole"></select></div>
       </div>
       <div style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);margin-bottom:16px">
@@ -1645,7 +1645,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="fg">
         <div class="form-group fg-full"><label class="fl">Full Name</label><input id="eu-name" placeholder="John Smith"></div>
         <div class="form-group fg-full"><label class="fl">Email</label><input id="eu-email" type="email" placeholder="john@example.com"></div>
-        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="eu-phone" type="tel" placeholder="+1 555 000 0000"></div>
+        <div class="form-group fg-full"><label class="fl">Phone Number</label><input id="eu-phone" type="tel" placeholder="Numbers only" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
         <div class="form-group fg-full"><label class="fl">Role</label><select id="eu-role"></select></div>
         <input type="hidden" id="eu-idx">
       </div>
@@ -5023,18 +5023,28 @@ function deleteWifiNetwork(idx){
   });
 }
 
-function saveWifiNetworks(){
-  const r=RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
+async function saveWifiNetworks(){
+  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
   if(!r) return;
   if(!r.wifi) r.wifi=[];
   document.querySelectorAll('[data-wifi]').forEach(el=>{
-    const i=parseInt(el.dataset.wifi);
-    const f=el.dataset.field;
+    const i = parseInt(el.dataset.wifi);
+    const f = el.dataset.field;
     if(!r.wifi[i]) r.wifi[i]={ssid:'',pass:'',hidden:false};
     if(f==='hidden') r.wifi[i][f]=el.checked;
     else r.wifi[i][f]=el.value;
   });
-  toast('WiFi settings saved','info');
+
+  try {
+    const res = await fetch('/api/admin/restaurants/' + r.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...r, wifi: JSON.stringify(r.wifi) })
+    });
+    if((await res.json()).success) {
+      toast('WiFi settings saved','success');
+    }
+  } catch(e) { toast('Failed to save WiFi settings','error'); }
 }
 
 // ── DANGER ZONE ──
@@ -5629,7 +5639,7 @@ function openAddUserToRest(){
   openM('mAddUser');
 }
 
-function saveNewUser(){
+async function saveNewUser(){
   const first = document.getElementById('addUserFirst')?.value.trim();
   const last  = document.getElementById('addUserLast')?.value.trim();
   const email = document.getElementById('addUserEmail')?.value.trim();
@@ -5639,69 +5649,100 @@ function saveNewUser(){
   if(!email){ toast('Email is required','error');      return; }
   if(!role){  toast('Please select a role','error');   return; }
   const phone = document.getElementById('addUserPhone')?.value.trim()||'';
-  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
-  if(r) r.users.push({ name:first+' '+last, email, phone, role, active:true, lastLogin:'Never' });
-  closeM('mAddUser');
-  if(r) renderDetailUsers(r);
-  toast('User created — temp password sent to '+email,'info');
+  
+  try {
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        name: first + ' ' + last, 
+        email, 
+        role, 
+        restaurant_id: currentRestaurantId,
+        phone 
+      })
+    });
+    const data = await res.json();
+    if(data.success) {
+      closeM('mAddUser');
+      await refreshAllData(); // Refresh to get the new user with ID
+      toast('User created successfully','success');
+    } else {
+      toast(data.error || 'Failed to create user', 'error');
+    }
+  } catch(e) { toast('Error creating user','error'); }
 }
 
-function openEditUser(idx){
+function openEditUser(id){
   const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
-  if(!r||!r.users[idx]) return;
-  const u = r.users[idx];
+  if(!r) return;
+  const u = r.users.find(x=>x.id == id);
+  if(!u) return;
   document.getElementById('eu-name').value  = u.name||'';
   document.getElementById('eu-email').value = u.email||'';
   document.getElementById('eu-phone').value = u.phone||'';
-  document.getElementById('eu-idx').value   = idx;
+  document.getElementById('eu-idx').value   = id;
   const roleEl = document.getElementById('eu-role');
   if(roleEl){ roleEl.innerHTML=getRoleOptions(); roleEl.value=u.role||''; }
   openM('mEditUser');
 }
 
-function saveEditUser(){
-  const idx   = parseInt(document.getElementById('eu-idx')?.value);
+async function saveEditUser(){
+  const id    = document.getElementById('eu-idx')?.value;
   const r     = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
-  if(!r||isNaN(idx)||!r.users[idx]) return;
+  if(!r||!id) return;
   const name  = document.getElementById('eu-name')?.value.trim();
   const email = document.getElementById('eu-email')?.value.trim();
+  const phone = document.getElementById('eu-phone')?.value.trim()||'';
+  const role  = document.getElementById('eu-role')?.value;
   if(!name){  toast('Name is required','error');  return; }
   if(!email){ toast('Email is required','error'); return; }
-  r.users[idx].name  = name;
-  r.users[idx].email = email;
-  r.users[idx].phone = document.getElementById('eu-phone')?.value.trim()||r.users[idx].phone||'';
-  r.users[idx].role  = document.getElementById('eu-role')?.value||r.users[idx].role;
-  closeM('mEditUser');
-  renderDetailUsers(r);
-  toast('User updated','info');
+
+  try {
+    const res = await fetch('/api/admin/users/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone, role, active: 1, restaurant_id: currentRestaurantId })
+    });
+    if((await res.json()).success) {
+      closeM('mEditUser');
+      await openRestaurantDetail(currentRestaurantId, 'users');
+      toast('User updated successfully','success');
+    }
+  } catch(e) { toast('Error updating user','error'); }
 }
 
-function deleteUser(idx){
-  const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
-  if(!r||!r.users[idx]) return;
-  const u = r.users[idx];
+function deleteUser(id){
   showConfirm({
     icon:'🗑', title:'Delete User',
-    message:`Remove <b>${u.name}</b> from this restaurant? They will lose all access.`,
+    message:`Remove this user? This cannot be undone.`,
     confirmLabel:'Delete User', danger:true,
-    onConfirm:()=>{ r.users.splice(idx,1); renderDetailUsers(r); toast('User removed','error'); }
+    onConfirm: async () => {
+      try {
+        const res = await fetch('/api/admin/users/' + id, { method: 'DELETE' });
+        if((await res.json()).success) {
+          await openRestaurantDetail(currentRestaurantId, 'users');
+          toast('User deleted successfully','success');
+        }
+      } catch(e) { toast('Error deleting user','error'); }
+    }
   });
 }
 
-function toggleUserActive(idx){
+async function toggleUserActive(id){
   const r = RESTAURANTS_DATA.find(x=>x.id===currentRestaurantId);
-  if(!r||!r.users[idx]) return;
-  const u = r.users[idx];
+  if(!r) return;
+  const u = r.users.find(x=>x.id == id);
+  if(!u) return;
   const willEnable = !u.active;
-  showConfirm({
-    icon: willEnable?'✅':'🚫',
-    title: willEnable?'Enable User':'Disable User',
-    message: willEnable
-      ?`Re-enable access for <b>${u.name}</b>?`
-      :`Disable access for <b>${u.name}</b>? They won't be able to log in.`,
-    confirmLabel: willEnable?'Enable':'Disable', danger:!willEnable,
-    onConfirm:()=>{ u.active=willEnable; renderDetailUsers(r); toast(u.name+' '+(willEnable?'enabled':'disabled'),willEnable?'info':'error'); }
-  });
+  
+  try {
+    const res = await fetch(`/api/admin/users/${id}/${willEnable?'enable':'disable'}`, { method: 'POST' });
+    if((await res.json()).success) {
+      await openRestaurantDetail(currentRestaurantId, 'users');
+      toast(u.name+' '+(willEnable?'enabled':'disabled'),willEnable?'info':'success');
+    }
+  } catch(e) { toast('Error toggling user status','error'); }
 }
 
 // ── KEG EDIT / DELETE ──
@@ -5904,9 +5945,9 @@ function deviceDetailRow(d){
 }
 
 // ── SETTINGS: schedule ──
-const DAYS_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+const DAYS_KEYS = ['mon','tue','wed','thu','fri','sat','sun'];
 const DEFAULT_HOURS = [
-  {open:'',close:'',on:false},{open:'12:00',close:'23:30',on:true},{open:'12:00',close:'23:30',on:true},
+  {open:'12:00',close:'23:30',on:true},{open:'12:00',close:'23:30',on:true},{open:'12:00',close:'23:30',on:true},
   {open:'12:00',close:'23:30',on:true},{open:'12:00',close:'00:30',on:true},{open:'12:00',close:'01:30',on:true},
   {open:'13:00',close:'02:00',on:true}
 ];
