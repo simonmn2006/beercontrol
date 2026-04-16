@@ -87,6 +87,7 @@ async function runMigrations() {
     const [userCols] = await pool.query('SHOW COLUMNS FROM users');
     const userColNames = userCols.map(c => c.Field);
     if (!userColNames.includes('phone')) await pool.query('ALTER TABLE users ADD COLUMN phone VARCHAR(50)');
+    if (!userColNames.includes('alert_settings')) await pool.query('ALTER TABLE users ADD COLUMN alert_settings LONGTEXT');
 
     // Beer Styles
     await pool.query(`CREATE TABLE IF NOT EXISTS beer_styles (
@@ -175,6 +176,8 @@ async function runMigrations() {
       current_co2 DOUBLE,
       current_flow DOUBLE DEFAULT 0,
       active TINYINT DEFAULT 1,
+      cost_price DOUBLE DEFAULT 0,
+      sale_price DOUBLE DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
     )`);
@@ -193,6 +196,9 @@ async function runMigrations() {
         console.log('  + Upgraded column: kegs.logo_path to LONGTEXT');
       }
     }
+
+    if (!kegColNames.includes('cost_price')) await pool.query('ALTER TABLE kegs ADD COLUMN cost_price DOUBLE DEFAULT 0');
+    if (!kegColNames.includes('sale_price')) await pool.query('ALTER TABLE kegs ADD COLUMN sale_price DOUBLE DEFAULT 0');
 
     await pool.query(`CREATE TABLE IF NOT EXISTS keg_sessions (
       id INT AUTO_INCREMENT PRIMARY KEY,

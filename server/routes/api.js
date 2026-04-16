@@ -72,7 +72,18 @@ router.get('/dashboard', async (req, res) => {
       SELECT a.* FROM alerts a WHERE a.restaurant_id=? ORDER BY a.created_at DESC LIMIT 30
     `, [rid]);
 
-    res.json({ kegs, poured_today, keg_changes, alerts, activity });
+    const financials_row = await db.get(`
+      SELECT 
+        SUM(pe.liters * k.sale_price) as revenue,
+        SUM(pe.liters * k.cost_price) as cost
+      FROM pour_events pe
+      JOIN kegs k ON pe.keg_id = k.id
+      WHERE pe.restaurant_id=? AND DATE(pe.recorded_at)=CURDATE()
+    `, [rid]);
+    const revenue_today = financials_row.revenue || 0;
+    const cost_today = financials_row.cost || 0;
+
+    res.json({ kegs, poured_today, keg_changes, alerts, activity, revenue_today, cost_today });
   } catch (err) {
     console.error('Dashboard error:', err);
     res.status(500).json({ error: 'server_error' });
@@ -146,6 +157,19 @@ router.get('/reports', async (req, res) => {
     res.json({ total_poured: total_poured.toFixed(1), daily, by_beer, keg_changes, keg_changes_count, daily_avg, best_day });
   } catch (err) {
     console.error('Reports error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// Update user alert settings
+router.put('/me/alerts', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const settings = req.body;
+    await db.run("UPDATE users SET alert_settings=? WHERE id=?", [JSON.stringify(settings), user.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Save alerts error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });
