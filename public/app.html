@@ -5596,6 +5596,11 @@ async function saveNewKeg(){
       toast('Keg added — Tap #'+tap+' · '+beer.name,'info');
     } else if (data.error) {
       toast(data.error, 'error');
+      const el = document.getElementById('ak-tap');
+      if (el) {
+        el.classList.add('pulse-err');
+        setTimeout(() => el.classList.remove('pulse-err'), 1000);
+      }
     }
   } catch(e) { toast('Error adding keg','error'); }
 }
@@ -5811,6 +5816,11 @@ async function saveEditKeg(){
       toast('Keg updated ✓','info');
     } else if (data.error) {
       toast(data.error, 'error');
+      const el = document.getElementById('ek-tap');
+      if (el) {
+        el.classList.add('pulse-err');
+        setTimeout(() => el.classList.remove('pulse-err'), 1000);
+      }
     }
   } catch(e) { toast('Error updating keg','error'); }
 }
