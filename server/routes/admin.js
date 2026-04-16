@@ -1,7 +1,7 @@
-// server/routes/admin.js  — admin-only API routes
 const express = require('express');
 const bcrypt  = require('bcryptjs');
 const { db, pool }  = require('../db');
+const { sendMail }  = require('../mail');
 const router  = express.Router();
 
 // ── Restaurants ─────────────────────────────
@@ -173,9 +173,15 @@ router.post('/users', async (req, res) => {
 
 router.put('/users/:id', async (req, res) => {
   try {
-    const { name, email, role, restaurant_id, language, active, phone } = req.body;
-    await db.run("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=?,phone=? WHERE id=?",
-      [name, email, role, restaurant_id||null, language||'en', active?1:0, phone||'', req.params.id]);
+    const { name, email, role, restaurant_id, language, active, phone, password } = req.body;
+    if (password) {
+      const hash = bcrypt.hashSync(password, 10);
+      await db.run("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=?,phone=?,password_hash=? WHERE id=?",
+        [name, email, role, restaurant_id||null, language||'en', active?1:0, phone||'', hash, req.params.id]);
+    } else {
+      await db.run("UPDATE users SET name=?,email=?,role=?,restaurant_id=?,language=?,active=?,phone=? WHERE id=?",
+        [name, email, role, restaurant_id||null, language||'en', active?1:0, phone||'', req.params.id]);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('Update user error:', err);
@@ -191,6 +197,47 @@ router.post('/users/:id/reset-password', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Reset password error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/users/:id/send-credentials', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const user = await db.get("SELECT name, email FROM users WHERE id=?", [req.params.id]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const loginUrl = `${req.protocol}://${req.get('host')}/login`;
+    
+    await sendMail({
+      to: user.email,
+      subject: 'Your KegHero Access Details',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background: white; color: #333;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #f59e0b; margin: 0;">KegHero</h1>
+            <p style="font-size: 14px; color: #666; margin-top: 5px;">Draft Beer Management Platform</p>
+          </div>
+          <p>Hello <strong>${user.name}</strong>,</p>
+          <p>Your administrative account has been set up. You can log in using the following credentials:</p>
+          <div style="background: #fdf2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #fee2e2;">
+            <p style="margin: 0 0 10px 0;"><strong>Login:</strong> <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">${user.email}</code></p>
+            <p style="margin: 0;"><strong>Password:</strong> <code style="background: #fff; padding: 2px 6px; border-radius: 4px;">${password}</code></p>
+          </div>
+          <p style="margin-bottom: 25px;">You can access the portal here:</p>
+          <div style="text-align: center;">
+            <a href="${loginUrl}" style="display: inline-block; padding: 14px 30px; background: #f59e0b; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Login to KegHero</a>
+          </div>
+          <p style="margin-top: 40px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+            This is an automated message. If you didn't expect this email, please contact your manager.
+          </p>
+        </div>
+      `
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Send credentials error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });
