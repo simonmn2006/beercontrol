@@ -518,4 +518,49 @@ router.get('/mqtt/stream', (req, res) => {
   });
 });
 
+// ── Alert Recipients ────────────────────────
+router.get('/alert-recipients', async (req, res) => {
+  try {
+    const { restaurant_id } = req.query;
+    if (!restaurant_id) return res.status(400).json({ error: 'restaurant_id required' });
+    
+    // Check permission
+    const user = req.session.user;
+    if (user.role !== 'admin' && String(user.restaurant_id) !== String(restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const recs = await db.all("SELECT * FROM alert_recipients WHERE restaurant_id=?", [restaurant_id]);
+    res.json(recs);
+  } catch (err) {
+    console.error('Get recipients error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/alert-recipients', async (req, res) => {
+  try {
+    const { restaurant_id, recipients } = req.body;
+    if (!restaurant_id || !Array.isArray(recipients)) return res.status(400).json({ error: 'Invalid data' });
+
+    // Check permission
+    const user = req.session.user;
+    if (user.role !== 'admin' && String(user.restaurant_id) !== String(restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Atomic update: Delete all and re-insert
+    await db.run("DELETE FROM alert_recipients WHERE restaurant_id=?", [restaurant_id]);
+    for (const r of recipients) {
+      if (r.type && r.value) {
+        await db.run("INSERT INTO alert_recipients (restaurant_id, type, value) VALUES (?,?,?)", [restaurant_id, r.type, r.value]);
+      }
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update recipients error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 module.exports = router;

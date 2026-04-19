@@ -83,6 +83,7 @@ async function runMigrations() {
     if (!restColNames.includes('timezone')) await pool.query("ALTER TABLE restaurants ADD COLUMN timezone VARCHAR(50) DEFAULT 'Europe/Madrid'");
     if (!restColNames.includes('opening_hours')) await pool.query('ALTER TABLE restaurants ADD COLUMN opening_hours TEXT');
     if (!restColNames.includes('wifi')) await pool.query('ALTER TABLE restaurants ADD COLUMN wifi TEXT');
+    if (!restColNames.includes('financial_settings')) await pool.query('ALTER TABLE restaurants ADD COLUMN financial_settings TEXT');
     
     const [userCols] = await pool.query('SHOW COLUMNS FROM users');
     const userColNames = userCols.map(c => c.Field);

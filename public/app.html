@@ -1357,8 +1357,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="detail-tab active" onclick="switchUserSettingsTab('users',this)">👤 Users</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('hours',this)">🕒 Opening Hours</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('alerts',this)">🔔 Alerts</div>
-    <div class="detail-tab" onclick="switchUserSettingsTab('refrigs',this)">❄️ Fridge Types</div>
-    <div class="detail-tab" onclick="switchUserSettingsTab('settings',this)">⚙️ Settings</div>
+    <div class="detail-tab" onclick="switchUserSettingsTab('financials',this)">💰 Financials</div>
   </div>
 
   <div id="ustab-users">
@@ -1379,32 +1378,28 @@ textarea{resize:vertical;min-height:80px}
   </div>
 
   <div id="ustab-alerts" style="display:none">
-    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title">Notification Preferences</span></div>
+    <div class="card" style="max-width:800px"><div class="card-hdr"><span class="card-title">Alert Notification Recipients</span></div>
       <div class="card-body">
-         <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
-           <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:var(--r)">
-             <div><div style="font-size:13px;font-weight:500;color:var(--text1)">Master Alerts Switch</div><div style="font-size:11px;color:var(--text3)">Enable or disable all notifications</div></div>
-             <button class="btn btn-sm btn-primary" id="alert-master-btn" onclick="toggleAlertSetting('master')">Enabled</button>
-           </div>
-           
-           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-             <div class="flex fxc g8" style="padding:10px;background:var(--bg3);border-radius:var(--r);cursor:pointer" onclick="toggleAlertSetting('temp')">
-               <input type="checkbox" id="at-temp" checked style="width:16px;height:16px"> <span style="font-size:12px">Temperature</span>
-             </div>
-             <div class="flex fxc g8" style="padding:10px;background:var(--bg3);border-radius:var(--r);cursor:pointer" onclick="toggleAlertSetting('co2')">
-               <input type="checkbox" id="at-co2" checked style="width:16px;height:16px"> <span style="font-size:12px">CO₂ Level</span>
-             </div>
-             <div class="flex fxc g8" style="padding:10px;background:var(--bg3);border-radius:var(--r);cursor:pointer" onclick="toggleAlertSetting('keg')">
-               <input type="checkbox" id="at-keg" checked style="width:16px;height:16px"> <span style="font-size:12px">Keg Replace</span>
-             </div>
-             <div class="flex fxc g8" style="padding:10px;background:var(--bg3);border-radius:var(--r);cursor:pointer" onclick="toggleAlertSetting('flow')">
-               <input type="checkbox" id="at-flow" checked style="width:16px;height:16px"> <span style="font-size:12px">Flow Rate</span>
+         <div id="owner-alert-config" style="display:flex;flex-direction:column;gap:24px">
+           <!-- Staff Selection -->
+           <div>
+             <div class="stat-label" style="margin-bottom:12px">Select Staff to Receive Emails</div>
+             <div id="alert-staff-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));gap:10px">
+               <!-- Populated by JS -->
              </div>
            </div>
-         </div>
 
-         <div class="form-group fg-full"><label class="fl">Telegram Chat ID</label><input id="us-telegram" placeholder="-100123456789"><div class="fl-hint">Add group or personal chat ID for alerts</div></div>
-         <div class="form-actions"><button class="btn btn-primary" onclick="saveAlertSettings()">Save Preferences</button></div>
+           <!-- External Emails -->
+           <div>
+             <div class="stat-label" style="margin-bottom:12px">Additional Email Recipients</div>
+             <div class="form-group fg-full">
+               <textarea id="us-external-emails" placeholder="Enter emails, one per line..." style="min-height:100px;width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px;color:var(--text1);font-family:var(--fm);font-size:12px"></textarea>
+               <div class="fl-hint">Enter valid email addresses for external monitoring or owners</div>
+             </div>
+           </div>
+
+           <div class="form-actions"><button class="btn btn-primary" onclick="saveOwnerAlertSettings()">Save Alert Recipients</button></div>
+         </div>
       </div>
     </div>
   </div>
@@ -1422,31 +1417,25 @@ textarea{resize:vertical;min-height:80px}
     </div>
   </div>
 
-  <div id="ustab-refrigs" style="display:none">
-    <div class="card">
-      <div class="card-hdr" style="justify-content:space-between">
-        <span class="card-title">Refrigerator Types Library</span>
-        <button class="btn btn-primary btn-sm" onclick="openAddRefrigTypeModal()">+ Add Type</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Icon</th><th>Type Name</th><th>Def Min</th><th>Def Max</th><th>Actions</th></tr>
-          </thead>
-          <tbody id="refrig-types-table"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div id="ustab-settings" style="display:none">
-    <div class="card" style="max-width:560px"><div class="card-hdr"><span class="card-title">General Preferences</span></div>
+  <div id="ustab-financials" style="display:none">
+    <div class="card" style="max-width:600px">
+      <div class="card-hdr"><span class="card-title">Keg Pricing & Financials</span></div>
       <div class="card-body">
-        <div class="fg">
-          <div class="form-group fg-full"><label class="fl">Venue Name</label><input id="us-venue-name" readonly style="background:var(--bg4)"></div>
-          <div class="form-group fg-full"><label class="fl">Language</label><select id="us-lang-pref"><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option><option value="el">🇬🇷 Ελληνικά</option></select></div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Configure your average purchase and sales prices to enable margin analytics.</div>
+        
+        <div class="g2 mb16">
+          <div class="form-group"><label class="fl">Purchase Price (50L Keg)</label><input type="number" step="0.01" id="fin-buy-50" placeholder="e.g. 120.00"></div>
+          <div class="form-group"><label class="fl">Purchase Price (30L Keg)</label><input type="number" step="0.01" id="fin-buy-30" placeholder="e.g. 80.00"></div>
         </div>
-        <div class="form-actions"><button class="btn btn-primary" onclick="toast(t('saved'),'info')">Save Preferences</button></div>
+        
+        <div class="g2 mb16">
+          <div class="form-group"><label class="fl">Sales Price (Large 0.5L)</label><input type="number" step="0.10" id="fin-sell-large" placeholder="e.g. 5.50"></div>
+          <div class="form-group"><label class="fl">Sales Price (Small 0.3L)</label><input type="number" step="0.10" id="fin-sell-small" placeholder="e.g. 3.80"></div>
+        </div>
+
+        <div class="form-group"><label class="fl">Currency Symbol</label><input type="text" id="fin-currency" value="€" style="max-width:80px"></div>
+
+        <div class="form-actions"><button class="btn btn-primary" onclick="saveFinancialSettings()">Save Financial Data</button></div>
       </div>
     </div>
   </div>
@@ -2158,6 +2147,7 @@ textarea{resize:vertical;min-height:80px}
         if (u.role === 'admin') {
           document.getElementById('navAdmin').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
+          document.querySelector('.mqtt-status').style.display = 'flex'; // Show for admin
           if (page === 'adminRestaurantDetail' && id) {
             openRestaurantDetail(parseInt(id), tab);
           } else {
@@ -2166,6 +2156,7 @@ textarea{resize:vertical;min-height:80px}
         } else {
           document.getElementById('navAdmin').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
+          document.querySelector('.mqtt-status').style.display = 'none'; // Hide for users
           window.currentRestaurantId = u.restaurant_id;
           nav(page || 'userDash');
           loadRestaurantDashboard();
@@ -6504,6 +6495,21 @@ function renderOwnerUsers(){
   `).join('');
 }
 
+
+function switchUserSettingsTab(tab, el) {
+  ['users','hours','alerts','financials'].forEach(t => {
+    const p = document.getElementById('ustab-' + t);
+    if(p) p.style.display = (t === tab) ? 'block' : 'none';
+  });
+  document.querySelectorAll('#userSettingsTabs .detail-tab').forEach(d => d.classList.remove('active'));
+  if(el) el.classList.add('active');
+  
+  if(tab === 'users')      renderOwnerUsers();
+  if(tab === 'hours')      buildOwnerSchedule();
+  if(tab === 'alerts')     buildOwnerAlertsTab();
+  if(tab === 'financials') buildFinancialsTab();
+}
+
 async function buildOwnerSchedule(){
   const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
   if(!r) return;
@@ -6514,35 +6520,49 @@ async function buildOwnerSchedule(){
   document.getElementById('save-hours-btn').disabled = !isOwner;
   document.getElementById('hours-owner-only-tag').style.display = isOwner ? 'none' : 'inline-flex';
 
-  // Use existing SCHED logic but adapted for this restaurant if needed
-  // For now, assume global SCHED or fetch from restaurant
-  container.innerHTML = (r.schedule || SCHED).map((s,i) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border)">
-      <div style="width:100px;font-weight:500;color:var(--text1)">${t(s.day)}</div>
-      <label class="switch"><input type="checkbox" id="os-on-${i}" ${s.on?'checked':''} ${!isOwner?'disabled':''}><span class="slider"></span></label>
-      <div style="flex:1"></div>
-      <input type="time" id="os-open-${i}" value="${s.open}" style="width:110px" ${s.on && isOwner ?'':'disabled'}>
-      <span style="color:var(--text3)">to</span>
-      <input type="time" id="os-close-${i}" value="${s.close}" style="width:110px" ${s.on && isOwner ?'':'disabled'}>
-    </div>
-  `).join('');
+  const DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
+  const saved = r.opening_hours ? JSON.parse(r.opening_hours) : null;
+  
+  container.innerHTML = DAYS.map((day,i) => {
+    const h = (saved && saved[day]) || DEFAULT_HOURS[i];
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border)">
+        <div style="width:100px;font-weight:500;color:var(--text1)">${t(day)}</div>
+        <label class="switch"><input type="checkbox" id="os-on-${i}" ${h.on?'checked':''} ${!isOwner?'disabled':''} onchange="toggleOwnerSchedDay(${i})"><span class="slider"></span></label>
+        <div style="flex:1"></div>
+        <input type="time" id="os-open-${i}" value="${h.open}" style="width:110px" ${h.on && isOwner ?'':'disabled'}>
+        <span style="color:var(--text3)">to</span>
+        <input type="time" id="os-close-${i}" value="${h.close}" style="width:110px" ${h.on && isOwner ?'':'disabled'}>
+      </div>`;
+  }).join('');
+}
+
+function toggleOwnerSchedDay(i){
+  const on = document.getElementById('os-on-'+i)?.checked;
+  const openIn  = document.getElementById('os-open-'+i);
+  const closeIn = document.getElementById('os-close-'+i);
+  if(openIn)  openIn.disabled  = !on;
+  if(closeIn) closeIn.disabled = !on;
 }
 
 async function saveOwnerSchedule(){
   const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
   if(!r) return;
-  const newSched = SCHED.map((s,i) => ({
-    day: s.day,
-    on: document.getElementById(`os-on-${i}`).checked,
-    open: document.getElementById(`os-open-${i}`).value,
-    close: document.getElementById(`os-close-${i}`).value
-  }));
+  const DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
+  const hours = {};
+  DAYS.forEach((day, i) => {
+    hours[day] = {
+      on: document.getElementById('os-on-' + i)?.checked,
+      open: document.getElementById('os-open-' + i)?.value,
+      close: document.getElementById('os-close-' + i)?.value
+    };
+  });
   
   try {
     const res = await fetch('/api/admin/restaurants/' + r.id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...r, schedule: JSON.stringify(newSched) })
+      body: JSON.stringify({ ...r, opening_hours: JSON.stringify(hours) })
     });
     if((await res.json()).success) {
       toast('Opening hours updated','success');
@@ -6551,50 +6571,98 @@ async function saveOwnerSchedule(){
   } catch(e) { toast('Error saving schedule','error'); }
 }
 
-let ALERT_SETTINGS = { master: true, temp: true, co2: true, keg: true, flow: true };
-
-function loadAlertSettings(){
-  // Hydrate from user object if available
-  if(window.currentUser && window.currentUser.alert_settings) {
-    try {
-      const saved = typeof window.currentUser.alert_settings === 'string' 
-        ? JSON.parse(window.currentUser.alert_settings) 
-        : window.currentUser.alert_settings;
-      ALERT_SETTINGS = { ...ALERT_SETTINGS, ...saved };
-    } catch(e) { console.error('Alert parse failed', e); }
-  }
-  updateAlertTogglesUI();
-}
-
-function updateAlertTogglesUI(){
-  const m = document.getElementById('alert-master-btn');
-  m.textContent = ALERT_SETTINGS.master ? 'Enabled' : 'Disabled';
-  m.className = ALERT_SETTINGS.master ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-ghost';
+async function buildOwnerAlertsTab(){
+  const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
+  if(!r) return;
   
-  ['temp','co2','keg','flow'].forEach(type => {
-    const el = document.getElementById('at-'+type);
-    if(el) {
-      el.checked = ALERT_SETTINGS[type];
-      el.disabled = !ALERT_SETTINGS.master;
-    }
-  });
-}
-
-function toggleAlertSetting(type){
-  if(type === 'master') ALERT_SETTINGS.master = !ALERT_SETTINGS.master;
-  else ALERT_SETTINGS[type] = !ALERT_SETTINGS[type];
-  updateAlertTogglesUI();
-}
-
-async function saveAlertSettings(){
+  const staffList = document.getElementById('alert-staff-list');
+  const staff = USERS_DATA.filter(u => u.restaurant_id === r.id);
+  
+  // Load existing recipients
+  let recipients = [];
   try {
-    const res = await fetch('/api/me/alerts', {
+    const res = await fetch('/api/alert-recipients?restaurant_id=' + r.id);
+    recipients = await res.json();
+  } catch(e) { console.error('Alert recipients fetch failed', e); }
+
+  staffList.innerHTML = staff.map(u => {
+    const isChecked = recipients.some(rec => rec.type === 'user_id' && parseInt(rec.value) === u.id);
+    return `
+      <div class="flex fxc g8" style="padding:10px;background:var(--bg3);border-radius:var(--r)">
+        <input type="checkbox" class="staff-alert-check" value="${u.id}" ${isChecked?'checked':''} style="width:16px;height:16px">
+        <div style="font-size:12px;line-height:1.2">
+          <div style="font-weight:600">${u.name}</div>
+          <div style="color:var(--text3);font-size:10px">${u.email}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const externalRes = recipients.filter(rec => rec.type === 'email').map(rec => rec.value).join('\n');
+  document.getElementById('us-external-emails').value = externalRes;
+}
+
+async function saveOwnerAlertSettings(){
+  const restId = window.currentRestaurantId;
+  const staffChecks = document.querySelectorAll('.staff-alert-check:checked');
+  const userIds = Array.from(staffChecks).map(c => c.value);
+  const emails = document.getElementById('us-external-emails').value.split('\n').map(e => e.trim()).filter(e => e.includes('@'));
+
+  const recipients = [
+    ...userIds.map(id => ({ type: 'user_id', value: id })),
+    ...emails.map(e => ({ type: 'email', value: e }))
+  ];
+
+  try {
+    const res = await fetch('/api/alert-recipients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restaurant_id: restId, recipients })
+    });
+    if((await res.json()).success) toast('Alert recipients updated','success');
+  } catch(e) { toast('Error saving alert recipients','error'); }
+}
+
+function buildFinancialsTab(){
+  const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
+  if(!r) return;
+  
+  let fin = { buy50: 0, buy30: 0, sellLarge: 0, sellSmall: 0, currency: '€' };
+  if(r.financial_settings) {
+    try {
+      fin = typeof r.financial_settings === 'string' ? JSON.parse(r.financial_settings) : r.financial_settings;
+    } catch(e) { console.error('Financials parse failed', e); }
+  }
+
+  document.getElementById('fin-buy-50').value = fin.buy50 || '';
+  document.getElementById('fin-buy-30').value = fin.buy30 || '';
+  document.getElementById('fin-sell-large').value = fin.sellLarge || '';
+  document.getElementById('fin-sell-small').value = fin.sellSmall || '';
+  document.getElementById('fin-currency').value = fin.currency || '€';
+}
+
+async function saveFinancialSettings(){
+  const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
+  if(!r) return;
+
+  const fin = {
+    buy50: parseFloat(document.getElementById('fin-buy-50').value) || 0,
+    buy30: parseFloat(document.getElementById('fin-buy-30').value) || 0,
+    sellLarge: parseFloat(document.getElementById('fin-sell-large').value) || 0,
+    sellSmall: parseFloat(document.getElementById('fin-sell-small').value) || 0,
+    currency: document.getElementById('fin-currency').value || '€'
+  };
+
+  try {
+    const res = await fetch('/api/admin/restaurants/' + r.id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(ALERT_SETTINGS)
+      body: JSON.stringify({ ...r, financial_settings: JSON.stringify(fin) })
     });
-    if((await res.json()).success) toast('Alert settings saved','success');
-  } catch(e) { toast('Error saving alert settings','error'); }
+    if((await res.json()).success) {
+      toast('Financial settings saved','success');
+      initData();
+    }
+  } catch(e) { toast('Error saving financials','error'); }
 }
 
 // ══════════════════════════════════════════
