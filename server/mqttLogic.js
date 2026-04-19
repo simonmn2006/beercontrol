@@ -22,19 +22,27 @@ class MqttLogic {
    * Typical topics:
    * - keghero/sensor/[SENSOR_ID]/pour -> { liters: 0.1, flow: 1.5, temp: 4.2 }
    * - keghero/sensor/[SENSOR_ID]/heartbeat -> { status: "online", battery: 95 }
+   * - keghero/facility/[SENSOR_ID]/temp -> { temp: 4.2 }
    * @param {Object} msg { topic, data, time }
    */
   async handleMessage(msg) {
     const parts = msg.topic.split('/');
-    if (parts[0] !== 'keghero' || parts[1] !== 'sensor') return;
+    if (parts[0] !== 'keghero') return;
 
+    const category = parts[1];
     const sensorId = parts[2];
-    const type = parts[3];
+    const type     = parts[3];
 
-    if (type === 'pour') {
-      await this.processPour(sensorId, msg.data);
-    } else if (type === 'heartbeat') {
-      await this.processHeartbeat(sensorId, msg.data);
+    if (category === 'sensor') {
+      if (type === 'pour') {
+        await this.processPour(sensorId, msg.data);
+      } else if (type === 'heartbeat') {
+        await this.processHeartbeat(sensorId, msg.data);
+      }
+    } else if (category === 'facility') {
+      if (type === 'temp' || type === 'telemetry') {
+        await this.processFacilityTemp(sensorId, msg.data);
+      }
     }
   }
 
@@ -83,6 +91,60 @@ class MqttLogic {
         [data.temp || 0, sensorId]);
     } catch (err) {
       console.error('❌ MQTT Logic: Error processing heartbeat:', err.message);
+    }
+  }
+
+  /**
+   * Processes facility sensor data (e.g. Fridge Temp)
+   */
+  async processFacilityTemp(sensorId, data) {
+    const temp = parseFloat(typeof data === 'object' ? (data.temp || data.value || 0) : data);
+    
+    try {
+      // 1. Find the sensor
+      const sensor = await db.get("SELECT * FROM facility_sensors WHERE sensor_id = ?", [sensorId]);
+      if (!sensor) {
+        // Optional: Auto-discover new sensors? 
+        // For now, only process known ones to avoid db pollution from rogue devices.
+        return;
+      }
+
+      // 2. Update current state
+      await db.run("UPDATE facility_sensors SET current_value = ?, online = 1, last_seen = NOW() WHERE id = ?", 
+        [temp, sensor.id]);
+
+      // 3. Log to historical data (every 10 mins approx)
+      const lastLog = await db.get("SELECT recorded_at FROM sensor_logs WHERE sensor_id = ? ORDER BY recorded_at DESC LIMIT 1", [sensorId]);
+      const now = new Date();
+      if (!lastLog || (now - new Date(lastLog.recorded_at)) >= 10 * 60 * 1000) {
+        await db.run("INSERT INTO sensor_logs (sensor_id, value) VALUES (?, ?)", [sensorId, temp]);
+      }
+
+      // 4. Threshold Checks & Alerts
+      if (temp > sensor.max_threshold) {
+        await this.createFacilityAlert(sensor, 'high_temp', `High Temperature Alert: ${sensor.name} is at ${temp}°C (Limit: ${sensor.max_threshold}°C)`);
+      } else if (temp < sensor.min_threshold) {
+        await this.createFacilityAlert(sensor, 'low_temp', `Low Temperature Alert: ${sensor.name} is at ${temp}°C (Limit: ${sensor.min_threshold}°C)`);
+      }
+
+    } catch (err) {
+      console.error('❌ MQTT Logic: Error processing facility temp:', err.message);
+    }
+  }
+
+  async createFacilityAlert(sensor, type, message) {
+    try {
+      // Check if an unresolved alert of this type already exists for this sensor
+      const existing = await db.get("SELECT id FROM alerts WHERE restaurant_id = ? AND message LIKE ? AND resolved = 0", 
+        [sensor.restaurant_id, `%${sensor.name}%`]);
+      
+      if (!existing) {
+        await db.run("INSERT INTO alerts (restaurant_id, type, message) VALUES (?, ?, ?)", 
+          [sensor.restaurant_id, type, message]);
+        console.warn(`🔔 ALERT: ${message}`);
+      }
+    } catch (e) {
+      console.error('❌ Error creating facility alert:', e);
     }
   }
 

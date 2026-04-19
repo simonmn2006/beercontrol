@@ -225,6 +225,61 @@ async function runMigrations() {
       FOREIGN KEY (session_id) REFERENCES keg_sessions(id)
     )`);
 
+    // ── Facility Monitoring ─────────────────
+    console.log('◈ Checking facility monitoring tables...');
+    await pool.query(`CREATE TABLE IF NOT EXISTS refrigerator_types (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      min_temp DOUBLE NOT NULL,
+      max_temp DOUBLE NOT NULL,
+      icon VARCHAR(50),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    const [typeCount] = await pool.query('SELECT COUNT(*) as c FROM refrigerator_types');
+    if (typeCount[0].c === 0) {
+      const types = [
+        ['Meat Fridge', 1.0, 4.0, '🥩'],
+        ['Wine Fridge', 10.0, 14.0, '🍷'],
+        ['Vegetable Fridge', 4.0, 7.0, '🥬'],
+        ['Beer Fridge', 2.0, 5.0, '🍺'],
+        ['Dessert Display', 3.0, 6.0, '🍨'],
+        ['Generic Storage', 1.0, 8.0, '❄️']
+      ];
+      for (const t of types) await pool.query('INSERT INTO refrigerator_types (name, min_temp, max_temp, icon) VALUES (?,?,?,?)', t);
+    }
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS facility_sensors (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      restaurant_id INT NOT NULL,
+      sensor_id VARCHAR(255) UNIQUE NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      type VARCHAR(50) DEFAULT 'temperature',
+      type_id INT,
+      current_value DOUBLE,
+      min_threshold DOUBLE DEFAULT 1.0,
+      max_threshold DOUBLE DEFAULT 8.0,
+      online TINYINT DEFAULT 0,
+      last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+      FOREIGN KEY (type_id) REFERENCES refrigerator_types(id) ON DELETE SET NULL
+    )`);
+
+    const [facCols] = await pool.query('SHOW COLUMNS FROM facility_sensors');
+    const facColNames = facCols.map(c => c.Field);
+    if (!facColNames.includes('type_id')) {
+      await pool.query('ALTER TABLE facility_sensors ADD COLUMN type_id INT, ADD FOREIGN KEY (type_id) REFERENCES refrigerator_types(id) ON DELETE SET NULL');
+    }
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS sensor_logs (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      sensor_id VARCHAR(255) NOT NULL,
+      value DOUBLE NOT NULL,
+      recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_sensor_time (sensor_id, recorded_at)
+    )`);
+
     // Create payments table (Original logic)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS payments (

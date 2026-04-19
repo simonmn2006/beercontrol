@@ -125,6 +125,40 @@ CREATE TABLE IF NOT EXISTS settings (
   `value` TEXT
 );
 
+CREATE TABLE IF NOT EXISTS refrigerator_types (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  min_temp DOUBLE NOT NULL,
+  max_temp DOUBLE NOT NULL,
+  icon VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS facility_sensors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id INT NOT NULL,
+  sensor_id VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(50) DEFAULT 'temperature',
+  type_id INT,
+  current_value DOUBLE,
+  min_threshold DOUBLE DEFAULT 1.0,
+  max_threshold DOUBLE DEFAULT 8.0,
+  online TINYINT DEFAULT 0,
+  last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+  FOREIGN KEY (type_id) REFERENCES refrigerator_types(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS sensor_logs (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  sensor_id VARCHAR(255) NOT NULL,
+  value DOUBLE NOT NULL,
+  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_sensor_time (sensor_id, recorded_at)
+);
+
 CREATE TABLE IF NOT EXISTS payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   restaurant_id INT NOT NULL,

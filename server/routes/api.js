@@ -290,6 +290,173 @@ router.post('/settings/schedule', async (req, res) => {
   }
 });
 
+// ── Facility Sensors ─────────────────────────
+router.get('/sensors', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const rid  = req.query.restaurant_id || user.restaurant_id;
+    if (user.role !== 'admin' && String(rid) !== String(user.restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const sensors = await db.all(`
+      SELECT s.*, t.name as type_name, t.icon as type_icon
+      FROM facility_sensors s
+      LEFT JOIN refrigerator_types t ON s.type_id = t.id
+      WHERE s.restaurant_id=? ORDER BY s.name
+    `, [rid]);
+    res.json(sensors);
+  } catch (err) {
+    console.error('Get sensors error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/sensors', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const { restaurant_id, sensor_id, name, type, type_id, min_threshold, max_threshold } = req.body;
+    const rid = restaurant_id || user.restaurant_id;
+    if (user.role !== 'admin' && String(rid) !== String(user.restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await db.run(
+      "INSERT INTO facility_sensors (restaurant_id, sensor_id, name, type, type_id, min_threshold, max_threshold) VALUES (?,?,?,?,?,?,?)",
+      [rid, sensor_id, name, type || 'temperature', type_id || null, min_threshold || 1.0, max_threshold || 8.0]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Create sensor error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/sensors/:id', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const { id } = req.params;
+    const { name, sensor_id, type, type_id, min_threshold, max_threshold } = req.body;
+    
+    const sensor = await db.get("SELECT restaurant_id FROM facility_sensors WHERE id=?", [id]);
+    if (!sensor) return res.status(404).json({ error: 'Sensor not found' });
+    if (user.role !== 'admin' && String(sensor.restaurant_id) !== String(user.restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    await db.run(
+      "UPDATE facility_sensors SET name=?, sensor_id=?, type=?, type_id=?, min_threshold=?, max_threshold=? WHERE id=?",
+      [name, sensor_id, type, type_id || null, min_threshold, max_threshold, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update sensor error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.delete('/sensors/:id', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const { id } = req.params;
+    const sensor = await db.get("SELECT restaurant_id FROM facility_sensors WHERE id=?", [id]);
+    if (!sensor) return res.status(404).json({ error: 'Sensor not found' });
+    if (user.role !== 'admin' && String(sensor.restaurant_id) !== String(user.restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    await db.run("DELETE FROM facility_sensors WHERE id=?", [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete sensor error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.get('/sensors/:sensorId/history', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const { sensorId } = req.params;
+    const from = req.query.from || new Date(Date.now() - 24*3600000).toISOString();
+    const to   = req.query.to   || new Date().toISOString();
+
+    const sensor = await db.get("SELECT restaurant_id FROM facility_sensors WHERE sensor_id=?", [sensorId]);
+    if (!sensor) return res.status(404).json({ error: 'Sensor not found' });
+    if (user.role !== 'admin' && String(sensor.restaurant_id) !== String(user.restaurant_id)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Aggregation logic: if timeframe > 48h, average by hour
+    const dateDiff = new Date(to) - new Date(from);
+    let query = "";
+    if (dateDiff > 48 *3600000) {
+      query = `
+        SELECT 
+          DATE_FORMAT(recorded_at, '%Y-%m-%d %H:00:00') as time,
+          AVG(value) as value
+        FROM sensor_logs
+        WHERE sensor_id=? AND recorded_at BETWEEN ? AND ?
+        GROUP BY time
+        ORDER BY time
+      `;
+    } else {
+      query = `
+        SELECT recorded_at as time, value 
+        FROM sensor_logs 
+        WHERE sensor_id=? AND recorded_at BETWEEN ? AND ?
+        ORDER BY recorded_at
+      `;
+    }
+
+    const logs = await db.all(query, [sensorId, from, to]);
+    res.json(logs);
+  } catch (err) {
+    console.error('Get sensor history error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// ── Refrigerator Types ───────────────────────
+router.get('/refrig-types', async (req, res) => {
+  try {
+    const types = await db.all("SELECT * FROM refrigerator_types ORDER BY name");
+    res.json(types);
+  } catch (err) {
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/refrig-types', async (req, res) => {
+  try {
+    if (req.session.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const { name, min_temp, max_temp, icon } = req.body;
+    await db.run("INSERT INTO refrigerator_types (name, min_temp, max_temp, icon) VALUES (?,?,?,?)", [name, min_temp, max_temp, icon]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.put('/refrig-types/:id', async (req, res) => {
+  try {
+    if (req.session.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const { id } = req.params;
+    const { name, min_temp, max_temp, icon } = req.body;
+    await db.run("UPDATE refrigerator_types SET name=?, min_temp=?, max_temp=?, icon=? WHERE id=?", [name, min_temp, max_temp, icon, id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.delete('/refrig-types/:id', async (req, res) => {
+  try {
+    if (req.session.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+    const { id } = req.params;
+    await db.run("DELETE FROM refrigerator_types WHERE id=?", [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // ── Real-time MQTT Stream (SSE) ──────────────────
 router.get('/mqtt/stream', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
