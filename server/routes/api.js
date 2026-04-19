@@ -300,7 +300,7 @@ router.get('/sensors', async (req, res) => {
     }
     
     let query = `
-      SELECT s.*, t.name as type_name, t.icon as type_icon, r.name as restaurant_name
+      SELECT s.*, s.type_id as refrig_type_id, t.name as type_name, t.icon as type_icon, r.name as restaurant_name
       FROM facility_sensors s
       LEFT JOIN refrigerator_types t ON s.type_id = t.id
       LEFT JOIN restaurants r ON s.restaurant_id = r.id
