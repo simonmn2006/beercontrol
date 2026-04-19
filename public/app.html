@@ -7244,7 +7244,7 @@ async function saveSensor() {
       toast(id ? 'Sensor updated' : 'Sensor added', 'success');
       closeM('mAddSensor');
       loadFacilitySensors();
-      if (activePage === 'adminRestaurantDetail' && window._currentRest) {
+      if (window.currentPage === 'adminRestaurantDetail' && window._currentRest) {
         renderDetailRefrigs(window._currentRest);
       }
     } else {
@@ -7271,7 +7271,7 @@ async function deleteSensor(id) {
           if (d.success) {
             toast('Sensor deleted', 'info');
             loadFacilitySensors();
-            if (activePage === 'adminRestaurantDetail' && window._currentRest) {
+            if (window.currentPage === 'adminRestaurantDetail' && window._currentRest) {
               renderDetailRefrigs(window._currentRest);
             }
           }

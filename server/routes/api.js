@@ -323,14 +323,26 @@ router.get('/sensors', async (req, res) => {
 router.post('/sensors', async (req, res) => {
   try {
     const user = req.session.user;
-    const { restaurant_id, sensor_id, name, type, type_id, min_threshold, max_threshold } = req.body;
+    const { restaurant_id, sensor_id, name, type, type_id, refrig_type_id, min_threshold, max_threshold } = req.body;
     const rid = restaurant_id || user.restaurant_id;
     if (user.role !== 'admin' && String(rid) !== String(user.restaurant_id)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
+    
+    // Map either refrig_type_id (frontend) or type_id (backend legacy)
+    const tid = refrig_type_id || type_id || null;
+
     await db.run(
       "INSERT INTO facility_sensors (restaurant_id, sensor_id, name, type, type_id, min_threshold, max_threshold) VALUES (?,?,?,?,?,?,?)",
-      [rid, sensor_id, name, type || 'temperature', type_id || null, min_threshold || 1.0, max_threshold || 8.0]
+      [
+        rid || null, 
+        sensor_id || '', 
+        name || 'Unnamed', 
+        type || 'temperature', 
+        tid, 
+        min_threshold ?? 1.0, 
+        max_threshold ?? 8.0
+      ]
     );
     res.json({ success: true });
   } catch (err) {
@@ -343,7 +355,7 @@ router.put('/sensors/:id', async (req, res) => {
   try {
     const user = req.session.user;
     const { id } = req.params;
-    const { name, sensor_id, type, type_id, min_threshold, max_threshold } = req.body;
+    const { name, sensor_id, type, type_id, refrig_type_id, min_threshold, max_threshold } = req.body;
     
     const sensor = await db.get("SELECT restaurant_id FROM facility_sensors WHERE id=?", [id]);
     if (!sensor) return res.status(404).json({ error: 'Sensor not found' });
@@ -351,9 +363,20 @@ router.put('/sensors/:id', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    // Map either refrig_type_id (frontend) or type_id (backend legacy)
+    const tid = refrig_type_id || type_id || null;
+
     await db.run(
       "UPDATE facility_sensors SET name=?, sensor_id=?, type=?, type_id=?, min_threshold=?, max_threshold=? WHERE id=?",
-      [name, sensor_id, type, type_id || null, min_threshold, max_threshold, id]
+      [
+        name || 'Unnamed', 
+        sensor_id || '', 
+        type || 'temperature', 
+        tid, 
+        min_threshold ?? 1.0, 
+        max_threshold ?? 8.0, 
+        id
+      ]
     );
     res.json({ success: true });
   } catch (err) {
