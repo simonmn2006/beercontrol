@@ -7182,8 +7182,14 @@ function openAddSensorModal() {
   document.getElementById('ms-max').value = '5.0';
   
   if (window.currentRole === 'admin') {
-    document.getElementById('ms-rest-group').style.display = 'block';
-    document.getElementById('ms-rest').value = '';
+    // If we are inside a specific restaurant detail, auto-select it and hide the group
+    if (window.currentPage === 'adminRestaurantDetail' && window._currentRest) {
+      document.getElementById('ms-rest-group').style.display = 'none';
+      document.getElementById('ms-rest').value = window._currentRest.id;
+    } else {
+      document.getElementById('ms-rest-group').style.display = 'block';
+      document.getElementById('ms-rest').value = '';
+    }
   } else {
     document.getElementById('ms-rest-group').style.display = 'none';
   }
