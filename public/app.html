@@ -1223,8 +1223,12 @@ textarea{resize:vertical;min-height:80px}
 <div class="page" id="page-userDash">
 
   <div class="sect-hdr">
-    <div><div class="sect-title" data-i18n="nav_live">Live Dashboard</div><div class="sect-sub" data-i18n="live_updates">Live — updates every 5s</div></div>
-    <div class="flex g8">
+    <div>
+      <div class="sect-title" data-i18n="nav_live">Live Dashboard</div>
+      <div class="sect-sub" data-i18n="live_updates">Live Updates Active</div>
+    </div>
+    <div class="flex g8" style="align-items:center">
+      <div class="live-label"><span class="pulsating-dot"></span> LIVE</div>
       <button class="btn btn-ghost btn-sm" onclick="nav('userKiosk')">📺 Kiosk Mode</button>
       <button class="btn btn-primary btn-sm" onclick="openM('mAddKeg')">+ Add Keg</button>
     </div>
@@ -2160,6 +2164,17 @@ textarea{resize:vertical;min-height:80px}
           window.currentRestaurantId = u.restaurant_id;
           nav(page || 'userDash');
           loadRestaurantDashboard();
+          
+          // Start background refresh (30s)
+          if (window.dashRefreshInterval) clearInterval(window.dashRefreshInterval);
+          window.dashRefreshInterval = setInterval(() => {
+            const livePages = ['userDash', 'userCosts', 'userKegs', 'userForecast', 'userRefrigs'];
+            if (livePages.includes(window.currentPage)) {
+              console.log('Background refreshing dashboard data...');
+              loadRestaurantDashboard();
+              if (window.currentPage === 'userRefrigs') loadFacilitySensors();
+            }
+          }, 30000);
         }
         
         if (typeof window.initAppSupport === 'function') window.initAppSupport();
@@ -5858,7 +5873,11 @@ async function saveNewKeg(){
     const data = await res.json();
     if(data.success) {
       closeM('mAddKeg');
-      await openRestaurantDetail(r.id); // Refresh data
+      if (window.currentRole === 'admin') {
+        await openRestaurantDetail(r.id);
+      } else {
+        await loadRestaurantDashboard();
+      }
       toast('Keg added — Tap #'+tap+' · '+beer.name,'info');
     } else if (data.error) {
       toast(data.error, 'error');
@@ -6459,9 +6478,21 @@ async function loadRestaurantDashboard(){
     window.USER_KEGS = data.kegs || [];
     buildKegGrids();
     
-    // Update Stats
-    document.querySelector('#page-userDash .stat-card.sc-red .stat-val').innerHTML = `${data.poured_today.toFixed(1)} <span>L</span>`;
-    document.querySelector('#page-userDash .stat-card.sc-gray .stat-val').textContent = data.keg_changes;
+    // Update Dashboard Stats with correct selectors
+    const pouredEl = document.getElementById('userPouredToday');
+    if (pouredEl) pouredEl.textContent = data.poured_today.toFixed(1);
+    
+    const changesEl = document.getElementById('userKegChanges');
+    if (changesEl) changesEl.textContent = data.keg_changes;
+
+    const tapsCard = document.querySelector('#page-userDash .stat-card.sc-blue .stat-val');
+    if (tapsCard) {
+      const active = data.kegs.filter(k => k.remaining_liters > 0).length;
+      tapsCard.innerHTML = `${active} <span>/ ${data.kegs.length}</span>`;
+    }
+
+    const alertsEl = document.querySelector('#page-userDash .stat-card.sc-red .stat-val');
+    if (alertsEl) alertsEl.textContent = (data.alerts || []).length;
     
     // Update Financial Stats if on the Costs page or visible
     if(document.querySelector('#page-userCosts .stat-card.sc-green .stat-val')) {

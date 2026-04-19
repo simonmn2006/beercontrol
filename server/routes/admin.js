@@ -302,8 +302,8 @@ router.post('/kegs', async (req, res) => {
 
     const r = await db.run(`
       INSERT INTO kegs (restaurant_id,tap_number,beer_name,keg_size_liters,remaining_liters,
-        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct,logo_path)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct,logo_path, active)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)
     `, [restaurant_id, tap_number, beer_name, keg_size_liters, keg_size_liters,
            esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10, logo_path||null]);
     // Start a keg session
