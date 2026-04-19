@@ -307,7 +307,9 @@ router.post('/kegs', async (req, res) => {
     `, [restaurant_id, tap_number, beer_name, keg_size_liters, keg_size_liters,
            esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10, logo_path||null]);
     // Start a keg session
-    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size) VALUES (?,?,?)", [r.lastInsertRowid, restaurant_id, keg_size_liters]);
+    // Start a keg session with price snapshots
+    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price) VALUES (?,?,?,?,?)", 
+      [r.lastInsertRowid, restaurant_id, keg_size_liters, cost_price||0, sale_price||0]);
     res.json({ success: true, id: r.lastInsertRowid });
   } catch (err) {
     console.error('Create keg error:', err);
@@ -362,12 +364,31 @@ router.post('/kegs/:id/new-keg', async (req, res) => {
     // Reset keg
     await db.run("UPDATE kegs SET remaining_liters=?, fob_active=0 WHERE id=?", [keg.keg_size_liters, keg.id]);
     // New session
-    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size) VALUES (?,?,?)", [keg.id, keg.restaurant_id, keg.keg_size_liters]);
+    // New session with price snapshots
+    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price) VALUES (?,?,?,?,?)", 
+      [keg.id, keg.restaurant_id, keg.keg_size_liters, keg.cost_price||0, keg.sale_price||0]);
     // Log alert
     await db.run("INSERT INTO alerts (restaurant_id,keg_id,type,message) VALUES (?,?,'info',?)", [keg.restaurant_id, keg.id, `Manual keg change — ${keg.beer_name} Tap #${keg.tap_number}`]);
     res.json({ success: true });
   } catch (err) {
     console.error('New keg error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.post('/financials/batch', async (req, res) => {
+  try {
+    const { updates } = req.body;
+    if (!Array.isArray(updates)) return res.status(400).json({ error: 'Updates must be an array' });
+    
+    for (const u of updates) {
+      await db.run("UPDATE kegs SET cost_price=?, sale_price=? WHERE id=?", [u.cost_price, u.sale_price, u.id]);
+      // Also update the active session's prices if it exists, so changes take effect immediately
+      await db.run("UPDATE keg_sessions SET cost_price=?, sale_price=? WHERE keg_id=? AND ended_at IS NULL", [u.cost_price, u.sale_price, u.id]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Batch financials error:', err);
     res.status(500).json({ error: 'server_error' });
   }
 });

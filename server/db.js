@@ -209,8 +209,15 @@ async function runMigrations() {
       ended_at DATETIME,
       total_poured DOUBLE DEFAULT 0,
       keg_size DOUBLE NOT NULL,
+      cost_price DOUBLE DEFAULT 0,
+      sale_price DOUBLE DEFAULT 0,
       FOREIGN KEY (keg_id) REFERENCES kegs(id)
     )`);
+
+    const [sessionCols] = await pool.query('SHOW COLUMNS FROM keg_sessions');
+    const sessionColNames = sessionCols.map(c => c.Field);
+    if (!sessionColNames.includes('cost_price')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN cost_price DOUBLE DEFAULT 0');
+    if (!sessionColNames.includes('sale_price')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN sale_price DOUBLE DEFAULT 0');
 
     await pool.query(`CREATE TABLE IF NOT EXISTS pour_events (
       id INT AUTO_INCREMENT PRIMARY KEY,

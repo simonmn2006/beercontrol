@@ -74,14 +74,15 @@ router.get('/dashboard', async (req, res) => {
 
     const financials_row = await db.get(`
       SELECT 
-        SUM(pe.liters * k.sale_price) as revenue,
-        SUM(pe.liters * k.cost_price) as cost
+        SUM(pe.liters * COALESCE(ks.sale_price, k.sale_price)) as revenue,
+        SUM(pe.liters * COALESCE(ks.cost_price, k.cost_price)) as cost
       FROM pour_events pe
       JOIN kegs k ON pe.keg_id = k.id
-      WHERE pe.restaurant_id=? AND DATE(pe.recorded_at)=CURDATE()
+      LEFT JOIN keg_sessions ks ON pe.session_id = ks.id
+      WHERE pe.restaurant_id=? AND DATE(pe.recorded_at) = CURDATE()
     `, [rid]);
     const revenue_today = financials_row.revenue || 0;
-    const cost_today = financials_row.cost || 0;
+    const cost_today    = financials_row.cost || 0;
 
     res.json({ kegs, poured_today, keg_changes, alerts, activity, revenue_today, cost_today });
   } catch (err) {
