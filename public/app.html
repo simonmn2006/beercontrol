@@ -3623,26 +3623,36 @@ function applyI18n(){
    BUILD KEG GRIDS
 ══════════════════════════════════════════ */
 function kegCard(k,clickable=true){
-  const pct=k.size>0?(k.rem/k.size*100):0;
-  const fill=pct<=10?'fill-red':pct<=20?'fill-amber':'fill-green';
-  const cls=pct<=10?'critical':pct<=20?'warning':'';
-  const badge=pct<=10?`<span class="keg-badge badge-crit">${t('critical')}</span>`:
-               k.fob?`<span class="keg-badge badge-fob">FOB ON</span>`:
-               pct>90?`<span class="keg-badge badge-new">${t('fresh')}</span>`:'';
-  return `<div class="keg-card ${cls}" ${clickable?`onclick="openEditKeg(${k.id})"`:'style="cursor:default"'}>
+  // Map raw DB keys to template keys if necessary
+  const name = k.name || k.beer_name || 'Unknown Beer';
+  const tap  = k.tap  || k.tap_number || 0;
+  const size = k.size || k.keg_size_liters || 0;
+  const rem  = k.rem  || k.remaining_liters || 0;
+  const poured = (k.poured !== undefined) ? k.poured : (k.poured_today || 0);
+  const temp = (k.temp !== undefined) ? k.temp : (k.current_temp || 0);
+  const co2  = (k.co2 !== undefined) ? k.co2 : (k.co2_pressure || 0);
+
+  const pct = size > 0 ? (rem / size * 100) : 0;
+  const fill = pct <= 10 ? 'fill-red' : pct <= 20 ? 'fill-amber' : 'fill-green';
+  const cls = pct <= 10 ? 'critical' : pct <= 20 ? 'warning' : '';
+  const badge = pct <= 10 ? `<span class="keg-badge badge-crit">${t('critical')}</span>` :
+               k.fob ? `<span class="keg-badge badge-fob">FOB ON</span>` :
+               pct > 90 ? `<span class="keg-badge badge-new">${t('fresh')}</span>` : '';
+
+  return `<div class="keg-card ${cls}" ${clickable ? `onclick="openEditKeg(${k.id})"` : 'style="cursor:default"'}>
     ${badge}
     <div class="keg-top">
-      <div><div class="keg-name">${k.name}</div><div class="keg-sub">${k.rest?k.rest+' · ':''}Tap #${k.tap}</div></div>
-      <div class="keg-logo">${k.emoji}</div>
+      <div><div class="keg-name">${name}</div><div class="keg-sub">${k.rest ? k.rest + ' · ' : ''}Tap #${tap}</div></div>
+      <div class="keg-logo">${k.emoji || '🍺'}</div>
     </div>
     <div class="prog-wrap">
-      <div class="prog-label"><span>${t('remaining')}</span><strong>${k.rem.toFixed(1)} / ${k.size} L</strong></div>
-      <div class="prog-bar"><div class="prog-fill ${fill}" style="width:${Math.max(0,Math.min(100,pct)).toFixed(1)}%"></div></div>
+      <div class="prog-label"><span>${t('remaining')}</span><strong>${rem.toFixed(1)} / ${size} L</strong></div>
+      <div class="prog-bar"><div class="prog-fill ${fill}" style="width:${Math.max(0, Math.min(100, pct)).toFixed(1)}%"></div></div>
     </div>
     <div class="keg-stats">
-      <div class="keg-stat"><div class="ks-label">${t('poured')}</div><div class="ks-val">${k.poured.toFixed(1)}L</div></div>
-      <div class="keg-stat"><div class="ks-label">${t('temp')}</div><div class="ks-val">${k.temp}°C</div></div>
-      <div class="keg-stat"><div class="ks-label">CO₂</div><div class="ks-val">${k.co2} bar</div></div>
+      <div class="keg-stat"><div class="ks-label">${t('poured')}</div><div class="ks-val">${poured.toFixed(1)}L</div></div>
+      <div class="keg-stat"><div class="ks-label">${t('temp')}</div><div class="ks-val">${temp}°C</div></div>
+      <div class="keg-stat"><div class="ks-label">CO₂</div><div class="ks-val">${co2} bar</div></div>
     </div>
   </div>`;
 }
@@ -6610,7 +6620,7 @@ function renderOwnerUsers(){
   const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
   const el = document.getElementById('owner-users-table');
   if(!el || !r) return;
-  const users = USERS_DATA.filter(u => u.restaurant_id === r.id);
+  const users = USERS_DATA.filter(u => String(u.restaurant_id) === String(r.id));
   el.innerHTML = users.map(u => `
     <tr>
       <td><div class="flex fxc g8"><div class="u-av" style="width:24px;height:24px;font-size:10px">${u.name.charAt(0)}</div><b>${u.name}</b></div></td>

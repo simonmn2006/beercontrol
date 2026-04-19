@@ -114,7 +114,7 @@ router.get('/me/users', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     const rid = user.restaurant_id;
-    const users = await db.all("SELECT id, name, email, role, active, last_login FROM users WHERE restaurant_id=?", [rid]);
+    const users = await db.all("SELECT id, name, email, role, active, last_login, restaurant_id FROM users WHERE restaurant_id=?", [rid]);
     res.json(users);
   } catch (err) {
     console.error('Me users error:', err);
