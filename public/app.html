@@ -1230,7 +1230,6 @@ textarea{resize:vertical;min-height:80px}
     <div class="flex g8" style="align-items:center">
       <div class="live-label"><span class="pulsating-dot"></span> LIVE</div>
       <button class="btn btn-ghost btn-sm" onclick="nav('userKiosk')">📺 Kiosk Mode</button>
-      <button class="btn btn-primary btn-sm user-admin-only" onclick="openM('mAddKeg')" style="display:none">+ Add Keg</button>
     </div>
   </div>
   <div class="g4 mb16">
@@ -1250,7 +1249,6 @@ textarea{resize:vertical;min-height:80px}
 <div class="page" id="page-userKegs">
   <div class="sect-hdr">
     <div><div class="sect-title" data-i18n="nav_kegs">Kegs & Beers</div><div class="sect-sub" data-i18n="kegs_sub">Configure beers, logos and keg sizes</div></div>
-    <button class="btn btn-primary user-admin-only" onclick="openM('mAddKeg')" style="display:none">+ Add Keg</button>
   </div>
   <div id="userKegsDetail" class="grid-kegs"></div>
 </div>
@@ -1382,9 +1380,37 @@ textarea{resize:vertical;min-height:80px}
   </div>
 
   <div id="ustab-alerts" style="display:none">
-    <div class="card" style="max-width:800px"><div class="card-hdr"><span class="card-title">Alert Notification Recipients</span></div>
+    <div class="card" style="max-width:800px">
+      <div class="card-hdr"><span class="card-title">Alert Thresholds & Notifications</span></div>
       <div class="card-body">
          <div id="owner-alert-config" style="display:flex;flex-direction:column;gap:24px">
+           <!-- Threshold Toggles -->
+           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+             <div class="alert-toggle-box" style="padding:16px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
+               <div class="flex fxc jsb" style="margin-bottom:8px">
+                 <span style="font-weight:600;font-size:13px">🌡 Temperature</span>
+                 <label class="twrap"><span class="toggle"><input type="checkbox" id="alert-temp-on" checked><span class="tslider"></span></span></label>
+               </div>
+               <div style="font-size:11px;color:var(--text3)">Notify if temperature exceeds limit</div>
+             </div>
+             <div class="alert-toggle-box" style="padding:16px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
+               <div class="flex fxc jsb" style="margin-bottom:8px">
+                 <span style="font-weight:600;font-size:13px">💨 CO₂ Pressure</span>
+                 <label class="twrap"><span class="toggle"><input type="checkbox" id="alert-co2-on" checked><span class="tslider"></span></span></label>
+               </div>
+               <div style="font-size:11px;color:var(--text3)">Notify if pressure drops below threshold</div>
+             </div>
+             <div class="alert-toggle-box" style="padding:16px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
+               <div class="flex fxc jsb" style="margin-bottom:8px">
+                 <span style="font-weight:600;font-size:13px">🛢 Low Keg Level</span>
+                 <label class="twrap"><span class="toggle"><input type="checkbox" id="alert-low-on" checked><span class="tslider"></span></span></label>
+               </div>
+               <div style="font-size:11px;color:var(--text3)">Notify when keg reaches 10% (critical)</div>
+             </div>
+           </div>
+
+           <div style="height:1px;background:var(--border);margin:8px 0"></div>
+
            <!-- Staff Selection -->
            <div>
              <div class="stat-label" style="margin-bottom:12px">Select Staff to Receive Emails</div>
@@ -1397,12 +1423,12 @@ textarea{resize:vertical;min-height:80px}
            <div>
              <div class="stat-label" style="margin-bottom:12px">Additional Email Recipients</div>
              <div class="form-group fg-full">
-               <textarea id="us-external-emails" placeholder="Enter emails, one per line..." style="min-height:100px;width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px;color:var(--text1);font-family:var(--fm);font-size:12px"></textarea>
+               <textarea id="us-external-emails" placeholder="Enter emails, one per line..." style="min-height:80px;width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px;color:var(--text1);font-family:var(--fm);font-size:12px"></textarea>
                <div class="fl-hint">Enter valid email addresses for external monitoring or owners</div>
              </div>
            </div>
 
-           <div class="form-actions"><button class="btn btn-primary" onclick="saveOwnerAlertSettings()">Save Alert Recipients</button></div>
+           <div class="form-actions"><button class="btn btn-primary" onclick="saveOwnerAlertSettings()">Update Alert Configuration</button></div>
          </div>
       </div>
     </div>
@@ -2142,7 +2168,11 @@ textarea{resize:vertical;min-height:80px}
         document.getElementById('urole').className = 'role-badge ' + (u.role === 'admin' ? 'admin' : 'user');
         
         // Initialize Data after successful login
-        if (typeof initData === 'function') await initData();
+        if (u.role === 'admin') {
+          if (typeof initData === 'function') await initData();
+        } else {
+          if (typeof initRestaurantUserData === 'function') await initRestaurantUserData();
+        }
 
         // Hash deep linking
         const hash = window.location.hash.replace('#', '');
@@ -2162,25 +2192,22 @@ textarea{resize:vertical;min-height:80px}
           document.getElementById('navUser').style.display = 'flex';
           document.querySelector('.mqtt-status').style.display = 'none'; // Hide for users
           
-          // Hide admin-only buttons in user dashboard
-          document.querySelectorAll('.user-admin-only').forEach(btn => {
-            btn.style.display = (u.role === 'Owner' || u.role === 'admin') ? 'inline-flex' : 'none';
-          });
+          // Visibility cleanup
+          document.querySelectorAll('.user-admin-only').forEach(btn => btn.style.display = 'none');
 
           window.currentRestaurantId = u.restaurant_id;
           nav(page || 'userDash');
           loadRestaurantDashboard();
           
-          // Start background refresh (30s)
+          // Start background refresh (5s for "live" feel)
           if (window.dashRefreshInterval) clearInterval(window.dashRefreshInterval);
           window.dashRefreshInterval = setInterval(() => {
             const livePages = ['userDash', 'userCosts', 'userKegs', 'userForecast', 'userRefrigs'];
             if (livePages.includes(window.currentPage)) {
-              console.log('Background refreshing dashboard data...');
               loadRestaurantDashboard();
               if (window.currentPage === 'userRefrigs') loadFacilitySensors();
             }
-          }, 30000);
+          }, 5000);
         }
         
         if (typeof window.initAppSupport === 'function') window.initAppSupport();
@@ -4386,6 +4413,30 @@ async function initData() {
   } catch (e) {
     console.error('Data init failed:', e);
   }
+}
+
+async function initRestaurantUserData() {
+  try {
+    const [rest, users] = await Promise.all([
+      fetch('/api/me/restaurant').then(r => r.json()),
+      fetch('/api/me/users').then(r => r.json())
+    ]);
+    if (rest && !rest.error) {
+      RESTAURANTS_DATA = [rest];
+      window.currentRestaurantId = rest.id;
+    }
+    if (users && !users.error) USERS_DATA = users;
+    
+    // Populate Forecast data immediately
+    if (typeof buildForecastPage === 'function') buildForecastPage();
+    
+    // Trigger UI updates
+    if (window.currentPage === 'userSettings') {
+       const activeTab = document.querySelector('#userSettingsTabs .detail-tab.active');
+       const tabName = activeTab ? activeTab.getAttribute('onclick').match(/'([^']+)'/)[1] : 'users';
+       switchUserSettingsTab(tabName, activeTab);
+    }
+  } catch(e) { console.error('Restaurant user data init failed', e); }
 }
 
 // Call init on load
@@ -6657,15 +6708,15 @@ async function buildOwnerAlertsTab(){
   const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
   if(!r) return;
   
-  // Load threshold settings from first active keg (global for now for simplicity, or per-rest if we had a table)
-  // Actually, let's load from the restaurant object if we have a place for it, 
-  // or just use a sample keg for the toggles. 
-  const firstKeg = window.USER_KEGS[0];
-  if (firstKeg) {
-    document.getElementById('alert-temp-on').checked = !!firstKeg.temp_max_c;
-    document.getElementById('alert-co2-on').checked = !!firstKeg.co2_min_bar;
-    document.getElementById('alert-low-on').checked = !!firstKeg.alert_low_pct;
+  // Load existing configuration
+  let config = { temp_on: true, co2_on: true, low_on: true };
+  if (r.alert_settings) {
+    try { config = typeof r.alert_settings === 'string' ? JSON.parse(r.alert_settings) : r.alert_settings; } catch(e){}
   }
+
+  if (document.getElementById('alert-temp-on')) document.getElementById('alert-temp-on').checked = config.temp_on;
+  if (document.getElementById('alert-co2-on'))  document.getElementById('alert-co2-on').checked = config.co2_on;
+  if (document.getElementById('alert-low-on'))  document.getElementById('alert-low-on').checked = config.low_on;
 
   const staffList = document.getElementById('alert-staff-list');
   const staff = USERS_DATA.filter(u => u.restaurant_id === r.id);
@@ -6703,16 +6754,27 @@ async function saveOwnerAlertSettings(){
     ...emails.map(e => ({ type: 'email', value: e }))
   ];
 
+  const alert_settings = {
+    temp_on: document.getElementById('alert-temp-on').checked,
+    co2_on: document.getElementById('alert-co2-on').checked,
+    low_on: document.getElementById('alert-low-on').checked
+  };
+
   try {
-    // Save recipients
+    // 1. Save Recipients
     await fetch('/api/alert-recipients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ restaurant_id: restId, recipients })
     });
     
-    // Note: Threshold toggles are UI only for now unless we add a backend for "master alert switch"
-    // For now we'll just show success
+    // 2. Save Threshold Toggles (via restaurant update)
+    await fetch('/api/admin/restaurants/' + restId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: restId, alert_settings: JSON.stringify(alert_settings) })
+    });
+    
     toast('Alert configuration updated','success');
   } catch(e) { toast('Error saving alerts','error'); }
 }

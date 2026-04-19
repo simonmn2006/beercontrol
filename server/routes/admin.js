@@ -292,7 +292,7 @@ router.get('/kegs', async (req, res) => {
 router.post('/kegs', async (req, res) => {
   try {
     const { restaurant_id, tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
-            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path } = req.body;
+            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path, cost_price, sale_price } = req.body;
 
     // Check if tap number is already in use
     const existing = await db.get("SELECT id FROM kegs WHERE restaurant_id=? AND tap_number=? AND active=1", [restaurant_id, tap_number]);
@@ -302,10 +302,10 @@ router.post('/kegs', async (req, res) => {
 
     const r = await db.run(`
       INSERT INTO kegs (restaurant_id,tap_number,beer_name,keg_size_liters,remaining_liters,
-        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct,logo_path, active)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)
+        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct,logo_path, active, cost_price, sale_price)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)
     `, [restaurant_id, tap_number, beer_name, keg_size_liters, keg_size_liters,
-           esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10, logo_path||null]);
+           esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10, logo_path||null, cost_price||0, sale_price||0]);
     // Start a keg session
     // Start a keg session with price snapshots
     await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price) VALUES (?,?,?,?,?)", 
@@ -320,7 +320,7 @@ router.post('/kegs', async (req, res) => {
 router.put('/kegs/:id', async (req, res) => {
   try {
     const { tap_number, beer_name, keg_size_liters, esp32_sensor_id, esp32_display_id,
-            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path } = req.body;
+            co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path, cost_price, sale_price } = req.body;
 
     // We need restaurant_id to check uniqueness
     const keg = await db.get("SELECT restaurant_id FROM kegs WHERE id=?", [req.params.id]);
@@ -334,9 +334,9 @@ router.put('/kegs/:id', async (req, res) => {
     }
 
     await db.run(`UPDATE kegs SET tap_number=?,beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
-      co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=?,logo_path=? WHERE id=?`,
+      co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=?,logo_path=?, cost_price=?, sale_price=? WHERE id=?`,
       [tap_number, beer_name, keg_size_liters, esp32_sensor_id||'', esp32_display_id||'',
-           co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path||null, req.params.id]);
+           co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path||null, cost_price||0, sale_price||0, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update keg error:', err);

@@ -91,6 +91,37 @@ router.get('/dashboard', async (req, res) => {
   }
 });
 
+router.get('/me/restaurant', async (req, res) => {
+  try {
+    const user = req.session.user;
+    if (!user.restaurant_id && user.role !== 'admin') {
+      return res.status(400).json({ error: 'No restaurant assigned' });
+    }
+    const rid = user.restaurant_id;
+    const restaurant = await db.get("SELECT * FROM restaurants WHERE id=?", [rid]);
+    if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+    res.json(restaurant);
+  } catch (err) {
+    console.error('Me restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.get('/me/users', async (req, res) => {
+  try {
+    const user = req.session.user;
+    if (!user.restaurant_id && user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const rid = user.restaurant_id;
+    const users = await db.all("SELECT id, name, email, role, active, last_login FROM users WHERE restaurant_id=?", [rid]);
+    res.json(users);
+  } catch (err) {
+    console.error('Me users error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // ── Kegs ────────────────────────────────────
 router.get('/kegs', async (req, res) => {
   try {
