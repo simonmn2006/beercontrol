@@ -558,8 +558,8 @@ textarea{resize:vertical;min-height:80px}
   <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;gap:0" id="detailTabs">
     <div class="detail-tab active" onclick="switchDetailTab('overview',this)">◈ Overview</div>
     <div class="detail-tab" onclick="switchDetailTab('kegs',this)">🛢 Kegs &amp; Taps</div>
-    <div class="detail-tab" onclick="switchDetailTab('users',this)">👤 Users</div>
     <div class="detail-tab" onclick="switchDetailTab('devices',this)">📡 Devices</div>
+    <div class="detail-tab" onclick="switchDetailTab('refrigs',this)">❄️ Refrigerators</div>
     <div class="detail-tab" onclick="switchDetailTab('settings',this)">⚙ Settings</div>
   </div>
 
@@ -656,6 +656,27 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
     <div id="detail-devices-list" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+
+  <!-- TAB: Refrigerators -->
+  <div id="dtab-refrigs" style="display:none">
+    <div class="sect-hdr">
+      <div><div class="sect-title">Refrigerators & Monitors</div><div class="sect-sub">Manage specific units and their temperature thresholds for this restaurant</div></div>
+      <button class="btn btn-primary" onclick="openAddSensorModal()">+ Add Refrigerator</button>
+    </div>
+    <div class="card mb16">
+      <div id="detail-refrigs-grid" class="card-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Unit Name</th><th>Type</th><th>MQTT ID</th><th>Thresholds</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="detail-refrigs-table"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- TAB: Settings -->
@@ -899,6 +920,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="detail-tab" onclick="switchSettingsTab('styles',this)">📋 Beer Styles</div>
     <div class="detail-tab" onclick="switchSettingsTab('roles',this)">👤 Roles</div>
     <div class="detail-tab" onclick="switchSettingsTab('plans',this)">💳 Plans</div>
+    <div class="detail-tab" onclick="switchSettingsTab('refrigTypes',this)">❄️ Fridge Types</div>
   </div>
 
   <!-- TAB: General -->
@@ -1071,6 +1093,42 @@ textarea{resize:vertical;min-height:80px}
             </div>
           </div>
           <div class="form-actions"><button class="btn btn-primary" onclick="saveNewStyle()">Add Style</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Refrigerator Types -->
+  <div id="stab-refrigTypes" style="display:none">
+    <div class="sect-hdr">
+      <div><div class="sect-title">Refrigerator Types</div><div class="sect-sub">Manage global refrigerator categories and their default safety thresholds</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><span class="card-title">Library</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Icon</th><th>Name</th><th>Min/Max</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="refrigTypesTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-title" id="refrigTypeFormTitle">Add New Category</span></div>
+        <div class="card-body">
+          <input type="hidden" id="rt-id">
+          <div class="fg">
+            <div class="form-group fg-full"><label class="fl">Type Name</label><input id="rt-name" placeholder="e.g. Beer Cellar"></div>
+            <div class="form-group"><label class="fl">Icon (Emoji)</label><input id="rt-icon" placeholder="❄️"></div>
+            <div class="form-group"><label class="fl">Min Temp (°C)</label><input id="rt-min" type="number" step="0.1" value="2.0"></div>
+            <div class="form-group"><label class="fl">Max Temp (°C)</label><input id="rt-max" type="number" step="0.1" value="8.0"></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveRefrigType()">Save Category</button>
+            <button class="btn btn-ghost" onclick="resetRefrigTypeForm()">Reset</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2227,7 +2285,7 @@ textarea{resize:vertical;min-height:80px}
 
   window.switchSettingsTab = function(tab, el) {
     document.querySelectorAll('.settings-view').forEach(v => v.style.display = 'none');
-    ['general','email','telegram','mqtt','thresholds','styles','roles','plans'].forEach(t => {
+    ['general','email','telegram','mqtt','thresholds','styles','roles','plans','refrigTypes'].forEach(t => {
       const panel = document.getElementById('stab-' + t);
       if(panel) panel.style.display = (t === tab) ? 'block' : 'none';
     });
@@ -2235,6 +2293,7 @@ textarea{resize:vertical;min-height:80px}
     if(el) el.classList.add('active');
     
     // Refresh lists if needed
+    if(tab==='refrigTypes') renderRefrigTypesAdmin();
     if(tab==='styles')  { if(typeof renderStylesList==='function') renderStylesList(); if(typeof populateStyleSelects==='function') populateStyleSelects(); }
     if(tab==='roles')   if(typeof renderRolesList==='function') renderRolesList();
     if(tab==='plans')   if(typeof renderPlansList==='function') renderPlansList();
@@ -5493,7 +5552,7 @@ async function deleteRestaurant() {
 // ── DETAIL TABS ──
 function switchDetailTab(tab, el, skipHash){
   currentDetailTab = tab;
-  ['overview','kegs','users','devices','settings'].forEach(t=>{
+  ['overview','kegs','users','devices','refrigs','settings'].forEach(t=>{
     const panel = document.getElementById('dtab-'+t);
     if(panel) panel.style.display = t===tab ? 'block' : 'none';
   });
@@ -5515,7 +5574,64 @@ function switchDetailTab(tab, el, skipHash){
   if(tab==='kegs')      renderDetailKegs(r);
   if(tab==='users')     renderDetailUsers(r);
   if(tab==='devices')   renderDetailDevices(r);
+  if(tab==='refrigs')   renderDetailRefrigs(r);
   if(tab==='settings'){  renderDetailSchedule(r); renderWifiList(r); }
+}
+
+async function renderDetailRefrigs(r) {
+  try {
+    const res = await fetch(`/api/sensors?restaurant_id=${r.id}`);
+    const sensors = await res.json();
+    
+    // Grid
+    const grid = document.getElementById('detail-refrigs-grid');
+    if (grid) {
+      if (sensors.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3)">No refrigerators configured for this venue.</div>';
+      } else {
+        grid.innerHTML = sensors.map(s => {
+          const type = REFRIG_TYPES.find(t => t.id === s.refrig_type_id) || { name: 'Unknown', icon: '❄️' };
+          const temp = s.current_value !== null ? parseFloat(s.current_value).toFixed(1) : '--';
+          const isError = s.current_value > s.max_threshold || s.current_value < s.min_threshold;
+          return `
+            <div class="stat-card ${isError ? 'sc-red' : 'sc-green'}" style="cursor:pointer" onclick="openEditSensorModal(${s.id})">
+              <div class="flex fxc g12 mb8">
+                <div style="font-size:22px">${type.icon || '❄️'}</div>
+                <div style="flex:1">
+                  <div class="stat-label" style="margin-bottom:0">${s.name}</div>
+                  <div style="font-size:10px;color:var(--text3)">${type.name}</div>
+                </div>
+              </div>
+              <div class="stat-val" style="font-size:24px">${temp}<span>°C</span></div>
+              <div style="font-size:10px;color:var(--text3);margin-top:8px">Range: ${s.min_threshold}° to ${s.max_threshold}°</div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+    
+    // Table
+    const table = document.getElementById('detail-refrigs-table');
+    if (table) {
+      table.innerHTML = sensors.map(s => {
+        const type = REFRIG_TYPES.find(t => t.id === s.refrig_type_id) || { name: 'Unknown' };
+        return `
+          <tr>
+            <td style="font-weight:600;color:var(--text1)">${s.name}</td>
+            <td><span class="tag tg-gray">${type.name}</span></td>
+            <td class="mono" style="font-size:11px">${s.sensor_id}</td>
+            <td><code>${s.min_threshold}°C</code> to <code>${s.max_threshold}°C</code></td>
+            <td>
+              <div class="flex g6">
+                <button class="btn btn-ghost btn-sm" onclick="openEditSensorModal(${s.id})">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteSensor(${s.id})">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch(e) { console.error('Render detail refrigs failed', e); }
 }
 
 // ── OVERVIEW TAB ──
@@ -7128,6 +7244,9 @@ async function saveSensor() {
       toast(id ? 'Sensor updated' : 'Sensor added', 'success');
       closeM('mAddSensor');
       loadFacilitySensors();
+      if (activePage === 'adminRestaurantDetail' && window._currentRest) {
+        renderDetailRefrigs(window._currentRest);
+      }
     } else {
       toast(d.error || 'Failed to save sensor', 'error');
     }
@@ -7149,13 +7268,101 @@ async function deleteSensor(id) {
       try {
         const res = await fetch(`/api/sensors/${id}`, { method: 'DELETE' });
         const d = await res.json();
-        if (d.success) {
-          toast('Sensor deleted', 'info');
-          loadFacilitySensors();
-        }
+          if (d.success) {
+            toast('Sensor deleted', 'info');
+            loadFacilitySensors();
+            if (activePage === 'adminRestaurantDetail' && window._currentRest) {
+              renderDetailRefrigs(window._currentRest);
+            }
+          }
       } catch (e) { toast('Error deleting sensor', 'error'); }
     }
   });
+}
+async function renderRefrigTypesAdmin() {
+  try {
+    const res = await fetch('/api/refrig-types');
+    const types = await res.json();
+    REFRIG_TYPES = types; // Sync global
+    
+    const el = document.getElementById('refrigTypesTable');
+    if (!el) return;
+    
+    el.innerHTML = types.map(t => `
+      <tr>
+        <td style="font-size:20px">${t.icon || '❄️'}</td>
+        <td style="font-weight:600;color:var(--text1)">${t.name}</td>
+        <td><code>${t.min_temp}°C</code> to <code>${t.max_temp}°C</code></td>
+        <td>
+          <div class="flex g6">
+            <button class="btn btn-ghost btn-sm" onclick="editRefrigType(${t.id})">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteRefrigType(${t.id})">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) { console.error('Load refrig types failed', e); }
+}
+
+function editRefrigType(id) {
+  const t = REFRIG_TYPES.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('refrigTypeFormTitle').textContent = 'Edit Category';
+  document.getElementById('rt-id').value = t.id;
+  document.getElementById('rt-name').value = t.name;
+  document.getElementById('rt-icon').value = t.icon;
+  document.getElementById('rt-min').value = t.min_temp;
+  document.getElementById('rt-max').value = t.max_temp;
+  document.getElementById('rt-name').focus();
+}
+
+function resetRefrigTypeForm() {
+  document.getElementById('refrigTypeFormTitle').textContent = 'Add New Category';
+  document.getElementById('rt-id').value = '';
+  document.getElementById('rt-name').value = '';
+  document.getElementById('rt-icon').value = '❄️';
+  document.getElementById('rt-min').value = '2.0';
+  document.getElementById('rt-max').value = '8.0';
+}
+
+async function saveRefrigType() {
+  const id = document.getElementById('rt-id').value;
+  const payload = {
+    name: document.getElementById('rt-name').value.trim(),
+    icon: document.getElementById('rt-icon').value.trim(),
+    min_temp: parseFloat(document.getElementById('rt-min').value),
+    max_temp: parseFloat(document.getElementById('rt-max').value)
+  };
+
+  if (!payload.name) { toast('Name is required', 'error'); return; }
+
+  try {
+    const url = id ? `/api/refrig-types/${id}` : '/api/refrig-types';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const d = await res.json();
+    if (d.success) {
+      toast(id ? 'Category updated' : 'Category added', 'success');
+      resetRefrigTypeForm();
+      renderRefrigTypesAdmin();
+    }
+  } catch(e) { toast('Error saving category', 'error'); }
+}
+
+async function deleteRefrigType(id) {
+  if (!confirm('Are you sure? Sensors using this type will remain but may lose their icon.')) return;
+  try {
+    const res = await fetch(`/api/refrig-types/${id}`, { method: 'DELETE' });
+    const d = await res.json();
+    if (d.success) {
+      toast('Category removed', 'info');
+      renderRefrigTypesAdmin();
+    }
+  } catch(e) { toast('Error deleting category', 'error'); }
 }
 
 </script>

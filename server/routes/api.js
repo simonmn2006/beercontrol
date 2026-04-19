@@ -298,12 +298,21 @@ router.get('/sensors', async (req, res) => {
     if (user.role !== 'admin' && String(rid) !== String(user.restaurant_id)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const sensors = await db.all(`
-      SELECT s.*, t.name as type_name, t.icon as type_icon
+    
+    let query = `
+      SELECT s.*, t.name as type_name, t.icon as type_icon, r.name as restaurant_name
       FROM facility_sensors s
       LEFT JOIN refrigerator_types t ON s.type_id = t.id
-      WHERE s.restaurant_id=? ORDER BY s.name
-    `, [rid]);
+      LEFT JOIN restaurants r ON s.restaurant_id = r.id
+    `;
+    let params = [];
+    if (rid) {
+      query += " WHERE s.restaurant_id=? ";
+      params.push(rid);
+    }
+    query += " ORDER BY r.name, s.name";
+    
+    const sensors = await db.all(query, params);
     res.json(sensors);
   } catch (err) {
     console.error('Get sensors error:', err);
