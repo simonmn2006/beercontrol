@@ -1256,8 +1256,8 @@ textarea{resize:vertical;min-height:80px}
   <div class="sect-hdr">
     <div><div class="sect-title">Refrigerators</div><div class="sect-sub">Real-time facility monitoring and hardware management</div></div>
     <div class="flex g8">
-      <button class="btn btn-ghost btn-sm" onclick="nav('userForecast')">📊 Analytics</button>
-      <button class="btn btn-primary" onclick="openAddSensorModal()">+ Add Refrigerator</button>
+      <button class="btn btn-ghost btn-sm" onclick="nav('userReports')">📊 Analytics</button>
+      <button class="btn btn-primary" id="btn-add-refrig" onclick="openAddSensorModal()">+ Add Refrigerator</button>
     </div>
   </div>
   
@@ -2524,7 +2524,7 @@ const TR = {
     nav_audit: "Audit Log",
     nav_costs: "Costs & Revenue",
     nav_forecast: "Forecast",
-    nav_kiosk: "Kiosk Mode",
+    nav_refrigs: "Refrigerators",
     nav_calibration: "Calibration",
     costs_sub: "Margin per tap, waste and profitability",
     revenue_today: "Revenue Today",
@@ -2574,6 +2574,7 @@ const TR = {
     nav_settings: "Einstellungen",
     nav_my_taps: "Meine Hähne",
     nav_live: "Live-Dashboard",
+    nav_refrigs: "Kühlschränke",
     nav_analytics: "Analyse",
     nav_reports: "Berichte",
     active_restaurants: "Aktive Restaurants",
@@ -7122,9 +7123,10 @@ function renderFacilitySensorsGrid() {
     const temp = s.current_value !== null ? parseFloat(s.current_value).toFixed(1) : '--';
     const isError = s.current_value > s.max_threshold || s.current_value < s.min_threshold;
     const lastSeen = s.last_seen ? new Date(s.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never';
+    const canEdit = window.currentRole === 'admin';
     
     return `
-      <div class="stat-card ${isError ? 'sc-red' : 'sc-green'}" style="cursor:pointer" onclick="openEditSensorModal(${s.id})">
+      <div class="stat-card ${isError ? 'sc-red' : 'sc-green'}" style="${canEdit ? 'cursor:pointer' : ''}" onclick="${canEdit ? `openEditSensorModal(${s.id})` : ''}">
         <div class="flex fxc g12 mb12">
           <div style="font-size:24px">${type.icon || '❄️'}</div>
           <div style="flex:1">
@@ -7153,6 +7155,19 @@ function renderFacilitySensorsTable() {
   const el = document.getElementById('facilitySensorsTable');
   if (!el) return;
   
+  const isAdmin = window.currentRole === 'admin';
+  const addBtn = document.getElementById('btn-add-refrig');
+  if (addBtn) addBtn.style.display = isAdmin ? 'block' : 'none';
+
+  // Find the header to hide Actions if not admin
+  const tableWrap = el.closest('.table-wrap');
+  if (tableWrap) {
+    const actionsHeader = tableWrap.querySelector('th:last-child');
+    if (actionsHeader && (actionsHeader.textContent === 'Actions' || actionsHeader.textContent === 'Aktionen')) {
+      actionsHeader.style.display = isAdmin ? '' : 'none';
+    }
+  }
+
   el.innerHTML = FACILITY_SENSORS.map(s => {
     const type = REFRIG_TYPES.find(t => t.id === s.refrig_type_id) || { name: 'Unknown' };
     return `
@@ -7162,7 +7177,7 @@ function renderFacilitySensorsTable() {
         <td class="mono" style="font-size:12px">${s.sensor_id}</td>
         <td><div class="flex g4"><code>${s.min_threshold}°C</code> <span style="color:var(--text3)">to</span> <code>${s.max_threshold}°C</code></div></td>
         <td><span class="sp ${s.online ? 'sp-on' : 'sp-off'}"><span class="sp-dot"></span>${s.online ? 'Online' : 'Offline'}</span></td>
-        <td>
+        <td style="${isAdmin ? '' : 'display:none'}">
           <div class="flex g6">
             <button class="btn btn-ghost btn-sm" onclick="openEditSensorModal(${s.id})">✏️</button>
             <button class="btn btn-danger btn-sm" onclick="deleteSensor(${s.id})">🗑️</button>
