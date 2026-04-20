@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
 /* ── RESET & VARS ── */
 :root{
@@ -19,6 +20,15 @@
   --blue:#4a9eff;--blue-dim:rgba(74,158,255,.12);
   --fh:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;--fm:'JetBrains Mono',monospace;
   --r:6px;--rl:10px;
+  
+  /* ── KIOSK THEMES ── */
+  --k-bg: #050506; --k-metal: #a1a1aa; --k-rim: #52525b; --k-beer: #f59e0b; --k-foam: #fdf6e3; --k-acc: #3b82f6; --k-ft: 'Big Shoulders Display', sans-serif;
+}
+.kiosk-preview-area[data-theme="modern"] {
+  --k-bg: #020617; --k-metal: #3b82f6; --k-rim: #1e40af; --k-beer: #60a5fa; --k-acc: #22d3ee;
+}
+.kiosk-preview-area[data-theme="crafthouse"] {
+  --k-bg: #0c0a09; --k-metal: #b45309; --k-rim: #78350f; --k-beer: #ea580c; --k-acc: #fcd34d;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:14px}
@@ -1483,6 +1493,46 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- Kiosk Mode -->
+<div class="page" id="page-userKiosk">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-hdr">
+      <span style="font-size:20px">📺</span>
+      <div class="modal-title" style="flex:1">Display Configuration</div>
+      <div class="flex g8">
+        <button class="btn btn-primary btn-sm" onclick="launchKiosk()">🚀 Launch Fullscreen</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="min-width:200px">
+          <label class="fl">Design Theme</label>
+          <select id="kioskTheme" onchange="buildKioskPreview()">
+            <option value="industrial">Industrial Steel</option>
+            <option value="modern" selected>Modern Neon</option>
+            <option value="crafthouse">Crafthouse Copper</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="fl">Grid Columns</label>
+          <select id="kioskCols" style="width:80px" onchange="buildKioskPreview()">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+        <div class="flex g16" style="padding-bottom:10px">
+          <label class="twrap"><span class="toggle"><input type="checkbox" id="kioskShowTemp" checked onchange="buildKioskPreview()"><span class="tslider"></span></span><span class="tlabel">Show Temp</span></label>
+          <label class="twrap"><span class="toggle"><input type="checkbox" id="kioskShowCo2" checked onchange="buildKioskPreview()"><span class="tslider"></span></span><span class="tlabel">Show CO₂</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="kioskPreview"></div>
+</div>
+
 <!-- ══ PAGE: USER SETTINGS ══ -->
 <div class="page" id="page-userSettings">
   <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;gap:20px" id="userSettingsTabs">
@@ -2472,7 +2522,10 @@ textarea{resize:vertical;min-height:80px}
       }
       if (pageId === 'userForecast')     if (typeof buildForecastPage === 'function') buildForecastPage();
       if (pageId === 'userCalibration')  if (typeof buildCalibration === 'function') buildCalibration();
-      if (pageId === 'userKiosk')        if (typeof buildKioskPreview === 'function') buildKioskPreview();
+      if (pageId === 'userKiosk') {
+        if (typeof buildKioskPreview === 'function') buildKioskPreview();
+        if (typeof animateKioskLiquids === 'function') animateKioskLiquids();
+      }
       if (pageId === 'userCosts')        if (typeof initCostCharts === 'function') initCostCharts();
       if (pageId === 'userRefrigs')     if (typeof loadFacilitySensors === 'function') loadFacilitySensors();
       if (pageId === 'userSettings') {
@@ -4439,63 +4492,126 @@ function calculateKFactor(id){
 }
 
 // ── KIOSK MODE ──
+function getKioskSvgKeg(k, pct) {
+  const startY = 820;
+  const endY = 80;
+  const currentY = startY - ((startY - endY) * (pct / 100));
+  const beerFillHeight = 820 - currentY;
+  
+  return `
+    <svg viewBox="0 0 500 900" class="k-svg-comp">
+      <defs>
+        <linearGradient id="k-mGrad-${k.id}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:var(--k-rim);transition:stop-color 1s ease" />
+          <stop offset="50%" style="stop-color:var(--k-metal);transition:stop-color 1s ease" />
+          <stop offset="100%" style="stop-color:var(--k-rim);transition:stop-color 1s ease" />
+        </linearGradient>
+        <mask id="k-mask-${k.id}">
+          <rect x="0" y="0" width="500" height="900" fill="white" />
+          <rect x="20" y="80" width="460" height="740" rx="40" ry="40" fill="black" />
+        </mask>
+      </defs>
+      <rect x="0" y="0" width="500" height="900" rx="80" ry="80" fill="#111" />
+      <g id="k-beer-${k.id}">
+        <rect x="25" y="${currentY}" width="450" height="${beerFillHeight}" fill="var(--k-beer)" opacity="0.8">
+          <animate attributeName="opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" />
+        </rect>
+        <path id="k-wave-${k.id}" d="M 25 ${currentY} Q 125 ${currentY-10} 250 ${currentY} T 475 ${currentY} V 900 H 25 Z" fill="var(--k-beer)" opacity="0.9" />
+        <path id="k-foam-${k.id}" d="M 25 ${currentY} Q 100 ${currentY-10} 250 ${currentY} T 475 ${currentY}" fill="none" stroke="var(--k-foam)" stroke-width="15" stroke-linecap="round" opacity="0.6" />
+      </g>
+      <g id="k-bubbles-${k.id}"></g>
+      <rect x="0" y="0" width="500" height="900" rx="80" ry="80" fill="url(#k-mGrad-${k.id})" mask="url(#k-mask-${k.id})" opacity="0.9" />
+      <rect x="0" y="200" width="500" height="30" fill="black" opacity="0.3" />
+      <rect x="0" y="650" width="500" height="30" fill="black" opacity="0.3" />
+    </svg>
+  `;
+}
+
+let kTick = 0;
+function animateKioskLiquids() {
+  if (window.currentPage !== 'userKiosk') return;
+  kTick += 0.05;
+  USER_KEGS.forEach(k => {
+    const w = document.getElementById(`k-wave-${k.id}`);
+    const f = document.getElementById(`k-foam-${k.id}`);
+    if (!w || !f) return;
+    
+    const pct = (k.rem / k.size * 100);
+    const y = 820 - (740 * (pct / 100));
+    const amp = 8;
+    
+    const x1 = 25, x2 = 125, x3 = 250, x4 = 375, x5 = 475;
+    const w1 = y + Math.sin(kTick + k.id) * amp;
+    const w2 = y + Math.cos(kTick * 0.8 + k.id) * amp;
+    const w3 = y + Math.sin(kTick * 1.2 + k.id) * amp;
+
+    const d = `M ${x1} ${y} Q ${x2} ${w1} ${x3} ${w2} T ${x5} ${w3} V 900 H ${x1} Z`;
+    const df = `M ${x1} ${y} Q ${x2} ${w1} ${x3} ${w2} T ${x5} ${w3}`;
+    
+    w.setAttribute('d', d);
+    f.setAttribute('d', df);
+    
+    // Occasional bubble
+    if (Math.random() > 0.95) {
+      const bLayer = document.getElementById(`k-bubbles-${k.id}`);
+      if (bLayer) {
+        const b = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        b.setAttribute('cx', 50 + Math.random() * 400);
+        b.setAttribute('cy', 850);
+        b.setAttribute('r', 1 + Math.random() * 3);
+        b.setAttribute('fill', '#fff');
+        b.setAttribute('opacity', 0.4);
+        bLayer.appendChild(b);
+        let by = 850;
+        const up = () => { by -= 4; b.setAttribute('cy', by); if (by < y) b.remove(); else requestAnimationFrame(up); };
+        up();
+      }
+    }
+  });
+  requestAnimationFrame(animateKioskLiquids);
+}
+
 function buildKioskPreview(){
   const el = document.getElementById('kioskPreview');
   if(!el) return;
   const cols = document.getElementById('kioskCols')?.value||3;
   const showTemp = document.getElementById('kioskShowTemp')?.checked;
   const showCo2 = document.getElementById('kioskShowCo2')?.checked;
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:16px">` +
+  const theme = document.getElementById('kioskTheme')?.value || 'industrial';
+  
+  el.className = 'kiosk-preview-area';
+  el.setAttribute('data-theme', theme);
+  el.style.background = 'var(--k-bg)';
+  el.style.padding = '40px 20px';
+  el.style.borderRadius = '12px';
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px;max-width:1200px;margin:0 auto">` +
     USER_KEGS.map(k=>{
       const pct = (k.rem/k.size*100).toFixed(0);
-      const fill = pct<=10?'fill-red':pct<=20?'fill-amber':'fill-green';
-      return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px;text-align:center">
-        <div style="font-size:36px;margin-bottom:8px">${k.emoji}</div>
-        <div style="font-family:var(--fh);font-size:20px;font-weight:700;margin-bottom:4px">${k.name}</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Tap #${k.tap}</div>
-        <div class="prog-bar" style="height:12px;margin-bottom:8px"><div class="prog-fill ${fill}" style="width:${pct}%"></div></div>
-        <div style="font-family:var(--fm);font-size:14px;color:var(--text1)">${k.rem.toFixed(1)} / ${k.size} L <span style="color:var(--text3)">(${pct}%)</span></div>
-        ${showTemp?`<div style="font-size:12px;color:var(--text3);margin-top:6px">🌡 ${k.temp}°C</div>`:''}
-        ${showCo2?`<div style="font-size:12px;color:var(--text3)">CO₂ ${k.co2} bar</div>`:''}
+      return `<div class="k-keg-card" style="position:relative;aspect-ratio:500/950">
+        <div style="position:absolute;inset:0;padding:2px">
+          ${getKioskSvgKeg(k, pct)}
+        </div>
+        <div style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:50%;aspect-ratio:1;background:#222;border:4px solid #444;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 10px 20px rgba(0,0,0,0.5)">
+           ${k.logo_path ? `<img src="${k.logo_path}" style="width:70%;height:70%;object-fit:contain">` : `<span style="font-size:40px">${k.emoji||'🍺'}</span>`}
+        </div>
+        <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;padding:0 20px;z-index:10">
+           <div style="font-family:var(--k-ft);font-size:24px;font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;text-shadow:0 2px 4px rgba(0,0,0,0.8)">${k.name}</div>
+           <div style="font-family:var(--fm);font-size:16px;font-weight:800;color:var(--k-beer);margin-bottom:10px">${pct}%</div>
+           ${k.esp32_display_id ? `<button class="btn btn-primary btn-sm" onclick="window.open('/display/${k.esp32_display_id}?theme=${theme}','_blank')">🚀 Launch Tap ${k.tap}</button>` : `<div style="font-size:10px;color:rgba(255,255,255,0.4)">No Display ID set</div>`}
+        </div>
       </div>`;
     }).join('') + '</div>';
 }
 
 function launchKiosk(){
-  const cols = document.getElementById('kioskCols')?.value||3;
-  const showTemp = document.getElementById('kioskShowTemp')?.checked;
-  const showCo2 = document.getElementById('kioskShowCo2')?.checked;
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>KegHero Kiosk</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#0e0f11;color:#eceef2;font-family:'Barlow Condensed',sans-serif;padding:24px;min-height:100vh}
-h1{font-size:22px;margin-bottom:20px;opacity:.5;letter-spacing:2px;text-transform:uppercase;font-family:'JetBrains Mono',monospace}
-.grid{display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px}
-.card{background:#1a1c20;border:1px solid #2e3240;border-radius:12px;padding:24px;text-align:center}
-.emoji{font-size:48px;margin-bottom:10px}
-.name{font-size:26px;font-weight:700;margin-bottom:4px}
-.tap{font-size:13px;color:#5c6378;margin-bottom:16px}
-.bar{height:14px;background:#2a2e36;border-radius:7px;overflow:hidden;margin-bottom:10px}
-.fill{height:100%;border-radius:7px;transition:width .6s}
-.fill-green{background:linear-gradient(90deg,#1a9a5e,#22c97a)}
-.fill-amber{background:linear-gradient(90deg,#d4900a,#f0a500)}
-.fill-red{background:linear-gradient(90deg,#b83333,#e84b4b)}
-.vol{font-family:'JetBrains Mono',monospace;font-size:16px}
-.meta{font-size:13px;color:#5c6378;margin-top:6px}
-.updated{position:fixed;bottom:16px;right:24px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#2e3240}
-</style></head><body>
-<h1>🍺 KegHero — Live Tap Status</h1>
-<div class="grid">${USER_KEGS.map(k=>{
-  const pct=(k.rem/k.size*100).toFixed(0);
-  const fc=pct<=10?'fill-red':pct<=20?'fill-amber':'fill-green';
-  return `<div class="card"><div class="emoji">${k.emoji}</div><div class="name">${k.name}</div><div class="tap">Tap #${k.tap}</div>
-  <div class="bar"><div class="fill ${fc}" style="width:${pct}%"></div></div>
-  <div class="vol">${k.rem.toFixed(1)} / ${k.size} L (${pct}%)</div>
-  ${showTemp?`<div class="meta">🌡 ${k.temp}°C${showCo2?' · CO₂ '+k.co2+' bar':''}</div>`:''}
-  </div>`;}).join('')}</div>
-<div class="updated">Last updated: ${new Date().toLocaleTimeString()}</div>
-</body></html>`;
-  const w = window.open('','_blank','width=1280,height=800');
-  if(w){ w.document.write(html); w.document.close(); }
+  const theme = document.getElementById('kioskTheme')?.value || 'industrial';
+  const firstWithId = USER_KEGS.find(k => k.esp32_display_id);
+  if (!firstWithId) {
+    toast('Please set a Display ID in "Kegs" section first.', 'error');
+    return;
+  }
+  window.open(`/display/${firstWithId.esp32_display_id}?theme=${theme}`, '_blank');
 }
 
 
