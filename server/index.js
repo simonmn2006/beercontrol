@@ -29,7 +29,15 @@ app.use(session({
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
-// Static files
+// Static files with Cache-Busting middleware
+app.use((req, res, next) => {
+  if (req.url.endsWith('.html') || req.url.endsWith('.css') || req.url.endsWith('.js')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'data', 'uploads')));
 
