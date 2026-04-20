@@ -7049,7 +7049,10 @@ async function saveFinancialSettings(){
     const res = await fetch('/api/financials/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ updates })
+      body: JSON.stringify({ 
+        restaurant_id: parseInt(window.currentRestaurantId),
+        updates 
+      })
     });
     const result = await res.json();
     if(result.success) {

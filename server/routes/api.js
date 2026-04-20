@@ -171,16 +171,30 @@ router.put('/me/restaurant', async (req, res) => {
 router.post('/financials/batch', async (req, res) => {
   try {
     const user = req.session.user;
-    const rid = user.restaurant_id;
-    if (!rid) return res.status(403).json({ error: 'Permission denied' });
+    // For admins, they might be managing another restaurant
+    let rid = user.restaurant_id;
+    if (user.role === 'admin' && req.body.restaurant_id) {
+      rid = req.body.restaurant_id;
+    }
+
+    if (!rid) {
+       console.warn('[Financials] Batch update failed: No restaurant ID in session/body');
+       return res.status(403).json({ error: 'Permission denied: No restaurant context' });
+    }
 
     const { updates } = req.body;
     if (!Array.isArray(updates)) return res.status(400).json({ error: 'Updates must be an array' });
     
+    console.log(`[Financials] Processing batch update for restaurant ${rid}, count: ${updates.length}`);
+
+    let updatedCount = 0;
     for (const u of updates) {
       // 1. Fetch keg details to get size + safety check (restaurant_id)
       const keg = await db.get("SELECT restaurant_id, keg_size_liters FROM kegs WHERE id=? AND restaurant_id=?", [u.id, rid]);
-      if (!keg) continue;
+      if (!keg) {
+        console.warn(`[Financials] Keg ${u.id} not found or doesn't belong to restaurant ${rid}`);
+        continue;
+      }
 
       const pricePerLiter = keg.keg_size_liters > 0 ? (u.cost_price / keg.keg_size_liters) : 0;
 
@@ -188,15 +202,19 @@ router.post('/financials/batch', async (req, res) => {
       await db.run("UPDATE kegs SET cost_price=?, sale_price=?, price_per_liter=? WHERE id=?", 
         [u.cost_price, u.sale_price, pricePerLiter, u.id]);
       
-      // 3. Insert into History
+      // 3. Insert into History (ensure price_per_liter 0 if missing)
       await db.run("INSERT INTO keg_price_history (keg_id, restaurant_id, cost_price, price_per_liter) VALUES (?,?,?,?)", 
         [u.id, rid, u.cost_price, pricePerLiter]);
 
       // 4. Update the active session's prices if it exists
       await db.run("UPDATE keg_sessions SET cost_price=?, sale_price=?, price_per_liter=? WHERE keg_id=? AND ended_at IS NULL", 
         [u.cost_price, u.sale_price, pricePerLiter, u.id]);
+      
+      updatedCount++;
     }
-    res.json({ success: true });
+    
+    console.log(`[Financials] Batch update complete. Successfully updated ${updatedCount} kegs.`);
+    res.json({ success: true, updatedCount });
   } catch (err) {
     console.error('Batch financials error:', err);
     res.status(500).json({ error: 'server_error' });
