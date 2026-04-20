@@ -7582,8 +7582,27 @@ async function loadFacilitySensors() {
 function renderFacilitySensorsGrid() {
   const el = document.getElementById('facilitySensorsGrid');
   if (!el) return;
+
+  // Update Summary Stats
+  const total = FACILITY_SENSORS.length;
+  const offline = FACILITY_SENSORS.filter(s => !s.online).length;
+  const alerts = FACILITY_SENSORS.filter(s => {
+    if (s.current_value === null) return false;
+    return s.current_value > s.max_threshold || s.current_value < s.min_threshold;
+  }).length;
+  const optimized = Math.max(0, total - offline - alerts);
+
+  const elCount = document.getElementById('refrigCount');
+  const elStable = document.getElementById('refrigStable');
+  const elAlerts = document.getElementById('refrigAlerts');
+  const elOffline = document.getElementById('refrigOffline');
+
+  if (elCount) elCount.textContent = total;
+  if (elStable) elStable.textContent = optimized;
+  if (elAlerts) elAlerts.textContent = alerts;
+  if (elOffline) elOffline.textContent = offline;
   
-  if (FACILITY_SENSORS.length === 0) {
+  if (total === 0) {
     el.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);background:var(--bg3);border-radius:12px;border:2px dashed var(--border)">No refrigerators configured yet.</div>';
     return;
   }
