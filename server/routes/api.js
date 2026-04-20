@@ -144,6 +144,53 @@ router.get('/kegs', async (req, res) => {
   }
 });
 
+router.get('/kegs/:id/price-history', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const { id } = req.params;
+    const history = await db.all("SELECT * FROM keg_price_history WHERE keg_id=? ORDER BY created_at DESC", [id]);
+    res.json(history);
+  } catch (err) {
+    console.error('Price history error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.get('/reports/refrigerators', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const rid = user.restaurant_id;
+    const from = req.query.from || new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    const to = req.query.to || new Date().toISOString().slice(0,10);
+    
+    // Join logs with sensors to get names/units
+    const logs = await db.all(`
+      SELECT sl.*, fs.name as sensor_name, fs.type as sensor_type
+      FROM sensor_logs sl
+      JOIN facility_sensors fs ON sl.sensor_id = fs.sensor_id
+      WHERE fs.restaurant_id=? AND sl.recorded_at BETWEEN ? AND ?
+      ORDER BY sl.recorded_at ASC
+    `, [rid, from + ' 00:00:00', to + ' 23:59:59']);
+    
+    res.json(logs);
+  } catch (err) {
+    console.error('Refrig reports error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
+router.get('/refrigerators/status', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const rid = user.restaurant_id;
+    const sensors = await db.all("SELECT * FROM facility_sensors WHERE restaurant_id=?", [rid]);
+    res.json(sensors);
+  } catch (err) {
+    console.error('Refrig status error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // ── Reports ─────────────────────────────────
 router.get('/reports', async (req, res) => {
   try {

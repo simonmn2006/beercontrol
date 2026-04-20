@@ -219,6 +219,15 @@ async function runMigrations() {
     if (!sessionColNames.includes('cost_price')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN cost_price DOUBLE DEFAULT 0');
     if (!sessionColNames.includes('sale_price')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN sale_price DOUBLE DEFAULT 0');
 
+    await pool.query(`CREATE TABLE IF NOT EXISTS keg_price_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      keg_id INT NOT NULL,
+      restaurant_id INT NOT NULL,
+      cost_price DOUBLE NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (keg_id) REFERENCES kegs(id) ON DELETE CASCADE
+    )`);
+
     await pool.query(`CREATE TABLE IF NOT EXISTS pour_events (
       id INT AUTO_INCREMENT PRIMARY KEY,
       keg_id INT NOT NULL,

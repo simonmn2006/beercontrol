@@ -382,9 +382,18 @@ router.post('/financials/batch', async (req, res) => {
     if (!Array.isArray(updates)) return res.status(400).json({ error: 'Updates must be an array' });
     
     for (const u of updates) {
-      await db.run("UPDATE kegs SET cost_price=?, sale_price=? WHERE id=?", [u.cost_price, u.sale_price, u.id]);
-      // Also update the active session's prices if it exists, so changes take effect immediately
-      await db.run("UPDATE keg_sessions SET cost_price=?, sale_price=? WHERE keg_id=? AND ended_at IS NULL", [u.cost_price, u.sale_price, u.id]);
+      // 1. Update Current Price
+      await db.run("UPDATE kegs SET cost_price=? WHERE id=?", [u.cost_price, u.id]);
+      
+      // 2. Insert into History (for tracking changes over time)
+      const keg = await db.get("SELECT restaurant_id FROM kegs WHERE id=?", [u.id]);
+      if (keg) {
+        await db.run("INSERT INTO keg_price_history (keg_id, restaurant_id, cost_price) VALUES (?,?,?)", 
+          [u.id, keg.restaurant_id, u.cost_price]);
+      }
+
+      // 3. Update the active session's price if it exists
+      await db.run("UPDATE keg_sessions SET cost_price=? WHERE keg_id=? AND ended_at IS NULL", [u.cost_price, u.id]);
     }
     res.json({ success: true });
   } catch (err) {
