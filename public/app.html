@@ -7986,7 +7986,7 @@ async function generateRefrigReport(from, to, sensorId) {
       charts.repRefrig.data.datasets = Object.entries(grouped).map(([name, points], idx) => ({
         label: name,
         data: points,
-        borderColor: ['#4a9eff','#22c97a','#f0a500','#e84b4b'][idx % 4],
+        borderColor: ['#4a9eff','#22c97a','#f0a500','#e84b4b','#a855f7','#06b6d4','#ec4899'][idx % 7],
         tension: 0.3,
         pointRadius: 0
       }));
