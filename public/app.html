@@ -367,28 +367,38 @@ textarea{resize:vertical;min-height:80px}
 /* ── DEVICE ROW IN DETAIL ── */
 .device-detail-row{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:flex-start;gap:14px;transition:border-color .15s}
 .device-detail-row:hover{border-color:var(--border2)}
-  .keg-alert-card.critical{background:rgba(232,75,75,.08);border-color:rgba(232,75,75,.3)}
+.keg-alert-card.critical{background:rgba(232,75,75,.08);border-color:rgba(232,75,75,.3)}
 
-  /* Line Length Cards */
-  .line-range-card {
-    padding: 20px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .line-range-card:hover {
-    border-color: var(--amber);
-    background: var(--bg4);
-  }
-  .line-range-card.active {
-    border-color: var(--amber);
-    background: var(--amber-glow);
-    box-shadow: 0 0 15px var(--amber-glow);
-  }
+/* Line Length Cards */
+.line-range-card {
+  padding: 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.line-range-card:hover {
+  border-color: var(--amber);
+  background: var(--bg4);
+}
+.line-range-card.active {
+  border-color: var(--amber);
+  background: var(--amber-glow);
+  box-shadow: 0 0 15px var(--amber-glow);
+}
+@media print {
+  .nav-side, .sect-hdr button, .flex.g8, #planInputs, .btn, .tag.tg-blue { display: none !important; }
+  body, .page, .card { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
+  .card-hdr { border-bottom: 2px solid #eee !important; color: black !important; background: none !important; }
+  .page { display: block !important; }
+  .stat-card { border: 1px solid #ddd !important; background: #fafafa !important; }
+  .td-name b { color: black !important; }
+  table { width: 100% !important; border-collapse: collapse !important; }
+  th { border-bottom: 2px solid #333 !important; }
+  td { border-bottom: 1px solid #eee !important; }
+}
 </style>
-</head>
 <body>
 
 <!-- ══════════════════════════════════════════
@@ -834,7 +844,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="stat-card sc-green">
       <div class="stat-label">MQTT Broker</div>
       <div class="stat-val" id="alert-stat-mqtt">Online</div>
-      <div class="stat-sub" id="alert-sub-mqtt">Live connection</div>
+      <div class="stat-sub">Live connection</div>
     </div>
     <div class="stat-card sc-blue">
       <div class="stat-label">OTA Pending</div>
@@ -1326,7 +1336,7 @@ textarea{resize:vertical;min-height:80px}
     <div><div class="sect-title" data-i18n="nav_reports">Reports & Analytics</div></div>
     <div class="flex g8">
       <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Report</button>
-      <button class="btn btn-ghost btn-sm" onclick="toast(t('downloading'),'info')">⤓ CSV Export</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadReportCSV()">⤓ CSV Export</button>
     </div>
   </div>
 
@@ -8234,4 +8244,53 @@ function renderFinancialsData(data) {
     `;
   }).join('');
 }
+
+// Global check to ensure order_suggestions text is correct
+if (typeof TRANSLATIONS !== 'undefined' && TRANSLATIONS.en) {
+  TRANSLATIONS.en.order_suggestions = "Order Suggestions";
+}
+
+function downloadReportCSV() {
+  const from = document.getElementById('repFrom').value;
+  const to = document.getElementById('repTo').value;
+  
+  if (!from || !to) {
+    toast('Please select a date range first', 'warning');
+    return;
+  }
+  
+  fetch(`/api/reports?from=${from}&to=${to}`)
+    .then(r => r.json())
+    .then(data => {
+      let csv = "Date,Beer,Liters\n";
+      if (data.daily) {
+        data.daily.forEach(d => {
+          csv += `${d.day},Total,${d.liters.toFixed(1)}\n`;
+        });
+      }
+      csv += "\nBeer Breakdown:\nBeer,Liters\n";
+      if (data.by_beer) {
+        data.by_beer.forEach(b => {
+          csv += `${b.beer_name},${b.liters.toFixed(1)}\n`;
+        });
+      }
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `keghero_report_${from}_to_${to}.csv`);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('CSV Downloaded', 'success');
+    })
+    .catch(e => {
+      console.error('CSV Export failed', e);
+      toast('Export failed', 'error');
+    });
+}
 </script>
+</body>
+</html>
