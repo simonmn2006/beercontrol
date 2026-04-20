@@ -1453,8 +1453,8 @@ textarea{resize:vertical;min-height:80px}
     <div class="detail-tab active" onclick="switchUserSettingsTab('users',this)">👤 Users</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('hours',this)">🕒 Opening Hours</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('alerts',this)">🔔 Alerts</div>
-    <div class="detail-tab" onclick="switchUserSettingsTab('financials',this)">💰 Financials</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('line',this)">📏 Line Length</div>
+    <div class="detail-tab" onclick="switchUserSettingsTab('financials',this)">💰 Financials</div>
   </div>
 
   <div id="ustab-users">
@@ -1541,7 +1541,6 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
-
   <div id="ustab-financials" style="display:none">
     <div class="card">
       <div class="card-hdr" style="justify-content:space-between">
@@ -1550,7 +1549,6 @@ textarea{resize:vertical;min-height:80px}
       </div>
       <div class="card-body">
         <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Configure purchase prices for each tap and track cost evolution over time.</div>
-        
         <div class="table-wrap">
           <table style="width:100%">
             <thead>
@@ -1559,11 +1557,7 @@ textarea{resize:vertical;min-height:80px}
             <tbody id="financials-keg-list"></tbody>
           </table>
         </div>
-
         <div class="form-actions"><button class="btn btn-primary" onclick="saveFinancialSettings()">Update Pricing</button></div>
-      </div>
-    </div>
-  </div>
       </div>
     </div>
   </div>
@@ -1604,6 +1598,8 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
+</div>
+
 </div><!-- /app -->
 
 <!-- ══════════════════════════════════════════
@@ -8041,6 +8037,11 @@ async function saveLineSettings() {
   const range = document.getElementById('selected-line-range').value;
   const liters = parseFloat(document.getElementById('selected-line-liters').value);
   
+  const btn = event.target;
+  const oldText = btn.textContent;
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
   try {
     const res = await fetch('/api/admin/restaurants/' + restId, {
       method: 'PUT',
@@ -8051,17 +8052,29 @@ async function saveLineSettings() {
         saved_liters_per_change: liters 
       })
     });
-    if ((await res.json()).success) {
-      toast('Line settings saved', 'success');
-      // Update local data
+    const result = await res.json();
+    if (result.success) {
+      toast('Line settings saved and applied!', 'success');
+      
+      // Update local memory so it stays selected if they switch tabs
       const r = RESTAURANTS_DATA.find(x => x.id === restId);
       if (r) {
         r.line_length_meters = range;
         r.saved_liters_per_change = liters;
       }
-      loadRestaurantDashboard(); // Refresh savings stat
+      
+      // Update dashboard to reflect new savings immediatey
+      loadRestaurantDashboard(); 
+    } else {
+      toast('Failed to save: ' + (result.error || 'Server error'), 'error');
     }
-  } catch(e) { toast('Error saving settings', 'error'); }
+  } catch(e) { 
+    console.error(e);
+    toast('Error saving settings', 'error'); 
+  } finally {
+    btn.textContent = oldText;
+    btn.disabled = false;
+  }
 }
 
 
