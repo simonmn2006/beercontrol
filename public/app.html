@@ -1670,6 +1670,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label class="fl">Min Flow (L/min)</label><input type="number" id="ak-flow" value="0.5" step="0.1"></div>
         <div class="form-group"><label class="fl">Low Alert (%)</label><input type="number" id="ak-low" value="20"></div>
         <div class="form-group"><label class="fl">Critical Alert (%)</label><input type="number" id="ak-critical" value="10"></div>
+        <div class="form-group"><label class="fl">Display ID (Optional)</label><input type="text" id="ak-display" placeholder="e.g. tap-1"></div>
         <div class="form-group"><label class="fl">Cost Price (€/L)</label><input type="number" id="ak-cost" value="0" step="0.01"></div>
         <div class="form-group"><label class="fl">Sale Price (€/L)</label><input type="number" id="ak-sale" value="0" step="0.01"></div>
       </div>
@@ -1710,6 +1711,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label class="fl">Critical Alert (%)</label><input type="number" id="ek-critical"></div>
         <div class="form-group"><label class="fl">Cost Price (€/L)</label><input type="number" id="ek-cost" step="0.01"></div>
         <div class="form-group"><label class="fl">Sale Price (€/L)</label><input type="number" id="ek-sale" step="0.01"></div>
+        <div class="form-group fg-full"><label class="fl">Display ID (Optional)</label><input type="text" id="ek-display" placeholder="e.g. tap-1"></div>
       </div>
       <div class="form-actions" style="justify-content:space-between">
         <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(232,75,75,.3)" onclick="deleteKegWrapper()">🗑 Delete Keg</button>
@@ -6109,6 +6111,7 @@ function renderDetailKegs(r){
           </div>
         </div>
         <div class="flex g6" style="flex-shrink:0">
+          ${k.esp32_display_id ? `<a href="/display/${k.esp32_display_id}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:4px">📺 View Live</a>` : ''}
           <button class="btn btn-ghost btn-sm" onclick="openEditKeg(${k.id})">✏</button>
           <button class="btn btn-ghost btn-sm" onclick="showConfirm({icon:'🛢',title:'New Keg',message:'Is this a new <b>${beer}</b> keg?',onConfirm:()=>toast('New keg session started','info')})">🛢 New Keg</button>
           <button class="btn btn-danger btn-sm" onclick="deleteKeg(${k.id})">🗑</button>
@@ -6138,6 +6141,12 @@ function openAddKegToRest(){
   if(logoRow) logoRow.style.display = 'none';
   const dd = document.getElementById('ak-beer-dropdown');
   if(dd) dd.style.display = 'none';
+
+  // Only admins can see/edit Display ID
+  const isAdmin = (window.currentRole && window.currentRole.toLowerCase() === 'admin');
+  const dispGrp = document.getElementById('ak-display')?.closest('.form-group');
+  if(dispGrp) dispGrp.style.display = isAdmin ? 'block' : 'none';
+
   openM('mAddKeg');
 }
 
@@ -6196,9 +6205,9 @@ async function saveNewKeg(){
     temp_max_c: parseFloat(document.getElementById('ak-temp')?.value)||6,
     co2_min_bar: parseFloat(document.getElementById('ak-co2')?.value)||1.5,
     alert_low_pct: parseInt(document.getElementById('ak-low')?.value)||20,
-    alert_critical_pct: parseInt(document.getElementById('ak-critical')?.value)||10,
     cost_price: parseFloat(document.getElementById('ak-cost')?.value)||0,
     sale_price: parseFloat(document.getElementById('ak-sale')?.value)||0,
+    esp32_display_id: document.getElementById('ak-display')?.value.trim() || null
   };
 
   try {
@@ -6440,6 +6449,12 @@ function openEditKeg(id){
   document.getElementById('ek-critical').value = k.alert_critical_pct||10;
   document.getElementById('ek-cost').value = k.cost_price||0;
   document.getElementById('ek-sale').value = k.sale_price||0;
+  document.getElementById('ek-display').value = k.esp32_display_id||'';
+  
+  // Only admins can see/edit Display ID
+  const isAdmin = (window.currentRole && window.currentRole.toLowerCase() === 'admin');
+  const dispGrp = document.getElementById('ek-display')?.closest('.form-group');
+  if(dispGrp) dispGrp.style.display = isAdmin ? 'block' : 'none';
   
   openM('mEditKeg');
 }
@@ -6493,6 +6508,7 @@ async function saveEditKeg(){
     alert_critical_pct: parseInt(document.getElementById('ek-critical')?.value)||k.alert_critical_pct,
     cost_price: parseFloat(document.getElementById('ek-cost')?.value)||0,
     sale_price: parseFloat(document.getElementById('ek-sale')?.value)||0,
+    esp32_display_id: document.getElementById('ek-display')?.value.trim() || null
   };
 
   try {

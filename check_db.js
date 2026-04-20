@@ -1,4 +1,5 @@
 // check_db.js
+require('dotenv').config();
 const { db } = require('./server/db');
 
 async function check() {
