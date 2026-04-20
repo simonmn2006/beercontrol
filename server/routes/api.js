@@ -168,6 +168,41 @@ router.put('/me/restaurant', async (req, res) => {
   }
 });
 
+router.post('/financials/batch', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const rid = user.restaurant_id;
+    if (!rid) return res.status(403).json({ error: 'Permission denied' });
+
+    const { updates } = req.body;
+    if (!Array.isArray(updates)) return res.status(400).json({ error: 'Updates must be an array' });
+    
+    for (const u of updates) {
+      // 1. Fetch keg details to get size + safety check (restaurant_id)
+      const keg = await db.get("SELECT restaurant_id, keg_size_liters FROM kegs WHERE id=? AND restaurant_id=?", [u.id, rid]);
+      if (!keg) continue;
+
+      const pricePerLiter = keg.keg_size_liters > 0 ? (u.cost_price / keg.keg_size_liters) : 0;
+
+      // 2. Update Current Price and Sale Price
+      await db.run("UPDATE kegs SET cost_price=?, sale_price=?, price_per_liter=? WHERE id=?", 
+        [u.cost_price, u.sale_price, pricePerLiter, u.id]);
+      
+      // 3. Insert into History
+      await db.run("INSERT INTO keg_price_history (keg_id, restaurant_id, cost_price, price_per_liter) VALUES (?,?,?,?)", 
+        [u.id, rid, u.cost_price, pricePerLiter]);
+
+      // 4. Update the active session's prices if it exists
+      await db.run("UPDATE keg_sessions SET cost_price=?, sale_price=?, price_per_liter=? WHERE keg_id=? AND ended_at IS NULL", 
+        [u.cost_price, u.sale_price, pricePerLiter, u.id]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Batch financials error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 router.get('/me/users', async (req, res) => {
   try {
     const user = req.session.user;

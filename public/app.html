@@ -7046,7 +7046,7 @@ async function saveFinancialSettings(){
   });
 
   try {
-    const res = await fetch('/api/admin/financials/batch', {
+    const res = await fetch('/api/financials/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ updates })
