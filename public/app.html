@@ -6724,18 +6724,19 @@ function deleteStyle(id){
 // ══════════════════════════════════════════
 // SETTINGS TABS
 // ══════════════════════════════════════════
-/* Settings navigation handled by Core Logic */
-
-function switchUserSettingsTab(tab, el){
-  document.querySelectorAll('#userSettingsTabs .detail-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  ['users','hours','alerts','settings'].forEach(id=>{
-    const target = document.getElementById('ustab-'+id);
-    if(target) target.style.display = (id===tab?'block':'none');
+function switchUserSettingsTab(tab, el) {
+  ['users','hours','alerts','financials','line'].forEach(t => {
+    const p = document.getElementById('ustab-' + t);
+    if(p) p.style.display = (t === tab) ? 'block' : 'none';
   });
-  if(tab==='users') renderOwnerUsers();
-  if(tab==='hours') buildOwnerSchedule();
-  if(tab==='alerts') loadAlertSettings();
+  document.querySelectorAll('#userSettingsTabs .detail-tab').forEach(d => d.classList.remove('active'));
+  if(el) el.classList.add('active');
+  
+  if(tab === 'users')      renderOwnerUsers();
+  if(tab === 'hours')      buildOwnerSchedule();
+  if(tab === 'alerts')     buildOwnerAlertsTab();
+  if(tab === 'financials') buildFinancialsTab();
+  if(tab === 'line')       buildLineTab();
 }
 
 async function loadRestaurantDashboard(){
@@ -6813,19 +6814,6 @@ function renderOwnerUsers(){
 }
 
 
-function switchUserSettingsTab(tab, el) {
-  ['users','hours','alerts','financials'].forEach(t => {
-    const p = document.getElementById('ustab-' + t);
-    if(p) p.style.display = (t === tab) ? 'block' : 'none';
-  });
-  document.querySelectorAll('#userSettingsTabs .detail-tab').forEach(d => d.classList.remove('active'));
-  if(el) el.classList.add('active');
-  
-  if(tab === 'users')      renderOwnerUsers();
-  if(tab === 'hours')      buildOwnerSchedule();
-  if(tab === 'alerts')     buildOwnerAlertsTab();
-  if(tab === 'financials') buildFinancialsTab();
-}
 
 async function buildOwnerSchedule(){
   const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
@@ -8021,6 +8009,60 @@ nav = function(id, el) {
     loadFinancials();
   }
 };
+
+function buildLineTab() {
+  const r = RESTAURANTS_DATA.find(x => x.id === parseInt(window.currentRestaurantId));
+  if (!r) return;
+  
+  const range = r.line_length_meters || '0-10m';
+  const liters = r.saved_liters_per_change || 0.70;
+  
+  // Find which index matches
+  let idx = 1;
+  if (range === '11-20m') idx = 2;
+  else if (range === '21-30m') idx = 3;
+  else if (range === '31-50m') idx = 4;
+  
+  selectLineRange(range, liters, idx, true); // true = silent (no toast)
+}
+
+function selectLineRange(range, liters, idx, silent) {
+  document.getElementById('selected-line-range').value = range;
+  document.getElementById('selected-line-liters').value = liters;
+  
+  document.querySelectorAll('.line-range-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('lrc-' + idx).classList.add('active');
+  
+  if (!silent) toast(`Selected ${range} (${liters}L saved per change)`, 'info');
+}
+
+async function saveLineSettings() {
+  const restId = parseInt(window.currentRestaurantId);
+  const range = document.getElementById('selected-line-range').value;
+  const liters = parseFloat(document.getElementById('selected-line-liters').value);
+  
+  try {
+    const res = await fetch('/api/admin/restaurants/' + restId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        id: restId, 
+        line_length_meters: range, 
+        saved_liters_per_change: liters 
+      })
+    });
+    if ((await res.json()).success) {
+      toast('Line settings saved', 'success');
+      // Update local data
+      const r = RESTAURANTS_DATA.find(x => x.id === restId);
+      if (r) {
+        r.line_length_meters = range;
+        r.saved_liters_per_change = liters;
+      }
+      loadRestaurantDashboard(); // Refresh savings stat
+    }
+  } catch(e) { toast('Error saving settings', 'error'); }
+}
 
 
 async function loadFinancials() {
