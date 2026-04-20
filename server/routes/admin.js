@@ -83,16 +83,30 @@ router.post('/restaurants', async (req, res) => {
 
 router.put('/restaurants/:id', async (req, res) => {
   try {
-    const { name, city, country, language, plan, renewal_date, active, 
-            phone, address, postal_code, timezone, opening_hours, wifi,
-            line_length_meters, saved_liters_per_change } = req.body;
-    await db.run(`
-      UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=?,
-      phone=?,address=?,postal_code=?,timezone=?,opening_hours=?,wifi=?,
-      line_length_meters=?, saved_liters_per_change=? WHERE id=?
-    `, [name||null, city||'', country||'', language||'en', plan||'starter', renewal_date||null, active?1:0, 
-        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'', wifi||null,
-        line_length_meters||'0-10m', saved_liters_per_change||0.70, req.params.id]);
+    const fields = [
+      'name', 'city', 'country', 'language', 'plan', 'renewal_date', 'active', 
+      'phone', 'address', 'postal_code', 'timezone', 'opening_hours', 'wifi',
+      'line_length_meters', 'saved_liters_per_change'
+    ];
+    
+    let updates = [];
+    let values = [];
+    
+    fields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updates.push(`${field}=?`);
+        // Handle boolean for 'active'
+        if (field === 'active') values.push(req.body[field] ? 1 : 0);
+        else values.push(req.body[field]);
+      }
+    });
+
+    if (updates.length === 0) return res.json({ success: true, message: 'No changes' });
+
+    values.push(req.params.id);
+    const sql = `UPDATE restaurants SET ${updates.join(', ')} WHERE id=?`;
+    
+    await db.run(sql, values);
     res.json({ success: true });
   } catch (err) {
     console.error('Update restaurant error:', err);
