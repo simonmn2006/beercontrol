@@ -3778,7 +3778,12 @@ function kegCard(k,clickable=true){
     ${badge}
     <div class="keg-top">
       <div><div class="keg-name">${name}</div><div class="keg-sub">${k.rest ? k.rest + ' · ' : ''}Tap #${tap}</div></div>
-      <div class="keg-logo">${k.emoji || '🍺'}</div>
+      <div class="keg-logo" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+        ${(k.logo_path || k.logo_data || k.logo) 
+          ? `<img src="${k.logo_path || k.logo_data || k.logo}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.textContent='${k.emoji||'🍺'}'">` 
+          : `<span style="font-size:24px">${k.emoji || '🍺'}</span>`
+        }
+      </div>
     </div>
     <div class="prog-wrap">
       <div class="prog-label"><span>${t('remaining')}</span><strong>${rem.toFixed(1)} / ${size} L</strong></div>
@@ -8135,7 +8140,17 @@ function renderFinancialsData(data) {
     return `
       <tr>
         <td class="mono">#${t.tap_number}</td>
-        <td class="td-name">${t.beer_name}</td>
+        <td class="td-name">
+          <div class="flex fxc g8">
+            <div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg3);border-radius:4px">
+              ${t.logo_path 
+                ? `<img src="${t.logo_path}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.textContent='🍺'">`
+                : '🍺'
+              }
+            </div>
+            <b>${t.beer_name}</b>
+          </div>
+        </td>
         <td style="text-align:right" class="mono">${t.total_liters.toFixed(1)} L</td>
         <td style="text-align:right" class="mono">€ ${t.revenue.toFixed(2)}</td>
         <td style="text-align:right" class="mono">€ ${t.cost.toFixed(2)}</td>

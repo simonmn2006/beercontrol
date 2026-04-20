@@ -100,8 +100,10 @@ router.get('/dashboard', async (req, res) => {
     // Per-tap breakdown for the charts/table
     const taps_financials = await db.all(`
       SELECT 
+        k.id,
         k.tap_number,
         k.beer_name,
+        k.logo_path,
         SUM(pe.liters) as total_liters,
         SUM(pe.liters * COALESCE(ks.sale_price, k.sale_price)) as revenue,
         SUM(pe.liters * COALESCE(ks.price_per_liter, k.price_per_liter)) as cost
