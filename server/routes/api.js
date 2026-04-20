@@ -146,6 +146,28 @@ router.get('/me/restaurant', async (req, res) => {
   }
 });
 
+router.put('/me/restaurant', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const rid = user.restaurant_id;
+    if (!rid) return res.status(403).json({ error: 'Permission denied' });
+
+    const { line_length_meters, saved_liters_per_change } = req.body;
+    
+    // Only allow specific fields for owners
+    await db.run(`
+      UPDATE restaurants 
+      SET line_length_meters=?, saved_liters_per_change=? 
+      WHERE id=?
+    `, [line_length_meters || '0-10m', saved_liters_per_change || 0.70, rid]);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update me restaurant error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 router.get('/me/users', async (req, res) => {
   try {
     const user = req.session.user;

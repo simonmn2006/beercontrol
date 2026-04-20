@@ -8043,11 +8043,10 @@ async function saveLineSettings() {
   btn.disabled = true;
 
   try {
-    const res = await fetch('/api/admin/restaurants/' + restId, {
+    const res = await fetch('/api/me/restaurant', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        id: restId, 
         line_length_meters: range, 
         saved_liters_per_change: liters 
       })
@@ -8063,7 +8062,7 @@ async function saveLineSettings() {
         r.saved_liters_per_change = liters;
       }
       
-      // Update dashboard to reflect new savings immediatey
+      // Update dashboard to reflect new savings immediately
       loadRestaurantDashboard(); 
     } else {
       toast('Failed to save: ' + (result.error || 'Server error'), 'error');
