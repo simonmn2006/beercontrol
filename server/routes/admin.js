@@ -84,12 +84,15 @@ router.post('/restaurants', async (req, res) => {
 router.put('/restaurants/:id', async (req, res) => {
   try {
     const { name, city, country, language, plan, renewal_date, active, 
-            phone, address, postal_code, timezone, opening_hours, wifi } = req.body;
+            phone, address, postal_code, timezone, opening_hours, wifi,
+            line_length_meters, saved_liters_per_change } = req.body;
     await db.run(`
       UPDATE restaurants SET name=?,city=?,country=?,language=?,plan=?,renewal_date=?,active=?,
-      phone=?,address=?,postal_code=?,timezone=?,opening_hours=?,wifi=? WHERE id=?
+      phone=?,address=?,postal_code=?,timezone=?,opening_hours=?,wifi=?,
+      line_length_meters=?, saved_liters_per_change=? WHERE id=?
     `, [name||null, city||'', country||'', language||'en', plan||'starter', renewal_date||null, active?1:0, 
-        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'', wifi||null, req.params.id]);
+        phone||'', address||'', postal_code||'', timezone||'Europe/Madrid', opening_hours||'', wifi||null,
+        line_length_meters||'0-10m', saved_liters_per_change||0.70, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update restaurant error:', err);
@@ -300,16 +303,16 @@ router.post('/kegs', async (req, res) => {
       return res.status(400).json({ error: 'This tap number is already in use in this restaurant.' });
     }
 
+    const pricePerLiter = keg_size_liters > 0 ? (cost_price / keg_size_liters) : 0;
     const r = await db.run(`
       INSERT INTO kegs (restaurant_id,tap_number,beer_name,keg_size_liters,remaining_liters,
-        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct,logo_path, active, cost_price, sale_price)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)
+        esp32_sensor_id,esp32_display_id,co2_min_bar,temp_max_c,alert_low_pct,alert_critical_pct,logo_path, active, cost_price, sale_price, price_per_liter)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)
     `, [restaurant_id, tap_number, beer_name, keg_size_liters, keg_size_liters,
-           esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10, logo_path||null, cost_price||0, sale_price||0]);
-    // Start a keg session
+           esp32_sensor_id||'', esp32_display_id||'', co2_min_bar||1.5, temp_max_c||6, alert_low_pct||20, alert_critical_pct||10, logo_path||null, cost_price||0, sale_price||0, pricePerLiter]);
     // Start a keg session with price snapshots
-    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price) VALUES (?,?,?,?,?)", 
-      [r.lastInsertRowid, restaurant_id, keg_size_liters, cost_price||0, sale_price||0]);
+    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price,price_per_liter) VALUES (?,?,?,?,?,?)", 
+      [r.lastInsertRowid, restaurant_id, keg_size_liters, cost_price||0, sale_price||0, pricePerLiter]);
     res.json({ success: true, id: r.lastInsertRowid });
   } catch (err) {
     console.error('Create keg error:', err);
@@ -333,10 +336,11 @@ router.put('/kegs/:id', async (req, res) => {
       return res.status(400).json({ error: 'This tap number is already in use in this restaurant.' });
     }
 
+    const pricePerLiter = keg_size_liters > 0 ? (cost_price / keg_size_liters) : 0;
     await db.run(`UPDATE kegs SET tap_number=?,beer_name=?,keg_size_liters=?,esp32_sensor_id=?,esp32_display_id=?,
-      co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=?,logo_path=?, cost_price=?, sale_price=? WHERE id=?`,
+      co2_min_bar=?,temp_max_c=?,alert_low_pct=?,alert_critical_pct=?,logo_path=?, cost_price=?, sale_price=?, price_per_liter=? WHERE id=?`,
       [tap_number, beer_name, keg_size_liters, esp32_sensor_id||'', esp32_display_id||'',
-           co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path||null, cost_price||0, sale_price||0, req.params.id]);
+           co2_min_bar, temp_max_c, alert_low_pct, alert_critical_pct, logo_path||null, cost_price||0, sale_price||0, pricePerLiter, req.params.id]);
     res.json({ success: true });
   } catch (err) {
     console.error('Update keg error:', err);
@@ -363,10 +367,10 @@ router.post('/kegs/:id/new-keg', async (req, res) => {
     await db.run("UPDATE keg_sessions SET ended_at=NOW() WHERE keg_id=? AND ended_at IS NULL", [keg.id]);
     // Reset keg
     await db.run("UPDATE kegs SET remaining_liters=?, fob_active=0 WHERE id=?", [keg.keg_size_liters, keg.id]);
-    // New session
+    const pricePerLiter = keg.keg_size_liters > 0 ? (keg.cost_price / keg.keg_size_liters) : 0;
     // New session with price snapshots
-    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price) VALUES (?,?,?,?,?)", 
-      [keg.id, keg.restaurant_id, keg.keg_size_liters, keg.cost_price||0, keg.sale_price||0]);
+    await db.run("INSERT INTO keg_sessions (keg_id,restaurant_id,keg_size,cost_price,sale_price,price_per_liter) VALUES (?,?,?,?,?,?)", 
+      [keg.id, keg.restaurant_id, keg.keg_size_liters, keg.cost_price||0, keg.sale_price||0, pricePerLiter]);
     // Log alert
     await db.run("INSERT INTO alerts (restaurant_id,keg_id,type,message) VALUES (?,?,'info',?)", [keg.restaurant_id, keg.id, `Manual keg change — ${keg.beer_name} Tap #${keg.tap_number}`]);
     res.json({ success: true });
@@ -382,18 +386,23 @@ router.post('/financials/batch', async (req, res) => {
     if (!Array.isArray(updates)) return res.status(400).json({ error: 'Updates must be an array' });
     
     for (const u of updates) {
-      // 1. Update Current Price
-      await db.run("UPDATE kegs SET cost_price=? WHERE id=?", [u.cost_price, u.id]);
-      
-      // 2. Insert into History (for tracking changes over time)
-      const keg = await db.get("SELECT restaurant_id FROM kegs WHERE id=?", [u.id]);
-      if (keg) {
-        await db.run("INSERT INTO keg_price_history (keg_id, restaurant_id, cost_price) VALUES (?,?,?)", 
-          [u.id, keg.restaurant_id, u.cost_price]);
-      }
+      // 1. Fetch keg details to get size
+      const keg = await db.get("SELECT restaurant_id, keg_size_liters FROM kegs WHERE id=?", [u.id]);
+      if (!keg) continue;
 
-      // 3. Update the active session's price if it exists
-      await db.run("UPDATE keg_sessions SET cost_price=? WHERE keg_id=? AND ended_at IS NULL", [u.cost_price, u.id]);
+      const pricePerLiter = keg.keg_size_liters > 0 ? (u.cost_price / keg.keg_size_liters) : 0;
+
+      // 2. Update Current Price and Sale Price
+      await db.run("UPDATE kegs SET cost_price=?, sale_price=?, price_per_liter=? WHERE id=?", 
+        [u.cost_price, u.sale_price, pricePerLiter, u.id]);
+      
+      // 3. Insert into History
+      await db.run("INSERT INTO keg_price_history (keg_id, restaurant_id, cost_price, price_per_liter) VALUES (?,?,?,?)", 
+        [u.id, keg.restaurant_id, u.cost_price, pricePerLiter]);
+
+      // 4. Update the active session's prices if it exists
+      await db.run("UPDATE keg_sessions SET cost_price=?, sale_price=?, price_per_liter=? WHERE keg_id=? AND ended_at IS NULL", 
+        [u.cost_price, u.sale_price, pricePerLiter, u.id]);
     }
     res.json({ success: true });
   } catch (err) {

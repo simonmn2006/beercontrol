@@ -367,6 +367,26 @@ textarea{resize:vertical;min-height:80px}
 /* ── DEVICE ROW IN DETAIL ── */
 .device-detail-row{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;align-items:flex-start;gap:14px;transition:border-color .15s}
 .device-detail-row:hover{border-color:var(--border2)}
+  .keg-alert-card.critical{background:rgba(232,75,75,.08);border-color:rgba(232,75,75,.3)}
+
+  /* Line Length Cards */
+  .line-range-card {
+    padding: 20px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .line-range-card:hover {
+    border-color: var(--amber);
+    background: var(--bg4);
+  }
+  .line-range-card.active {
+    border-color: var(--amber);
+    background: var(--amber-glow);
+    box-shadow: 0 0 15px var(--amber-glow);
+  }
 </style>
 </head>
 <body>
@@ -1366,18 +1386,47 @@ textarea{resize:vertical;min-height:80px}
 
 <!-- ══ PAGE: USER COSTS ══ -->
 <div class="page" id="page-userCosts">
-  <div class="sect-hdr">
-    <div><div class="sect-title" data-i18n="nav_costs">Costs & Revenue</div><div class="sect-sub" data-i18n="costs_sub">Margin per tap and profitability</div></div>
+    <div class="flex g12 fxc">
+      <div class="dp-wrap">
+        <input type="date" id="fin-date-from" class="dp-input" onchange="loadFinancials()" style="font-family:var(--fm);font-size:12px;padding:6px 10px">
+      </div>
+      <span style="color:var(--text3)">→</span>
+      <div class="dp-wrap">
+        <input type="date" id="fin-date-to" class="dp-input" onchange="loadFinancials()" style="font-family:var(--fm);font-size:12px;padding:6px 10px">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="loadFinancials()">Refresh</button>
+    </div>
   </div>
   <div class="g4 mb16">
-    <div class="stat-card sc-green"><div class="stat-label">Revenue Today</div><div class="stat-val">€ 0</div></div>
-    <div class="stat-card sc-amber"><div class="stat-label">Keg Cost Today</div><div class="stat-val">€ 0</div></div>
+    <div class="stat-card sc-green"><div class="stat-label">Revenue <span class="fin-period-label">Period</span></div><div class="stat-val">€ 0</div></div>
+    <div class="stat-card sc-amber"><div class="stat-label">Keg Cost <span class="fin-period-label">Period</span></div><div class="stat-val">€ 0</div></div>
     <div class="stat-card sc-blue"><div class="stat-label">Gross Margin</div><div class="stat-val">0%</div></div>
-    <div class="stat-card sc-red"><div class="stat-label">Waste Today</div><div class="stat-val">0 L</div></div>
+    <div class="stat-card sc-green"><div class="stat-label">Money Saved</div><div class="stat-val" id="finMoneySaved">€ 0</div></div>
   </div>
   <div class="card mb16">
     <div class="card-hdr">Profit per Tap</div>
     <div class="card-body"><div style="height:280px"><canvas id="chartCostTap"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">Detailed Profit Breakdown</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tap #</th>
+            <th>Beer Name</th>
+            <th style="text-align:right">Liters Poured</th>
+            <th style="text-align:right">Revenue</th>
+            <th style="text-align:right">Cost</th>
+            <th style="text-align:right">Profit</th>
+            <th style="text-align:right">Margin %</th>
+          </tr>
+        </thead>
+        <tbody id="fin-taps-table">
+          <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">Select dates to see performance breakdown.</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -1400,6 +1449,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="detail-tab" onclick="switchUserSettingsTab('hours',this)">🕒 Opening Hours</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('alerts',this)">🔔 Alerts</div>
     <div class="detail-tab" onclick="switchUserSettingsTab('financials',this)">💰 Financials</div>
+    <div class="detail-tab" onclick="switchUserSettingsTab('line',this)">📏 Line Length</div>
   </div>
 
   <div id="ustab-users">
@@ -1499,7 +1549,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="table-wrap">
           <table style="width:100%">
             <thead>
-              <tr><th>Tap</th><th>Beer / Name</th><th>Purchase Price (€)</th><th>History</th></tr>
+              <tr><th>Tap</th><th>Beer / Name</th><th>Purchase Price (Total)</th><th>Selling Price (€/L)</th><th>History</th></tr>
             </thead>
             <tbody id="financials-keg-list"></tbody>
           </table>
@@ -1509,6 +1559,43 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ustab-line" style="display:none">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">Draft Line Settings</span>
+      </div>
+      <div class="card-body">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Configure the distance from your kegs to your taps. This allows KegHero to calculate the amount of beer saved in your lines during keg changes.</div>
+        
+        <div class="grid-2-col" style="gap:16px">
+          <div class="line-range-card" id="lrc-1" onclick="selectLineRange('0-10m', 0.70, 1)">
+            <div class="flex fxc jsb"><b>0 - 10 Meters</b> <span class="tag tg-blue">0.70 L Saved</span></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Ideal for under-counter setups.</div>
+          </div>
+          <div class="line-range-card" id="lrc-2" onclick="selectLineRange('11-20m', 1.40, 2)">
+            <div class="flex fxc jsb"><b>11 - 20 Meters</b> <span class="tag tg-blue">1.40 L Saved</span></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Typical for small cellar storage.</div>
+          </div>
+          <div class="line-range-card" id="lrc-3" onclick="selectLineRange('21-30m', 2.15, 3)">
+            <div class="flex fxc jsb"><b>21 - 30 Meters</b> <span class="tag tg-blue">2.15 L Saved</span></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Standard distance for most venues.</div>
+          </div>
+          <div class="line-range-card" id="lrc-4" onclick="selectLineRange('31-50m', 3.50, 4)">
+            <div class="flex fxc jsb"><b>31 - 50 Meters</b> <span class="tag tg-blue">3.50 L Saved</span></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Long-draw remote systems.</div>
+          </div>
+        </div>
+
+        <input type="hidden" id="selected-line-range" value="0-10m">
+        <input type="hidden" id="selected-line-liters" value="0.70">
+
+        <div class="form-actions" style="margin-top:30px">
+          <button class="btn btn-primary" onclick="saveLineSettings()">Save Line Settings</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2349,6 +2436,13 @@ textarea{resize:vertical;min-height:80px}
       if (pageId === 'userKiosk')        if (typeof buildKioskPreview === 'function') buildKioskPreview();
       if (pageId === 'userCosts')        if (typeof initCostCharts === 'function') initCostCharts();
       if (pageId === 'userRefrigs')     if (typeof loadFacilitySensors === 'function') loadFacilitySensors();
+      if (pageId === 'userSettings') {
+        if (typeof switchUserSettingsTab === 'function') {
+          const active = document.querySelector('#userSettingsTabs .detail-tab.active') || document.querySelector('#userSettingsTabs .detail-tab');
+          const tab = active ? active.getAttribute('onclick').match(/'([^']+)'/)[1] : 'users';
+          switchUserSettingsTab(tab, active);
+        }
+      }
     }, 50);
   }
 
@@ -6652,6 +6746,9 @@ async function loadRestaurantDashboard(){
     // Update Dashboard Stats with correct selectors
     const pouredEl = document.getElementById('userPouredToday');
     if (pouredEl) pouredEl.textContent = data.poured_today.toFixed(1);
+
+    const savedEl = document.getElementById('userMoneySaved');
+    if (savedEl) savedEl.textContent = '€ ' + (data.money_saved || 0).toFixed(2);
     
     const changesEl = document.getElementById('userKegChanges');
     if (changesEl) changesEl.textContent = data.keg_changes;
@@ -6667,10 +6764,19 @@ async function loadRestaurantDashboard(){
     
     // Update Financial Stats if on the Costs page or visible
     if(document.querySelector('#page-userCosts .stat-card.sc-green .stat-val')) {
-      document.querySelector('#page-userCosts .stat-card.sc-green .stat-val').textContent = `€ ${data.revenue_today.toFixed(2)}`;
-      document.querySelector('#page-userCosts .stat-card.sc-amber .stat-val').textContent = `€ ${data.cost_today.toFixed(2)}`;
+      const revEl = document.querySelector('#page-userCosts .stat-card.sc-green .stat-val');
+      const costEl = document.querySelector('#page-userCosts .stat-card.sc-amber .stat-val');
+      const marginEl = document.querySelector('#page-userCosts .stat-card.sc-blue .stat-val');
+      const savedEl = document.getElementById('finMoneySaved');
+      
+      if (revEl) revEl.textContent = `€ ${data.revenue_today.toFixed(2)}`;
+      if (costEl) costEl.textContent = `€ ${data.cost_today.toFixed(2)}`;
+      
       const margin = data.revenue_today > 0 ? ((data.revenue_today - data.cost_today) / data.revenue_today * 100) : 0;
-      document.querySelector('#page-userCosts .stat-card.sc-blue .stat-val').textContent = `${margin.toFixed(1)}%`;
+      if (marginEl) marginEl.textContent = `${margin.toFixed(1)}%`;
+      if (savedEl) savedEl.textContent = `€ ${(data.money_saved || 0).toFixed(2)}`;
+      
+      renderFinancialsData(data);
     }
   } catch(e) { console.error('Dashboard load failed', e); }
 }
@@ -6678,7 +6784,11 @@ async function loadRestaurantDashboard(){
 function renderOwnerUsers(){
   const r = RESTAURANTS_DATA.find(x=>x.id===parseInt(window.currentRestaurantId));
   const el = document.getElementById('owner-users-table');
-  if(!el || !r) return;
+  if(!el) return;
+  if(!r || (USERS_DATA.length === 0)) {
+    el.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">Loading users...</td></tr>';
+    return;
+  }
   const users = USERS_DATA.filter(u => String(u.restaurant_id) === String(r.id));
   el.innerHTML = users.map(u => `
     <tr>
@@ -6855,22 +6965,43 @@ async function buildFinancialsTab(){
   const list = document.getElementById('financials-keg-list');
   if(!list) return;
 
-  list.innerHTML = window.USER_KEGS.map(k => `
+  list.innerHTML = window.USER_KEGS.map(k => {
+    const ppl = k.keg_size_liters > 0 ? (k.cost_price / k.keg_size_liters) : 0;
+    return `
     <tr id="fin-row-${k.id}">
       <td class="mono">Tap #${k.tap_number}</td>
       <td><b>${k.beer_name}</b> <span style="font-size:10px;color:var(--text3)">(${k.keg_size_liters}L)</span></td>
-      <td><input type="number" step="0.01" class="keg-cost-in" data-id="${k.id}" value="${k.cost_price || 0}" style="width:100px"></td>
+      <td>
+        <div class="flex fxc g8">
+          <input type="number" step="0.01" class="keg-cost-in" data-id="${k.id}" data-size="${k.keg_size_liters}" 
+                 value="${k.cost_price || 0}" style="width:100px" oninput="updateLiterPricePreview(${k.id}, this)">
+          <span style="font-size:11px;color:var(--text3)" id="ppl-preview-${k.id}">= ${ppl.toFixed(2)} €/L</span>
+        </div>
+      </td>
+      <td>
+        <input type="number" step="0.01" class="keg-sale-in" data-id="${k.id}" 
+               value="${k.sale_price || 0}" style="width:100px">
+        <span style="font-size:10px;color:var(--text3);display:block">€/Liter</span>
+      </td>
       <td><button class="btn btn-ghost btn-sm" onclick="togglePriceHistory(${k.id}, this)">⏳ View History</button></td>
     </tr>
     <tr id="fin-hist-${k.id}" style="display:none;background:var(--bg3)">
-       <td colspan="4" style="padding:0">
+       <td colspan="5" style="padding:0">
          <div id="hist-content-${k.id}" style="padding:16px;font-size:12px">
            <div class="stat-label">Price Evolution</div>
            <div class="hist-list" style="max-height:150px;overflow-y:auto">Loading...</div>
          </div>
        </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+}
+
+function updateLiterPricePreview(id, inp) {
+  const size = parseFloat(inp.dataset.size) || 0;
+  const price = parseFloat(inp.value) || 0;
+  const ppl = size > 0 ? (price / size) : 0;
+  const el = document.getElementById('ppl-preview-' + id);
+  if (el) el.textContent = `= ${ppl.toFixed(2)} €/L`;
 }
 
 async function togglePriceHistory(kegId, btn) {
@@ -6891,12 +7022,13 @@ async function togglePriceHistory(kegId, btn) {
       }
       container.innerHTML = `
         <table style="width:100%;background:none">
-          <thead><tr><th>Date</th><th>Price</th></tr></thead>
+          <thead><tr><th>Date</th><th>Total Price</th><th>€/L</th></tr></thead>
           <tbody>
             ${items.map(i => `
               <tr>
                 <td>${new Date(i.created_at).toLocaleString()}</td>
                 <td class="mono">€ ${i.cost_price.toFixed(2)}</td>
+                <td class="mono" style="color:var(--text3)">€ ${(i.price_per_liter || 0).toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -6914,10 +7046,12 @@ async function saveFinancialSettings(){
   
   rows.forEach(row => {
     const costIn = row.querySelector('.keg-cost-in');
+    const saleIn = row.querySelector('.keg-sale-in');
     if(costIn) {
       updates.push({
         id: costIn.dataset.id,
-        cost_price: parseFloat(costIn.value) || 0
+        cost_price: parseFloat(costIn.value) || 0,
+        sale_price: saleIn ? (parseFloat(saleIn.value) || 0) : 0
       });
     }
   });
@@ -7727,4 +7861,226 @@ async function deleteRefrigType(id) {
   } catch(e) { toast('Error deleting category', 'error'); }
 }
 
+// ── CUSTOM DASHBOARD & REPORT LOGIC ──
+
+let currentReportTab = 'kegs';
+
+function switchReportTab(tab, el) {
+  currentReportTab = tab;
+  document.querySelectorAll('#reportTabs .detail-tab').forEach(d => d.classList.remove('active'));
+  if(el) el.classList.add('active');
+  
+  document.getElementById('report-view-kegs').style.display = (tab === 'kegs') ? 'block' : 'none';
+  document.getElementById('report-view-refrigs').style.display = (tab === 'refrigs') ? 'block' : 'none';
+  
+  document.getElementById('filter-keg-only').style.display = (tab === 'kegs') ? 'block' : 'none';
+  document.getElementById('filter-refrig-only').style.display = (tab === 'refrigs') ? 'block' : 'none';
+  
+  if (tab === 'refrigs') prepareRefrigOptions();
+}
+
+function prepareRefrigOptions() {
+  const sel = document.getElementById('repRefrig');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">All Units</option>' + (FACILITY_SENSORS || []).map(s => `
+    <option value="${s.sensor_id}">${s.name}</option>
+  `).join('');
+}
+
+async function generateReport() {
+  const from = document.getElementById('repFrom').value;
+  const to = document.getElementById('repTo').value;
+  if (!from || !to) { toast('Please select date range', 'error'); return; }
+
+  if (currentReportTab === 'kegs') {
+    const tap = document.getElementById('repTap').value;
+    await generateKegReport(from, to, tap);
+  } else {
+    const sid = document.getElementById('repRefrig').value;
+    await generateRefrigReport(from, to, sid);
+  }
+}
+
+async function generateKegReport(from, to, tapId) {
+  try {
+    let url = `/api/reports?from=${from}&to=${to}`;
+    if (tapId) url += `&keg_id=${tapId}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // Update Stats
+    document.getElementById('repTotalPoured').textContent = data.total_poured.toFixed(1);
+    document.getElementById('repDailyAvg').textContent = data.daily_average.toFixed(1);
+    document.getElementById('repBestDay').textContent = data.best_day_volume.toFixed(1);
+    document.getElementById('repKegChanges').textContent = data.keg_changes;
+
+    // Update Charts
+    if (charts.daily) {
+      charts.daily.data.labels = data.daily_pour.map(x => x.date);
+      charts.daily.data.datasets[0].data = data.daily_pour.map(x => x.total);
+      charts.daily.update();
+    }
+    if (charts.beer) {
+      charts.beer.data.labels = data.volume_by_beer.map(x => x.beer_name);
+      charts.beer.data.datasets[0].data = data.volume_by_beer.map(x => x.total);
+      charts.beer.data.datasets[0].backgroundColor = ['#f0a500','#22c97a','#4a9eff','#e84b4b','#9ba3b8'];
+      charts.beer.update();
+    }
+    toast('Keg report generated', 'success');
+  } catch(e) { toast('Failed to load keg report', 'error'); }
+}
+
+async function generateRefrigReport(from, to, sensorId) {
+  try {
+    let url = `/api/reports/refrigerators?from=${from}&to=${to}`;
+    if (sensorId) url += `&sensor_id=${sensorId}`;
+    const res = await fetch(url);
+    const logs = await res.json();
+
+    if (logs.length === 0) { toast('No data found for selected period', 'info'); return; }
+
+    const temps = logs.map(l => l.value);
+    document.getElementById('repAvgTemp').textContent = (temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1);
+    document.getElementById('repMaxTemp').textContent = Math.max(...temps).toFixed(1);
+    document.getElementById('repMinTemp').textContent = Math.min(...temps).toFixed(1);
+    document.getElementById('repRefrigAlerts').textContent = '—'; // Would need server-side alert count
+
+    // Chart
+    if (charts.repRefrig) {
+      const grouped = {};
+      logs.forEach(l => {
+        if(!grouped[l.sensor_name]) grouped[l.sensor_name] = [];
+        grouped[l.sensor_name].push({ x: new Date(l.recorded_at), y: l.value });
+      });
+      
+      charts.repRefrig.data.datasets = Object.entries(grouped).map(([name, points], idx) => ({
+        label: name,
+        data: points,
+        borderColor: ['#4a9eff','#22c97a','#f0a500','#e84b4b'][idx % 4],
+        tension: 0.3,
+        pointRadius: 0
+      }));
+      charts.repRefrig.update();
+    }
+    toast('Refrigerator report generated', 'success');
+  } catch(e) { toast('Failed to load refrig report', 'error'); }
+}
+
+async function loadRefrigTrends() {
+  if (window.currentPage !== 'userRefrigs') return;
+  try {
+    const from = new Date(Date.now() - 24*3600000).toISOString().slice(0,19).replace('T',' ');
+    const res = await fetch(`/api/reports/refrigerators?from=${from.slice(0,10)}`);
+    const logs = await res.json();
+    
+    if (charts.refrigTrend && logs.length > 0) {
+      const grouped = {};
+      logs.forEach(l => {
+        if(!grouped[l.sensor_name]) grouped[l.sensor_name] = [];
+        grouped[l.sensor_name].push({ x: new Date(l.recorded_at), y: l.value });
+      });
+      
+      charts.refrigTrend.data.datasets = Object.entries(grouped).map(([name, points], idx) => ({
+        label: name,
+        data: points,
+        borderColor: ['#4a9eff','#22c97a','#f0a500','#e84b4b'][idx % 4],
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 0
+      }));
+      charts.refrigTrend.update();
+    }
+  } catch(e) { console.error('Trends load failed', e); }
+}
+
+// Hook into page navigation
+const _origNav = nav;
+nav = function(id, el) {
+  _origNav(id, el);
+  if (id === 'userReports') {
+    initReportCharts();
+    const today = new Date().toISOString().slice(0,10);
+    const lastWeek = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    if (!document.getElementById('repFrom').value) document.getElementById('repFrom').value = lastWeek;
+    if (!document.getElementById('repTo').value) document.getElementById('repTo').value = today;
+  }
+  if (id === 'userRefrigs') {
+    initRefrigCharts();
+    loadRefrigTrends();
+  }
+  if (id === 'userCosts') {
+    initCostCharts();
+    const today = new Date().toISOString().slice(0,10);
+    if (!document.getElementById('fin-date-from').value) document.getElementById('fin-date-from').value = today;
+    if (!document.getElementById('fin-date-to').value) document.getElementById('fin-date-to').value = today;
+    loadFinancials();
+  }
+};
+
+
+async function loadFinancials() {
+  const from = document.getElementById('fin-date-from').value;
+  const to = document.getElementById('fin-date-to').value;
+  if (!from || !to) return;
+  
+  try {
+    const res = await fetch(`/api/dashboard?from=${from}&to=${to}`);
+    const data = await res.json();
+    if (data.error) return;
+    
+    // Update labels to show it's a period
+    document.querySelectorAll('.fin-period-label').forEach(el => el.textContent = 'Period');
+    
+    // Update Stats
+    const revVal = document.querySelector('#page-userCosts .stat-card.sc-green .stat-val');
+    const costVal = document.querySelector('#page-userCosts .stat-card.sc-amber .stat-val');
+    const marginVal = document.querySelector('#page-userCosts .stat-card.sc-blue .stat-val');
+    const savedVal = document.getElementById('finMoneySaved');
+
+    if (revVal) revVal.textContent = `€ ${data.revenue_today.toFixed(2)}`;
+    if (costVal) costVal.textContent = `€ ${data.cost_today.toFixed(2)}`;
+    const margin = data.revenue_today > 0 ? ((data.revenue_today - data.cost_today) / data.revenue_today * 100) : 0;
+    if (marginVal) marginVal.textContent = `${margin.toFixed(1)}%`;
+    if (savedVal) savedVal.textContent = `€ ${(data.money_saved || 0).toFixed(2)}`;
+    
+    renderFinancialsData(data);
+  } catch(e) { console.error('Financials load failed', e); }
+}
+
+function renderFinancialsData(data) {
+  const taps = data.taps_financials || [];
+  
+  // 1. Chart
+  if (charts.costTap) {
+    charts.costTap.data.labels = taps.map(t => `#${t.tap_number} ${t.beer_name}`);
+    charts.costTap.data.datasets[0].data = taps.map(t => t.revenue);
+    charts.costTap.data.datasets[1].data = taps.map(t => t.cost);
+    charts.costTap.update();
+  }
+  
+  // 2. Table
+  const tbody = document.getElementById('fin-taps-table');
+  if (!tbody) return;
+  
+  if (taps.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No data found for this period.</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = taps.map(t => {
+    const profit = t.revenue - t.cost;
+    const margin = t.revenue > 0 ? (profit / t.revenue * 100) : 0;
+    return `
+      <tr>
+        <td class="mono">#${t.tap_number}</td>
+        <td class="td-name">${t.beer_name}</td>
+        <td style="text-align:right" class="mono">${t.total_liters.toFixed(1)} L</td>
+        <td style="text-align:right" class="mono">€ ${t.revenue.toFixed(2)}</td>
+        <td style="text-align:right" class="mono">€ ${t.cost.toFixed(2)}</td>
+        <td style="text-align:right; font-weight:600; color:${profit > 0 ? 'var(--green)' : 'var(--text1)'}" class="mono">€ ${profit.toFixed(2)}</td>
+        <td style="text-align:right"><span class="tag ${margin > 50 ? 'tg-green' : 'tg-amber'}">${margin.toFixed(1)}%</span></td>
+      </tr>
+    `;
+  }).join('');
+}
 </script>

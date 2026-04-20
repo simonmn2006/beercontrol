@@ -84,6 +84,8 @@ async function runMigrations() {
     if (!restColNames.includes('opening_hours')) await pool.query('ALTER TABLE restaurants ADD COLUMN opening_hours TEXT');
     if (!restColNames.includes('wifi')) await pool.query('ALTER TABLE restaurants ADD COLUMN wifi TEXT');
     if (!restColNames.includes('financial_settings')) await pool.query('ALTER TABLE restaurants ADD COLUMN financial_settings TEXT');
+    if (!restColNames.includes('line_length_meters')) await pool.query("ALTER TABLE restaurants ADD COLUMN line_length_meters VARCHAR(50) DEFAULT '0-10m'");
+    if (!restColNames.includes('saved_liters_per_change')) await pool.query('ALTER TABLE restaurants ADD COLUMN saved_liters_per_change DOUBLE DEFAULT 0.70');
     
     const [userCols] = await pool.query('SHOW COLUMNS FROM users');
     const userColNames = userCols.map(c => c.Field);
@@ -200,6 +202,7 @@ async function runMigrations() {
 
     if (!kegColNames.includes('cost_price')) await pool.query('ALTER TABLE kegs ADD COLUMN cost_price DOUBLE DEFAULT 0');
     if (!kegColNames.includes('sale_price')) await pool.query('ALTER TABLE kegs ADD COLUMN sale_price DOUBLE DEFAULT 0');
+    if (!kegColNames.includes('price_per_liter')) await pool.query('ALTER TABLE kegs ADD COLUMN price_per_liter DOUBLE DEFAULT 0');
 
     await pool.query(`CREATE TABLE IF NOT EXISTS keg_sessions (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -211,6 +214,7 @@ async function runMigrations() {
       keg_size DOUBLE NOT NULL,
       cost_price DOUBLE DEFAULT 0,
       sale_price DOUBLE DEFAULT 0,
+      price_per_liter DOUBLE DEFAULT 0,
       FOREIGN KEY (keg_id) REFERENCES kegs(id)
     )`);
 
@@ -218,12 +222,14 @@ async function runMigrations() {
     const sessionColNames = sessionCols.map(c => c.Field);
     if (!sessionColNames.includes('cost_price')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN cost_price DOUBLE DEFAULT 0');
     if (!sessionColNames.includes('sale_price')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN sale_price DOUBLE DEFAULT 0');
+    if (!sessionColNames.includes('price_per_liter')) await pool.query('ALTER TABLE keg_sessions ADD COLUMN price_per_liter DOUBLE DEFAULT 0');
 
     await pool.query(`CREATE TABLE IF NOT EXISTS keg_price_history (
       id INT AUTO_INCREMENT PRIMARY KEY,
       keg_id INT NOT NULL,
       restaurant_id INT NOT NULL,
       cost_price DOUBLE NOT NULL,
+      price_per_liter DOUBLE DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (keg_id) REFERENCES kegs(id) ON DELETE CASCADE
     )`);

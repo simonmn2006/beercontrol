@@ -45,23 +45,36 @@ router.get('/dashboard', async (req, res) => {
 
     // Restaurant user
     const rid = user.restaurant_id;
+    const { from, to } = req.query; // Optional date range
+    
+    // Default to today if no dates provided
+    const dateFilter = (from && to) 
+      ? "DATE(recorded_at) BETWEEN ? AND ?" 
+      : "DATE(recorded_at) = CURDATE()";
+    const dateParams = (from && to) ? [rid, from, to] : [rid];
+
+    // Default for sessions started today vs range
+    const sessionDateFilter = (from && to)
+      ? "DATE(started_at) BETWEEN ? AND ?"
+      : "DATE(started_at) = CURDATE()";
+
     const kegs = await db.all(`
       SELECT k.*,
         COALESCE((SELECT SUM(pe.liters) FROM pour_events pe 
-                  WHERE pe.keg_id=k.id AND DATE(pe.recorded_at)=CURDATE()),0) as poured_today
+                  WHERE pe.keg_id=k.id AND ${dateFilter}), 0) as poured_today
       FROM kegs k WHERE k.restaurant_id=? AND k.active=1 ORDER BY k.tap_number
-    `, [rid]);
+    `, (from && to) ? [from, to, rid] : [rid]);
 
     const poured_today_row = await db.get(`
       SELECT COALESCE(SUM(liters),0) as t FROM pour_events 
-      WHERE restaurant_id=? AND DATE(recorded_at)=CURDATE()
-    `, [rid]);
+      WHERE restaurant_id=? AND ${dateFilter}
+    `, dateParams);
     const poured_today = poured_today_row.t;
 
     const keg_changes_row = await db.get(`
       SELECT COUNT(*) as c FROM keg_sessions 
-      WHERE restaurant_id=? AND DATE(started_at)=CURDATE()
-    `, [rid]);
+      WHERE restaurant_id=? AND ${sessionDateFilter}
+    `, dateParams);
     const keg_changes = keg_changes_row.c;
 
     const alerts = await db.all(`
@@ -75,16 +88,42 @@ router.get('/dashboard', async (req, res) => {
     const financials_row = await db.get(`
       SELECT 
         SUM(pe.liters * COALESCE(ks.sale_price, k.sale_price)) as revenue,
-        SUM(pe.liters * COALESCE(ks.cost_price, k.cost_price)) as cost
+        SUM(pe.liters * COALESCE(ks.price_per_liter, k.price_per_liter)) as cost
       FROM pour_events pe
       JOIN kegs k ON pe.keg_id = k.id
       LEFT JOIN keg_sessions ks ON pe.session_id = ks.id
-      WHERE pe.restaurant_id=? AND DATE(pe.recorded_at) = CURDATE()
-    `, [rid]);
+      WHERE pe.restaurant_id=? AND ${dateFilter.replace('recorded_at', 'pe.recorded_at')}
+    `, dateParams);
     const revenue_today = financials_row.revenue || 0;
     const cost_today    = financials_row.cost || 0;
 
-    res.json({ kegs, poured_today, keg_changes, alerts, activity, revenue_today, cost_today });
+    // Per-tap breakdown for the charts/table
+    const taps_financials = await db.all(`
+      SELECT 
+        k.tap_number,
+        k.beer_name,
+        SUM(pe.liters) as total_liters,
+        SUM(pe.liters * COALESCE(ks.sale_price, k.sale_price)) as revenue,
+        SUM(pe.liters * COALESCE(ks.price_per_liter, k.price_per_liter)) as cost
+      FROM pour_events pe
+      JOIN kegs k ON pe.keg_id = k.id
+      LEFT JOIN keg_sessions ks ON pe.session_id = ks.id
+      WHERE pe.restaurant_id=? AND ${dateFilter.replace('recorded_at', 'pe.recorded_at')}
+      GROUP BY k.id
+      ORDER BY k.tap_number
+    `, dateParams);
+
+    // Calculate Money Saved (KegHero Profit)
+    const rest = await db.get("SELECT saved_liters_per_change FROM restaurants WHERE id=?", [rid]);
+    const saved_liters_per_change = rest ? (rest.saved_liters_per_change || 0) : 0;
+    
+    // Avg Retail Price for this restaurant's active kegs
+    const avg_sale_row = await db.get("SELECT AVG(sale_price) as avg_p FROM kegs WHERE restaurant_id=? AND active=1", [rid]);
+    const avg_sale_price = avg_sale_row ? (avg_sale_row.avg_p || 0) : 0;
+    
+    const money_saved = keg_changes * saved_liters_per_change * avg_sale_price;
+
+    res.json({ kegs, poured_today, keg_changes, alerts, activity, revenue_today, cost_today, money_saved, taps_financials });
   } catch (err) {
     console.error('Dashboard error:', err);
     res.status(500).json({ error: 'server_error' });
