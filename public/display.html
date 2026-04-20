@@ -59,17 +59,33 @@
     }
 
     /* ── MESH GRIDS & LIGHTS ── */
-    body::before {
-      content: ''; position: absolute; inset: 0;
-      background-image: 
-        radial-gradient(circle at 20% 40%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 80% 60%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
-      pointer-events: none;
-    }
-
     .kiosk-wrapper {
-      width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 60px 20px;
+      width: 100%; height: 100%; position: relative;
+      background-size: cover; background-position: center;
+      display: flex; flex-direction: column; align-items: center;
+      transition: background-image 1.5s ease-in-out;
     }
+    
+    [data-theme="industrial"] .kiosk-wrapper { background-image: url('/public/img/skin_industrial.png'); }
+    [data-theme="modern"] .kiosk-wrapper { background-image: url('/public/img/skin_modern.png'); }
+    [data-theme="crafthouse"] .kiosk-wrapper { background-image: url('/public/img/skin_crafthouse.png'); }
+
+    /* ── LIQUID WINDOW (Positioned over the skin's window) ── */
+    .liquid-window {
+      position: absolute;
+      top: 19%; left: 50%; transform: translateX(-50%);
+      width: 280px; height: 500px;
+      overflow: hidden; z-index: 5;
+      border-radius: 60px;
+      mask-image: radial-gradient(circle, white 100%, transparent 100%);
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+    }
+    
+    [data-theme="modern"] .liquid-window { width: 230px; height: 460px; top: 25%; }
+    [data-theme="crafthouse"] .liquid-window { width: 220px; height: 350px; top: 30%; border-radius: 110px; }
+    [data-theme="industrial"] .liquid-window { width: 310px; height: 550px; top: 18%; border-radius: 80px; }
+
+    .liquid-svg { width: 100%; height: 100%; display: block; }
 
     /* ── TOP HEADER ── */
     .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 40px; }
@@ -142,29 +158,31 @@
       box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05);
       position: relative; padding: 15px;
     }
-    .gauge-mini::after {
-      content: ''; position: absolute; inset: 0; border-radius: 50%;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.02) 100%);
-      pointer-events: none;
-    }
-    .mini-label { font-family: var(--fmono); font-size: 11px; font-weight: 800; letter-spacing: 2px; opacity: 0.6; margin-bottom: 12px; color: var(--accent); }
-    .mini-svg { width: 100px; height: 100px; filter: drop-shadow(0 0 5px var(--accent)); }
-    .mini-val { position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
-    .mini-val span { font-size: 24px; font-weight: 800; font-family: var(--fmono); color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
-    .mini-unit { font-size: 8px; opacity: 0.4; letter-spacing: 1px; font-weight: 700; margin-top: -2px; }
+    
+    /* DATA OVERLAYS */
+    .data-overlay { position: absolute; z-index: 10; pointer-events: none; }
+    
+    .overlay-temp { top: 410px; left: 160px; text-align: center; }
+    .overlay-co2 { top: 410px; right: 160px; text-align: center; }
+    
+    [data-theme="modern"] .overlay-temp { top: 380px; left: 240px; }
+    [data-theme="modern"] .overlay-co2 { top: 380px; right: 240px; }
 
-    /* BEER LOGO BADGE */
-    .beer-badge {
-      position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-      width: 380px; height: 380px; z-index: 20;
-      display: flex; align-items: center; justify-content: center;
-      background: radial-gradient(circle at 30% 30%, #252528, #000);
-      border: 15px solid #111;
-      border-radius: 50%; box-shadow: 0 40px 80px rgba(0,0,0,0.9), inset 0 0 30px rgba(255,255,255,0.05);
-      padding: 50px;
+    .ov-val { font-family: var(--fmono); font-size: 28px; font-weight: 900; color: #fff; text-shadow: 0 0 10px var(--glow); }
+    .ov-lbl { font-size: 10px; font-weight: 800; opacity: 0.6; letter-spacing: 1px; color: var(--accent); }
+
+    .brand-overlay {
+      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+      font-family: var(--ft); font-size: 32px; font-weight: 900; letter-spacing: 6px;
+      opacity: 0.5; text-shadow: 0 1px 5px rgba(0,0,0,0.5); z-index: 10;
     }
-    .badge-img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 0 20px var(--glow)); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    .beer-badge:hover .badge-img { transform: scale(1.08); }
+    
+    .logo-badge-overlay {
+      position: absolute; top: 41%; left: 50%; transform: translate(-50%, -50%);
+      width: 320px; height: 320px; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .badge-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 30px var(--glow)); transform: scale(1.2); }
 
     /* ── FOOTER DATA ── */
     .footer { width: 100%; text-align: center; padding-bottom: 60px; }
@@ -188,164 +206,35 @@
 
 <div id="alertOverlay"><span class="alert-msg">LOW KEG LEVEL</span></div>
 
-<div class="kiosk-wrapper" id="kioskUI">
+<div class="kiosk-wrapper">
   
-  <div class="header">
-    <div class="live-tag">
-      <div class="live-dot"></div> Live Stream
-    </div>
-    <div class="brand">KEGHERO</div>
-    <div style="width:100px; text-align:right">
-      <span id="txtPct" style="font-family:var(--fmono); font-size:24px; font-weight:800; color:var(--beer-main)">0%</span>
-    </div>
+  <div class="brand-overlay">KEGHERO</div>
+
+  <div class="data-overlay overlay-temp">
+    <div class="ov-val"><span id="valTemp">0.0</span>°</div>
+    <div class="ov-lbl">TEMPERATURE</div>
   </div>
 
-  <div class="main-body">
-    
-    <!-- Gauges -->
-    <div class="gauge-column gauge-left">
-      <div class="gauge-mini">
-        <div class="mini-label">TEMP</div>
-        <svg class="mini-svg" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
-          <circle id="gTemp" cx="50" cy="50" r="45" fill="none" stroke="var(--accent)" stroke-width="8" stroke-dasharray="0 283" stroke-linecap="round" style="transition:all 1.5s cubic-bezier(0.4, 0, 0.2, 1)"></circle>
-        </svg>
-        <div class="mini-val"><span id="valTemp">0.0</span><div class="mini-unit">°CELSIUS</div></div>
-      </div>
-      
-      <div class="gauge-mini">
-        <div class="mini-label">FLOW</div>
-        <svg class="mini-svg" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
-          <circle id="gFlow" cx="50" cy="50" r="45" fill="none" stroke="var(--beer-main)" stroke-width="8" stroke-dasharray="0 283" stroke-linecap="round" style="transition:all 0.5s ease-out"></circle>
-        </svg>
-        <div class="mini-val"><span id="valFlow">0.0</span><div class="mini-unit">LITERS / MIN</div></div>
-      </div>
-    </div>
+  <div class="data-overlay overlay-co2">
+    <div class="ov-val"><span id="valCo2">0.0</span></div>
+    <div class="ov-lbl">PSI PRESSURE</div>
+  </div>
 
-    <div class="gauge-column gauge-right">
-      <div class="gauge-mini">
-        <div class="mini-label">PRESSURE</div>
-        <svg class="mini-svg" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
-          <circle id="gCo2" cx="50" cy="50" r="45" fill="none" stroke="var(--beer-main)" stroke-width="8" stroke-dasharray="0 283" stroke-linecap="round" style="transition:all 1.5s ease"></circle>
-        </svg>
-        <div class="mini-val"><span id="valCo2">0.0</span><div class="mini-unit">PSI / BAR</div></div>
-      </div>
-    </div>
+  <div class="liquid-window">
+    <svg class="liquid-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
+      <!-- Background Interior is now transparent to show the 3D skin background -->
+      <g id="beerGroup">
+        <rect id="beerFill" x="0" y="800" width="500" height="900" fill="var(--beer-main)" opacity="0.5" />
+        <path id="wavePath" d="" fill="var(--beer-main)" opacity="0.8" />
+        <path id="foamPath" d="" fill="none" stroke="var(--foam)" stroke-width="20" stroke-linecap="round" opacity="0.6" />
+      </g>
 
-    <!-- THE KEG -->
-    <div class="keg-container">
-      <div class="keg-backlight" id="kegGlow"></div>
-      
-      <div class="pct-wall">
-        <div class="pct-active-label" id="pctFloating" style="top: 100%;">100%</div>
-        <div class="pct-marker"></div>
-        <div class="pct-marker"></div>
-        <div class="pct-marker"></div>
-        <div class="pct-marker"></div>
-        <div class="pct-marker"></div>
-      </div>
+      <g id="bubbleLayer"></g>
+    </svg>
+  </div>
 
-      <svg class="keg-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="brushed" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.5 0.01" numOctaves="3" result="noise" />
-            <feColorMatrix in="noise" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.15 0" result="brushed" />
-            <feComposite in="SourceGraphic" in2="brushed" operator="over" />
-          </filter>
-          <filter id="kegGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="15" result="blur" />
-            <feFlood flood-color="var(--accent)" flood-opacity="0.3" result="color" />
-            <feComposite in="color" in2="blur" operator="in" result="glow" />
-            <feComposite in="SourceGraphic" in2="glow" operator="over" />
-          </filter>
-          <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" class="stop-side" stop-color="#333" />
-            <stop offset="15%" class="stop-main" stop-color="#aaa" />
-            <stop offset="50%" class="stop-side" stop-color="#333" />
-            <stop offset="85%" class="stop-main" stop-color="#aaa" />
-            <stop offset="100%" class="stop-side" stop-color="#333" />
-          </linearGradient>
-          <mask id="kegMask">
-            <rect x="0" y="0" width="500" height="900" fill="white" />
-            <rect x="25" y="80" width="450" height="740" rx="45" ry="45" fill="black" />
-            <rect x="150" y="25" width="200" height="40" rx="20" fill="black" />
-            <rect x="150" y="835" width="200" height="40" rx="20" fill="black" />
-          </mask>
-        </defs>
-
-        <style>
-          #metalGrad .stop-side { transition: stop-color 1s ease; }
-          #metalGrad .stop-main { transition: stop-color 1s ease; }
-          [data-theme="industrial"] .stop-side { stop-color: #222; }
-          [data-theme="industrial"] .stop-main { stop-color: #aaa; }
-          [data-theme="modern"] .stop-side { stop-color: #0c1c4a; }
-          [data-theme="modern"] .stop-main { stop-color: #1e40af; }
-          [data-theme="crafthouse"] .stop-side { stop-color: #431407; }
-          [data-theme="crafthouse"] .stop-main { stop-color: #92400e; }
-        </style>
-        
-        <filter id="brushed" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.5 0.01" numOctaves="5" result="noise" />
-          <feColorMatrix in="noise" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" result="brushed" />
-          <feComposite in="SourceGraphic" in2="brushed" operator="over" />
-        </filter>
-
-        <filter id="rimGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur" />
-          <feFlood flood-color="white" flood-opacity="0.3" result="color" />
-          <feComposite in="color" in2="blur" operator="in" result="glow" />
-          <feComposite in="SourceGraphic" in2="glow" operator="over" />
-        </filter>
-
-        <filter id="insetShadow">
-          <feMorphology operator="dilate" radius="2" in="SourceAlpha" result="dilated" />
-          <feGaussianBlur stdDeviation="15" in="dilated" result="blur" />
-          <feOffset dx="0" dy="10" />
-          <feComposite operator="out" in="SourceGraphic" result="shadow" />
-        </filter>
-
-        <!-- Back Shell (The Dark Interior) -->
-        <rect x="0" y="0" width="500" height="900" rx="80" ry="80" fill="#08080a" />
-        
-        <!-- Placeholder Empty Glass State -->
-        <rect x="25" y="80" width="450" height="740" rx="45" ry="45" fill="#111" opacity="0.3" stroke="rgba(255,255,255,0.05)" stroke-width="2" />
-
-        <!-- Liquid Logic -->
-        <g id="beerGroup">
-          <rect id="beerFill" x="25" y="800" width="450" height="0" fill="var(--beer-main)" opacity="0.8">
-            <animate attributeName="opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" />
-          </rect>
-          <!-- Animated Top Wave -->
-          <path id="wavePath" d="M 25 800 Q 125 790 250 800 T 475 800 V 900 H 25 Z" fill="var(--beer-main)" opacity="0.9" />
-          <path id="foamPath" d="M 25 800 Q 100 780 250 800 T 475 800" fill="none" stroke="var(--foam)" stroke-width="20" stroke-linecap="round" opacity="0.8" />
-        </g>
-
-        <!-- Bubbles Layer (handled in JS) -->
-        <g id="bubbleLayer" opacity="0.6"></g>
-
-        <!-- Front Metal Shell with Cutout -->
-        <g filter="url(#brushed)">
-          <rect x="0" y="0" width="500" height="900" rx="80" ry="80" fill="url(#metalGrad)" mask="url(#kegMask)" filter="url(#rimGlow)" opacity="0.98" />
-        </g>
-        
-        <!-- Keg Details (3D Rivets/Rings) -->
-        <rect x="0" y="240" width="500" height="40" fill="rgba(0,0,0,0.5)" filter="url(#insetShadow)" />
-        <rect x="0" y="620" width="500" height="40" fill="rgba(0,0,0,0.5)" filter="url(#insetShadow)" />
-        
-        <!-- Side Reflection -->
-        <rect x="420" y="100" width="30" height="700" rx="15" fill="white" opacity="0.05" />
-        <rect x="0" y="200" width="500" height="30" fill="black" opacity="0.3" />
-        <rect x="0" y="650" width="500" height="30" fill="black" opacity="0.3" />
-      </svg>
-
-      <div class="beer-badge">
-        <div id="badgeLogoContainer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">🍺</div>
-      </div>
-
-    </div>
-
+  <div class="logo-badge-overlay">
+    <div id="badgeLogoContainer">🍺</div>
   </div>
 
   <div class="footer">
@@ -353,6 +242,9 @@
     <div class="flow-wrap">
       <div class="flow-num" id="txtFlow">0.0</div>
       <div class="flow-lbl">LIVE FLOWING<br>LITERS / MIN</div>
+    </div>
+    <div style="margin-top:20px; font-family:var(--fmono); font-size:24px; color:var(--beer-main); font-weight: 800;">
+      REMAINING: <span id="txtPct">0%</span>
     </div>
   </div>
 
