@@ -1439,6 +1439,25 @@ textarea{resize:vertical;min-height:80px}
   <div class="sect-hdr">
     <div><div class="sect-title" data-i18n="nav_forecast">Forecast</div><div class="sect-sub" data-i18n="forecast_sub">Predicted run-out based on historical consumption</div></div>
   </div>
+  <div class="card mb16">
+    <div class="card-hdr" style="justify-content:space-between">
+      <div class="flex fxc g8">
+        <span class="card-title">📅 Seasonal Planning Tool</span>
+        <span class="tag tg-blue">Advanced</span>
+      </div>
+      <div class="flex g12 fxc" id="planInputs">
+        <div class="fxc g6"><label style="font-size:11px;color:var(--text3)">Compare with Period:</label></div>
+        <input type="date" id="planFrom" class="inp inp-sm" style="width:130px">
+        <span style="color:var(--text3)">to</span>
+        <input type="date" id="planTo" class="inp inp-sm" style="width:130px">
+        <button class="btn btn-primary btn-sm" onclick="buildForecastPage()">Calculate Requirement</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:12px;background:var(--bg3);font-size:12px;color:var(--text2)">
+      Analyze how much beer you consumed during a specific historical period (like last Christmas) to prepare your stock accurately.
+    </div>
+  </div>
+
   <div class="grid-kegs" id="forecastCards"></div>
   <div class="card mt16">
     <div class="card-hdr" data-i18n="order_suggestions">Suggested Orders</div>
@@ -4265,78 +4284,90 @@ const FORECAST_DATA = [];
 
 const SUPPLIERS = {};
 
-function buildForecastPage(){
+async function buildForecastPage(){
   const fc = document.getElementById('forecastCards');
+  const orders = document.getElementById('orderSuggestions');
   if(!fc) return;
 
-  // Populate FORECAST_DATA if empty
-  if (FORECAST_DATA.length === 0 && window.USER_KEGS && window.USER_KEGS.length > 0) {
-    window.USER_KEGS.forEach(k => {
-      const daily = 2 + Math.random() * 5; // Simulating daily avg for now
-      const daysLeft = k.remaining_liters / daily;
-      const urg = daysLeft < 2 ? 'critical' : daysLeft < 5 ? 'high' : daysLeft < 10 ? 'medium' : 'low';
-      const runoutDate = new Date();
-      runoutDate.setDate(runoutDate.getDate() + Math.floor(daysLeft));
+  const from = document.getElementById('planFrom').value;
+  const to = document.getElementById('planTo').value;
+  
+  let url = '/api/forecast';
+  if (from && to) url += `?compareFrom=${from}&compareTo=${to}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    // Clear and build cards
+    fc.innerHTML = data.map(k => {
+      const pct = (k.remaining_liters / k.keg_size_liters * 100).toFixed(0);
+      const daysLeft = k.days_left !== null ? Math.floor(k.days_left) : null;
+      const urg = daysLeft === null ? 'low' : daysLeft < 2 ? 'critical' : daysLeft < 5 ? 'high' : daysLeft < 10 ? 'medium' : 'low';
       
-      FORECAST_DATA.push({
-        id: k.id,
-        name: k.beer_name,
-        tap: k.tap_number,
-        rem: k.remaining_liters,
-        size: k.keg_size_liters,
-        emoji: k.emoji || '🍺',
-        urgency: urg,
-        runout: runoutDate.toLocaleDateString(lang, { day: '2-digit', month: 'short' }) + ' (est.)',
-        daily: daily,
-        confidence: 85 + Math.floor(Math.random() * 10)
+      const fill = urg==='critical'?'fill-red':urg==='high'?'fill-amber':urg==='medium'?'fill-amber':'fill-green';
+      const urgColor = {critical:'var(--red)',high:'var(--amber)',medium:'var(--amber)',low:'var(--green)'}[urg];
+      const urgBg = {critical:'var(--red-dim)',high:'var(--amber-dim)',medium:'var(--amber-dim)',low:'var(--green-dim)'}[urg];
+      
+      let runoutStr = 'No data';
+      if (daysLeft !== null) {
+        const d = new Date(); d.setDate(d.getDate() + daysLeft);
+        runoutStr = d.toLocaleDateString(lang, { day: '2-digit', month: 'short' }) + ' (est.)';
+      }
+
+      // Historical comparison text
+      let histInfo = '';
+      if (from && to) {
+        const needed = Math.ceil((k.historical_total - k.remaining_liters) / k.keg_size_liters);
+        histInfo = `
+          <div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:4px;border:1px dashed var(--border)">
+            <div style="color:var(--blue);font-weight:600">Historical Demand: ${k.historical_total.toFixed(1)}L</div>
+            <div style="color:var(--text1)">Stock Requirement: ${needed > 0 ? `+${needed} kegs` : '✓ OK'}</div>
+          </div>
+        `;
+      }
+
+      return `<div class="keg-card ${urg==='critical'?'critical':urg==='high'?'warning':''}">
+        <div class="keg-top">
+          <div><div class="keg-name">${k.beer_name}</div><div class="keg-sub">Tap #${k.tap} · ${k.keg_size_liters}L</div></div>
+          <div class="keg-logo" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border-radius:50%">🍺</div>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>${t('remaining')}</span><strong>${k.remaining_liters.toFixed(1)} / ${k.keg_size_liters} L</strong></div>
+          <div class="prog-bar"><div class="prog-fill ${fill}" style="width:${pct}%"></div></div>
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;background:${urgBg};border-radius:var(--r)">
+          <div style="font-size:11px;color:${urgColor};font-family:var(--fm);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">⏱ Run-out prediction</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text1)">${runoutStr}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">${k.velocity.toFixed(1)} L/day avg</div>
+        </div>
+        ${histInfo}
+      </div>`;
+    }).join('');
+
+    // Suggested Orders
+    if(orders){
+      const items = data.filter(k => {
+        const daysLeft = k.days_left;
+        return daysLeft !== null && daysLeft < 7;
       });
-    });
-  }
-
-  fc.innerHTML = FORECAST_DATA.map(k => {
-    const pct = (k.rem/k.size*100).toFixed(0);
-    const fill = k.urgency==='critical'?'fill-red':k.urgency==='high'?'fill-amber':k.urgency==='medium'?'fill-amber':'fill-green';
-    const urgColor = {critical:'var(--red)',high:'var(--amber)',medium:'var(--amber)',low:'var(--green)'}[k.urgency];
-    const urgBg = {critical:'var(--red-dim)',high:'var(--amber-dim)',medium:'var(--amber-dim)',low:'var(--green-dim)'}[k.urgency];
-    return `<div class="keg-card ${k.urgency==='critical'?'critical':k.urgency==='high'?'warning':''}">
-      <div class="keg-top">
-        <div><div class="keg-name">${k.name}</div><div class="keg-sub">Tap #${k.tap} · ${k.size}L</div></div>
-        <div class="keg-logo">${k.emoji}</div>
-      </div>
-      <div class="prog-wrap">
-        <div class="prog-label"><span>${t('remaining')}</span><strong>${k.rem.toFixed(1)} / ${k.size} L</strong></div>
-        <div class="prog-bar"><div class="prog-fill ${fill}" style="width:${pct}%"></div></div>
-      </div>
-      <div style="margin-top:12px;padding:10px 12px;background:${urgBg};border-radius:var(--r)">
-        <div style="font-size:11px;color:${urgColor};font-family:var(--fm);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">⏱ Run-out prediction</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text1)">${k.runout}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:3px">${k.daily.toFixed(1)} L/day avg · ${k.confidence}% confidence</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const orders = document.getElementById('orderSuggestions');
-  if(orders){
-    const items = FORECAST_DATA.filter(k=>k.urgency==='critical'||k.urgency==='high'||k.urgency==='medium');
-    if (items.length === 0) {
-      orders.innerHTML = `<div style="text-align:center;color:var(--text3);padding:20px">No orders suggested at this time. All taps are stable.</div>`;
-    } else {
-      orders.innerHTML = items.map(k => {
-        const s = SUPPLIERS[k.name] || {};
-        return `<div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
-          <div style="font-size:28px">${k.emoji}</div>
-          <div style="flex:1">
-            <div style="font-weight:500;color:var(--text1);margin-bottom:2px">${k.name} — ${k.size}L keg needed by <strong style="color:var(--amber)">${k.runout.split(' ')[0]}</strong></div>
-            <div style="font-size:12px;color:var(--text3)">${s.name||'—'} · ${s.phone||'—'}</div>
-          </div>
-          <div class="flex g8">
-            <button class="btn btn-ghost btn-sm" onclick="toast('WhatsApp order sent','info')">📱 WhatsApp</button>
-            <button class="btn btn-primary btn-sm" onclick="toast('Order email sent','info')">📧 Order</button>
-          </div>
-        </div>`;
-      }).join('');
+      
+      if (items.length === 0) {
+        orders.innerHTML = `<div style="text-align:center;color:var(--text3);padding:20px">No immediate orders suggested based on current velocity.</div>`;
+      } else {
+        orders.innerHTML = items.map(k => {
+          return `<div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)">
+            <div style="font-size:28px">🍺</div>
+            <div style="flex:1">
+              <div style="font-weight:500;color:var(--text1);margin-bottom:2px">${k.beer_name} — Order suggested</div>
+              <div style="font-size:12px;color:var(--text3)">Current velocity: ${k.velocity.toFixed(1)} L/day. Est. run-out: ${Math.floor(k.days_left)} days.</div>
+            </div>
+          </div>`;
+        }).join('');
+      }
     }
-  }
+
+  } catch(e) { console.error('Forecast build failed', e); }
 }
 
 // ── CALIBRATION ──

@@ -132,6 +132,56 @@ router.get('/dashboard', async (req, res) => {
   }
 });
 
+// ── Forecast Logic ──────────────────────────
+router.get('/forecast', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const rid = user.restaurant_id;
+    const { compareFrom, compareTo } = req.query;
+
+    const kegs = await db.all("SELECT * FROM kegs WHERE restaurant_id=? AND active=1", [rid]);
+    const forecast = [];
+
+    for (const k of kegs) {
+      // 1. Calculate Recent Velocity (last 14 days)
+      const recent = await db.get(`
+        SELECT SUM(liters) as liters, COUNT(DISTINCT DATE(recorded_at)) as days
+        FROM pour_events 
+        WHERE keg_id=? AND recorded_at > DATE_SUB(NOW(), INTERVAL 14 DAY)
+      `, [k.id]);
+      
+      const velocity = recent.days > 0 ? (recent.liters / recent.days) : 0;
+      
+      // 2. Historical Comparison (if requested)
+      let historicalLiters = 0;
+      if (compareFrom && compareTo) {
+        const hist = await db.get(`
+          SELECT SUM(liters) as liters 
+          FROM pour_events 
+          WHERE restaurant_id=? AND beer_name=? AND recorded_at BETWEEN ? AND ?
+        `, [rid, k.beer_name, compareFrom + ' 00:00:00', compareTo + ' 23:59:59']);
+        historicalLiters = hist.liters || 0;
+      }
+
+      forecast.push({
+        id: k.id,
+        tap: k.tap_number,
+        beer_name: k.beer_name,
+        remaining_liters: k.remaining_liters,
+        keg_size_liters: k.keg_size_liters,
+        velocity: velocity,
+        historical_total: historicalLiters,
+        days_left: velocity > 0 ? (k.remaining_liters / velocity) : null
+      });
+    }
+
+    res.json(forecast);
+  } catch (err) {
+    console.error('Forecast API error:', err);
+    res.status(500).json({ error: 'server_error' });
+  }
+});
+
 router.get('/me/restaurant', async (req, res) => {
   try {
     const user = req.session.user;
