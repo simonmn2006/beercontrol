@@ -1335,7 +1335,7 @@ textarea{resize:vertical;min-height:80px}
   <div class="sect-hdr">
     <div><div class="sect-title" data-i18n="nav_reports">Reports & Analytics</div></div>
     <div class="flex g8">
-      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print Report</button>
+      <button class="btn btn-ghost btn-sm" onclick="printDashboardReport()">🖨 Print Report</button>
       <button class="btn btn-ghost btn-sm" onclick="downloadReportCSV()">⤓ CSV Export</button>
     </div>
   </div>
@@ -1476,7 +1476,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="card-hdr" style="background:var(--bg2)">
       <div class="flex fxc g8">
         <span style="font-size:18px">📦</span>
-        <span class="card-title" data-i18n="order_suggestions">Order Suggestions</span>
+        <span class="card-title">Order Suggestions</span>
       </div>
     </div>
     <div id="orderSuggestions" style="padding:16px;display:flex;flex-direction:column;gap:12px"></div>
@@ -4345,7 +4345,8 @@ async function buildForecastPage(){
         `;
       }
 
-      const logo = k.logo_path ? `<img src="${k.logo_path}" style="width:100%;height:100%;object-fit:contain">` : '🍺';
+      const logoData = k.library_logo || k.logo_path;
+      const logo = logoData ? `<img src="${logoData}" style="width:100%;height:100%;object-fit:contain">` : '🍺';
       
       return `<div class="keg-card ${urg==='critical'?'critical':urg==='high'?'warning':''}">
         <div class="keg-top">
@@ -8290,6 +8291,58 @@ function downloadReportCSV() {
       console.error('CSV Export failed', e);
       toast('Export failed', 'error');
     });
+}
+
+function printDashboardReport() {
+  const reportContent = document.getElementById('page-userReports').innerHTML;
+  const from = document.getElementById('repFrom').value;
+  const to = document.getElementById('repTo').value;
+
+  const printWin = window.open('', '', 'width=900,height=800');
+  if (!printWin) {
+    toast('Pop-up blocked. Please allow pop-ups to print.', 'warning');
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>KegHero Report: ${from} to ${to}</title>
+      <style>
+        body { font-family: sans-serif; color: #333; padding: 40px; line-height: 1.5; }
+        .sect-hdr { border-bottom: 2px solid #333; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .sect-title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
+        .card { border: 1px solid #eee; border-radius: 8px; margin-bottom: 24px; padding: 20px; page-break-inside: avoid; }
+        .card-hdr { font-weight: bold; font-size: 18px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .stat-card { border: 1px solid #eee; padding: 12px; border-radius: 6px; background: #fcfcfc; text-align: center; }
+        .stat-label { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-val { font-size: 18px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; background: #f5f5f5; padding: 10px; border-bottom: 2px solid #ddd; font-size: 12px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #eee; }
+        .tg-green { background: #e6f7ef; color: #1a9a5e; }
+        .tg-amber { background: #fff7e6; color: #d4900a; }
+        .flex { display: flex; align-items: center; gap: 8px; }
+        .mono { font-family: monospace; }
+        /* Hide UI controls */
+        .sect-hdr button, .flex.g8, #repInputs, .rep-tabs, .btn, .tag.tg-blue { display: none !important; }
+        @media print {
+          body { padding: 0; }
+          .card { border: 1px solid #ddd; }
+        }
+      </style>
+    </head>
+    <body onload="setTimeout(() => { window.print(); window.close(); }, 500)">
+      ${reportContent}
+    </body>
+    </html>
+  `;
+
+  printWin.document.write(html);
+  printWin.document.close();
 }
 </script>
 </body>

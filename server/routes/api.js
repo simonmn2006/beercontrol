@@ -139,7 +139,12 @@ router.get('/forecast', async (req, res) => {
     const rid = user.restaurant_id;
     const { compareFrom, compareTo } = req.query;
 
-    const kegs = await db.all("SELECT * FROM kegs WHERE restaurant_id=? AND active=1", [rid]);
+    const kegs = await db.all(`
+      SELECT k.*, b.logo_data as library_logo 
+      FROM kegs k
+      LEFT JOIN beer_library b ON k.beer_name = b.name
+      WHERE k.restaurant_id=? AND k.active=1
+    `, [rid]);
     const forecast = [];
 
     for (const k of kegs) {
