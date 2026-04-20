@@ -3878,7 +3878,22 @@ function initRefrigCharts(){
     charts.refrigTrend = new Chart(c, {
       type: 'line',
       data: { labels: [], datasets: [] },
-      options: { ...CO, scales: { ...CO.scales, y: { ...CO.scales.y, title: { display: true, text: '°C', color: '#5c6378', font: { size: 10 } } } } }
+      options: { 
+        ...CO, 
+        plugins: { 
+          ...CO.plugins,
+          legend: { 
+            display: true, 
+            position: 'top',
+            align: 'end',
+            labels: { color: '#9ba3b8', font: { size: 10 }, boxWidth: 12 } 
+          } 
+        },
+        scales: { 
+          ...CO.scales, 
+          y: { ...CO.scales.y, title: { display: true, text: '°C', color: '#5c6378', font: { size: 10 } } } 
+        } 
+      }
     });
   }
 }
@@ -7998,7 +8013,7 @@ async function loadRefrigTrends() {
       charts.refrigTrend.data.datasets = Object.entries(grouped).map(([name, points], idx) => ({
         label: name,
         data: points,
-        borderColor: ['#4a9eff','#22c97a','#f0a500','#e84b4b'][idx % 4],
+        borderColor: ['#4a9eff','#22c97a','#f0a500','#e84b4b','#a855f7','#06b6d4','#ec4899'][idx % 7],
         borderWidth: 2,
         tension: 0.4,
         pointRadius: 0
