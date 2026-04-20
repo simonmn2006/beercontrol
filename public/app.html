@@ -1386,6 +1386,8 @@ textarea{resize:vertical;min-height:80px}
 
 <!-- ══ PAGE: USER COSTS ══ -->
 <div class="page" id="page-userCosts">
+  <div class="sect-hdr">
+    <div><div class="sect-title" data-i18n="nav_costs">Costs & Revenue</div><div class="sect-sub" data-i18n="costs_sub">Margin per tap and profitability</div></div>
     <div class="flex g12 fxc">
       <div class="dp-wrap">
         <input type="date" id="fin-date-from" class="dp-input" onchange="loadFinancials()" style="font-family:var(--fm);font-size:12px;padding:6px 10px">
@@ -1397,16 +1399,19 @@ textarea{resize:vertical;min-height:80px}
       <button class="btn btn-ghost btn-sm" onclick="loadFinancials()">Refresh</button>
     </div>
   </div>
+
   <div class="g4 mb16">
     <div class="stat-card sc-green"><div class="stat-label">Revenue <span class="fin-period-label">Period</span></div><div class="stat-val">€ 0</div></div>
     <div class="stat-card sc-amber"><div class="stat-label">Keg Cost <span class="fin-period-label">Period</span></div><div class="stat-val">€ 0</div></div>
     <div class="stat-card sc-blue"><div class="stat-label">Gross Margin</div><div class="stat-val">0%</div></div>
     <div class="stat-card sc-green"><div class="stat-label">Money Saved</div><div class="stat-val" id="finMoneySaved">€ 0</div></div>
   </div>
+
   <div class="card mb16">
     <div class="card-hdr">Profit per Tap</div>
     <div class="card-body"><div style="height:280px"><canvas id="chartCostTap"></canvas></div></div>
   </div>
+
   <div class="card">
     <div class="card-hdr"><span class="card-title">Detailed Profit Breakdown</span></div>
     <div class="table-wrap">
