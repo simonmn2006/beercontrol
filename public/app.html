@@ -1249,7 +1249,6 @@ textarea{resize:vertical;min-height:80px}
     </div>
     <div class="flex g8" style="align-items:center">
       <div class="live-label"><span class="pulsating-dot"></span> LIVE</div>
-      <button class="btn btn-ghost btn-sm" onclick="nav('userKiosk')">📺 Kiosk Mode</button>
     </div>
   </div>
   <div class="g4 mb16">
@@ -1324,7 +1323,7 @@ textarea{resize:vertical;min-height:80px}
 <!-- ══ PAGE: USER REPORTS ══ -->
 <div class="page" id="page-userReports">
   <div class="sect-hdr">
-    <div><div class="sect-title" data-i18n="nav_reports">Reports & Analytics</div><div class="sect-sub" data-i18n="reports_sub">Detailed performance metrics and history</div></div>
+    <div><div class="sect-title" data-i18n="nav_reports">Reports & Analytics</div></div>
     <button class="btn btn-ghost btn-sm" onclick="toast(t('downloading'),'info')">⤓ CSV Export</button>
   </div>
 
@@ -2558,7 +2557,7 @@ const TR = {
     suspend: "Suspend",
     activate: "Activate",
     overdue: "Overdue",
-    kegs_sub: "Configure beers, logos and keg sizes per restaurant",
+    kegs_sub: "",
     remaining: "Remaining",
     poured: "Poured",
     temp: "Temp",
@@ -2601,7 +2600,7 @@ const TR = {
     max_temp: "Max Temp (°C)",
     min_co2: "Min CO₂ (bar)",
     cleaning_interval: "Line Cleaning (days)",
-    live_updates: "Live — updates every 5s",
+    live_updates: "Live",
     kegs_changed: "Kegs Changed",
     active_taps: "Active Taps",
     my_taps: "My Taps",
@@ -2700,7 +2699,7 @@ const TR = {
     nav_forecast: "Forecast",
     nav_refrigs: "Refrigerators",
     nav_calibration: "Calibration",
-    costs_sub: "Margin per tap, waste and profitability",
+    costs_sub: "Margin per tap and profitability",
     revenue_today: "Revenue Today",
     cost_today: "Keg Cost Today",
     gross_margin: "Gross Margin",
