@@ -3771,7 +3771,7 @@ function kegCard(k,clickable=true){
   const cls = pct <= 10 ? 'critical' : pct <= 20 ? 'warning' : '';
   const badge = pct <= 10 ? `<span class="keg-badge badge-crit">${t('critical')}</span>` :
                k.fob ? `<span class="keg-badge badge-fob">FOB ON</span>` :
-               pct > 90 ? `<span class="keg-badge badge-new">${t('fresh')}</span>` : '';
+               '';
 
   return `<div class="keg-card ${cls}" ${clickable ? `onclick="openEditKeg(${k.id})"` : 'style="cursor:default"'}>
     ${badge}
