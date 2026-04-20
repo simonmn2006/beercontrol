@@ -234,6 +234,11 @@ async function runMigrations() {
       FOREIGN KEY (keg_id) REFERENCES kegs(id) ON DELETE CASCADE
     )`);
 
+
+    const [histCols] = await pool.query('SHOW COLUMNS FROM keg_price_history');
+    const histColNames = histCols.map(c => c.Field);
+    if (!histColNames.includes('price_per_liter')) await pool.query('ALTER TABLE keg_price_history ADD COLUMN price_per_liter DOUBLE DEFAULT 0');
+
     await pool.query(`CREATE TABLE IF NOT EXISTS pour_events (
       id INT AUTO_INCREMENT PRIMARY KEY,
       keg_id INT NOT NULL,
