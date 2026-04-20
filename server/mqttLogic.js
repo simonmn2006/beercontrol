@@ -156,12 +156,14 @@ class MqttLogic {
     if (!displayId) return;
     try {
       const kegs = await db.all(`
-        SELECT id, tap_number, beer_name, keg_size_liters, remaining_liters, 
-               current_temp, current_co2, current_flow, co2_min_bar, temp_max_c,
-               alert_low_pct, alert_critical_pct, logo_path
-        FROM kegs 
-        WHERE esp32_display_id = ? AND active = 1
-        ORDER BY tap_number
+        SELECT k.id, k.tap_number, k.beer_name, k.keg_size_liters, k.remaining_liters, 
+               k.current_temp, k.current_co2, k.current_flow, k.co2_min_bar, k.temp_max_c,
+               k.alert_low_pct, k.alert_critical_pct, k.logo_path,
+               b.logo_data as library_logo
+        FROM kegs k
+        LEFT JOIN beer_library b ON k.beer_name = b.name
+        WHERE k.esp32_display_id = ? AND k.active = 1
+        ORDER BY k.tap_number
       `, [displayId]);
 
       if (kegs.length === 0) return;

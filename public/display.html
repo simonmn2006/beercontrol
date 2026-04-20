@@ -8,453 +8,417 @@
     @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@700;800&display=swap');
 
     :root {
+      /* Base Colors (Industrial Theme Default) */
       --bg: #050506;
-      --amber: #f59e0b;
-      --blue: #3b82f6;
-      --red: #ef4444;
-      --green: #10b981;
+      --keg-metal: #a1a1aa;
+      --keg-rim: #52525b;
+      --beer-main: #f59e0b;
+      --beer-dark: #b45309;
+      --foam: #fdf6e3;
+      --amber: #f8fafc;
+      --accent: #3b82f6;
       --text: #ffffff;
       --fm: 'Inter', sans-serif;
       --ft: 'Big Shoulders Display', sans-serif;
+      --fmono: 'JetBrains Mono', monospace;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    [data-theme="modern"] {
+      --bg: #020617;
+      --keg-metal: #3b82f6;
+      --keg-rim: #1e40af;
+      --beer-main: #60a5fa;
+      --beer-dark: #1d4ed8;
+      --accent: #22d3ee;
+    }
+
+    [data-theme="crafthouse"] {
+      --bg: #0c0a09;
+      --keg-metal: #b45309;
+      --keg-rim: #78350f;
+      --beer-main: #ea580c;
+      --beer-dark: #7c2d12;
+      --accent: #fcd34d;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
     
     body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--fm);
-      height: 100vh;
-      width: 100vw;
+      width: 720px;
+      height: 1560px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-evenly;
-      /* Brushed Metal Background */
-      background-image: 
-        radial-gradient(circle at 50% 10%, rgba(40,40,60,1) 0%, rgba(5,5,6,1) 80%),
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 10px);
-    }
-
-    .container {
-      width: 100%;
-      height: 100%;
-      max-width: 720px;
-      display: flex;
-      flex-direction: column;
-      padding: 60px 40px;
-      gap: 20px;
-    }
-
-    /* TOP STATS */
-    .top-stats {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      margin-bottom: 20px;
-    }
-
-    .stat-box {
-      width: 48%;
-      text-align: center;
-      position: relative;
-    }
-
-    .stat-label {
-      font-family: var(--ft);
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: 3px;
-      color: rgba(255,255,255,0.4);
-      margin-bottom: 20px;
-      text-transform: uppercase;
-    }
-
-    .gauge-ring {
-      position: relative;
-      width: 260px;
-      height: 260px;
       margin: 0 auto;
-    }
-
-    .gauge-svg {
-      transform: rotate(-90deg);
-      width: 100%;
-      height: 100%;
-    }
-
-    .gauge-bg { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 14; }
-    .gauge-val {
-      fill: none;
-      stroke-width: 16;
-      stroke-linecap: round;
-      transition: stroke-dasharray 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-      filter: drop-shadow(0 0 10px currentColor);
-    }
-
-    .stat-value {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .stat-num { font-size: 72px; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1; }
-    .stat-unit { font-size: 20px; color: var(--text); opacity: 0.5; margin-top: 5px; font-weight: 700; letter-spacing: 2px; }
-
-    /* CENTER KEG SECTION - BIGGER */
-    .keg-area {
-      flex: 1;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
+      /* Immersive Background */
+      background: radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 70%), var(--bg);
     }
 
-    .keg-glow {
-      position: absolute;
-      width: 500px;
-      height: 800px;
-      background: radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%);
-      filter: blur(60px);
-      z-index: 0;
-      animation: pulse-glow 5s infinite ease-in-out;
+    /* ── MESH GRIDS & LIGHTS ── */
+    body::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: 
+        radial-gradient(circle at 20% 40%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 80% 60%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+      pointer-events: none;
     }
 
-    @keyframes pulse-glow {
-      0%, 100% { opacity: 0.3; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.15); }
+    .kiosk-wrapper {
+      width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 60px 20px;
     }
 
-    .keg-glass {
-      position: relative;
-      width: 520px;
-      height: 780px;
-      border: 8px solid rgba(255,255,255,0.15);
-      border-radius: 80px;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(8px);
-      overflow: hidden;
-      box-shadow: 
-        inset 0 0 100px rgba(0,0,0,0.8),
-        0 40px 100px rgba(0,0,0,1);
-      z-index: 1;
+    /* ── TOP HEADER ── */
+    .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 40px; }
+    .live-tag {
+      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 40px; padding: 6px 16px;
+      display: flex; align-items: center; gap: 8px; font-family: var(--fmono); font-size: 14px; color: #ef4444; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: blink 1s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+    .brand { font-family: var(--ft); font-size: 32px; font-weight: 900; letter-spacing: 4px; opacity: 0.6; }
+
+    /* ── MAIN DISPLAY AREA ── */
+    .main-body { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+
+    /* GAUGES */
+    .gauge-column { position: absolute; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 400px; z-index: 10; }
+    .gauge-left { left: 40px; }
+    .gauge-right { right: 40px; }
+
+    .gauge-mini { text-align: center; }
+    .mini-label { font-family: var(--ft); font-size: 20px; color: rgba(255,255,255,0.4); margin-bottom: 8px; letter-spacing: 2px; text-transform: uppercase; }
+    .mini-svg { width: 140px; height: 140px; }
+    .mini-val { font-family: var(--fmono); font-size: 32px; font-weight: 700; margin-top: -85px; }
+    .mini-unit { font-size: 12px; opacity: 0.4; font-weight: 600; margin-top: 4px; }
+
+    /* ── THE KEG ── */
+    .keg-container { position: relative; width: 500px; height: 900px; }
+    
+    /* Keg Shine/Glow */
+    .keg-backlight { 
+      position: absolute; inset: -50px; 
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%); 
+      filter: blur(40px); z-index: 0;
     }
 
-    /* Reflections */
-    .keg-glass::before {
-      content: ''; position: absolute; top: 5%; left: 8%; width: 15%; height: 90%;
-      background: linear-gradient(to right, rgba(255,255,255,0.1), transparent);
-      border-radius: 100px; pointer-events: none;
+    /* Vertical Percentage on Side */
+    .pct-wall {
+      position: absolute; right: 20px; top: 100px; bottom: 100px; width: 40px;
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+      font-family: var(--fmono); font-size: 11px; color: rgba(255,255,255,0.2); z-index: 5;
+    }
+    .pct-marker { width: 10px; height: 1px; background: rgba(255,255,255,0.1); }
+    .pct-active-label { 
+      position: absolute; right: 45px; transform: translateY(-50%);
+      font-size: 18px; font-weight: 800; color: var(--beer-main); transition: top 0.5s ease;
     }
 
-    .keg-liquid {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to top, #6b3410, #f59e0b);
-      transition: height 2.5s cubic-bezier(0.19, 1, 0.22, 1);
-      box-shadow: 0 0 50px rgba(245,158,11,0.4);
+    .keg-svg { width: 100%; height: 100%; filter: drop-shadow(0 40px 80px rgba(0,0,0,0.8)); transition: filter 1s ease; }
+
+    /* Theme Adjustments */
+    [data-theme="modern"] .keg-backlight { background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%); }
+    [data-theme="crafthouse"] .keg-backlight { background: radial-gradient(circle, rgba(180, 83, 9, 0.15) 0%, transparent 70%); }
+
+    [data-theme="modern"] .mini-svg circle#gTemp { stroke: #22d3ee; filter: drop-shadow(0 0 5px #22d3ee); }
+    [data-theme="modern"] .mini-svg circle#gFlow { stroke: #60a5fa; filter: drop-shadow(0 0 5px #60a5fa); }
+    [data-theme="modern"] .mini-svg circle#gCo2 { stroke: #818cf8; filter: drop-shadow(0 0 5px #818cf8); }
+
+    [data-theme="crafthouse"] {
+      background: radial-gradient(circle at 50% 20%, #1c1917 0%, #0c0a09 100%);
     }
+    [data-theme="crafthouse"] .mini-svg circle { stroke-width: 10; }
+    [data-theme="crafthouse"] .mini-label { color: #fcd34d; font-family: serif; }
 
-    /* FOAM */
-    .keg-foam {
-      position: absolute;
-      top: -40px;
-      left: 0;
-      right: 0;
-      height: 100px;
-      background: #fdf6e3; /* Creamy foam */
-      border-radius: 50% 50% 0 0;
-      filter: blur(2px);
-      box-shadow: 0 -10px 40px rgba(255,255,255,0.4);
-      animation: foam-wobble 4s infinite ease-in-out;
-      z-index: 2;
+    /* BEER LOGO BADGE */
+    .beer-badge {
+      position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+      width: 280px; height: 280px; z-index: 20;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 30% 30%, #333, #000);
+      border: 10px solid #222; border-color: #444 #111 #000 #333;
+      border-radius: 50%; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      padding: 30px;
     }
+    .badge-img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
 
-    @keyframes foam-wobble {
-      0%, 100% { transform: scaleY(1) translateY(0); }
-      50% { transform: scaleY(1.1) translateY(-10px); }
+    /* ── FOOTER DATA ── */
+    .footer { width: 100%; text-align: center; padding-bottom: 60px; }
+    .beer-name { font-family: var(--ft); font-size: 64px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 4px; }
+    .flow-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; }
+    .flow-num { font-size: 80px; font-family: var(--fmono); font-weight: 800; line-height: 1; }
+    .flow-lbl { font-size: 16px; opacity: 0.4; text-align: left; line-height: 1.2; font-weight: 700; }
+
+    /* ── ALERT OVERLAY ── */
+    #alertOverlay {
+      position: fixed; inset: 0; background: rgba(239, 68, 68, 0.2); 
+      backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100;
+      animation: alertPulse 2s infinite ease-in-out; pointer-events: none;
     }
-
-    .keg-bubbles { position: absolute; inset: 0; pointer-events: none; }
-    .bubble {
-      position: absolute;
-      background: rgba(255,255,255,0.3);
-      border-radius: 50%;
-      bottom: -10%;
-      animation: rise 6s infinite ease-in;
-    }
-
-    @keyframes rise {
-      0% { transform: translateY(0) scale(0.5); opacity: 0; }
-      20% { opacity: 0.6; }
-      100% { transform: translateY(-900px) scale(2); opacity: 0; }
-    }
-
-    /* BEER LOGO BADGE - METALLIC 3D */
-    .beer-logo-badge {
-      position: absolute;
-      top: 45%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 320px;
-      height: 320px;
-      background: radial-gradient(circle at 30% 30%, #444, #111);
-      border: 12px solid #333;
-      border-color: #555 #222 #111 #444; /* 3D effect */
-      outline: 4px solid var(--amber);
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-      z-index: 10;
-      box-shadow: 
-        0 20px 60px rgba(0,0,0,0.8),
-        inset 0 4px 20px rgba(255,255,255,0.2);
-    }
-
-    .logo-img { max-width: 90%; max-height: 90%; filter: drop-shadow(0 0 20px rgba(255,255,255,0.2)); }
-    .beer-name-badge {
-      position: absolute;
-      bottom: -40px;
-      background: linear-gradient(to bottom, var(--amber), #b45309);
-      color: #000;
-      font-size: 32px;
-      font-family: var(--ft);
-      font-weight: 950;
-      padding: 10px 40px;
-      border-radius: 60px;
-      white-space: nowrap;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      border: 3px solid rgba(0,0,0,0.2);
-    }
-
-    /* FLOW RATE SECTION - ENLARGED */
-    .bottom-section {
-      text-align: center;
-      margin-top: 40px;
-    }
-
-    .flow-label {
-      font-family: var(--ft);
-      font-size: 32px;
-      font-weight: 900;
-      color: rgba(255,255,255,0.4);
-      margin-bottom: 15px;
-      text-transform: uppercase;
-      letter-spacing: 5px;
-    }
-
-    .flow-value {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 30px;
-    }
-
-    .flow-icon { font-size: 80px; filter: drop-shadow(0 0 30px var(--amber)); }
-    .flow-num { font-size: 140px; font-weight: 900; font-family: 'JetBrains Mono', monospace; line-height: 0.8; }
-    .flow-unit { font-size: 24px; text-align: left; opacity: 0.5; line-height: 1.2; font-weight: 700; margin-left: 10px; }
-
-    /* ALERT BAR - BIGGER */
-    .alert-bar {
-      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.3), transparent);
-      border: 3px solid rgba(239, 68, 68, 0.4);
-      padding: 24px 40px;
-      border-radius: 100px;
-      margin-top: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      animation: alert-pulse 1.5s infinite ease-in-out;
-      display: none;
-    }
-
-    @keyframes alert-pulse {
-      0%, 100% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.03); opacity: 1; }
-    }
-
-    .alert-text { font-size: 28px; font-weight: 900; text-transform: uppercase; color: var(--red); font-family: var(--ft); border-spacing: 2px; }
-
-    /* TRANSITIONS */
-    .fade-switch { animation: fadeSwitch 1s ease-in-out; }
-    @keyframes fadeSwitch { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+    @keyframes alertPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+    .alert-msg { font-family: var(--ft); font-size: 80px; font-weight: 950; color: #fff; text-shadow: 0 0 40px #ef4444; }
 
   </style>
 </head>
 <body>
 
-<div class="container" id="mainContainer">
-  <div class="top-stats">
-    <div class="stat-box">
-      <div class="stat-label">Pressure</div>
-      <div class="gauge-ring">
-        <svg class="gauge-svg" viewBox="0 0 260 260">
-          <circle class="gauge-bg" cx="130" cy="130" r="115"></circle>
-          <circle id="gaugeCo2" class="gauge-val" cx="130" cy="130" r="115" stroke="var(--amber)" stroke-dasharray="0 722"></circle>
+<div id="alertOverlay"><span class="alert-msg">LOW KEG LEVEL</span></div>
+
+<div class="kiosk-wrapper" id="kioskUI">
+  
+  <div class="header">
+    <div class="live-tag">
+      <div class="live-dot"></div> Live Stream
+    </div>
+    <div class="brand">KEGHERO</div>
+    <div style="width:100px; text-align:right">
+      <span id="txtPct" style="font-family:var(--fmono); font-size:24px; font-weight:800; color:var(--beer-main)">0%</span>
+    </div>
+  </div>
+
+  <div class="main-body">
+    
+    <!-- Gauges -->
+    <div class="gauge-column gauge-left">
+      <div class="gauge-mini">
+        <div class="mini-label">TEMP</div>
+        <svg class="mini-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
+          <circle id="gTemp" cx="50" cy="50" r="45" fill="none" stroke="var(--accent)" stroke-width="8" stroke-dasharray="0 283" stroke-linecap="round" style="transition:all 1.5s cubic-bezier(0.4, 0, 0.2, 1)"></circle>
         </svg>
-        <div class="stat-value">
-          <div class="stat-num" id="valCo2">0.0</div>
-          <div class="stat-unit">PSI</div>
-        </div>
+        <div class="mini-val"><span id="valTemp">0.0</span><div class="mini-unit">°CELSIUS</div></div>
       </div>
-    </div>
-
-    <div class="stat-box">
-      <div class="stat-label">Temperature</div>
-      <div class="gauge-ring">
-        <svg class="gauge-svg" viewBox="0 0 260 260">
-          <circle class="gauge-bg" cx="130" cy="130" r="115"></circle>
-          <circle id="gaugeTemp" class="gauge-val" cx="130" cy="130" r="115" stroke="var(--blue)" stroke-dasharray="0 722"></circle>
+      
+      <div class="gauge-mini">
+        <div class="mini-label">FLOW</div>
+        <svg class="mini-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
+          <circle id="gFlow" cx="50" cy="50" r="45" fill="none" stroke="var(--beer-main)" stroke-width="8" stroke-dasharray="0 283" stroke-linecap="round" style="transition:all 0.5s ease-out"></circle>
         </svg>
-        <div class="stat-value">
-          <div class="stat-num" id="valTemp">0.0</div>
-          <div class="stat-unit">°C</div>
-        </div>
+        <div class="mini-val"><span id="valFlow">0.0</span><div class="mini-unit">LITERS / MIN</div></div>
       </div>
     </div>
-  </div>
 
-  <div class="keg-area">
-    <div class="keg-glow" id="kegGlow"></div>
-    <div class="keg-glass">
-      <div class="keg-liquid" id="liquidLevel" style="height: 0%;">
-        <div class="keg-foam"></div>
+    <div class="gauge-column gauge-right">
+      <div class="gauge-mini">
+        <div class="mini-label">PRESSURE</div>
+        <svg class="mini-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"></circle>
+          <circle id="gCo2" cx="50" cy="50" r="45" fill="none" stroke="var(--beer-main)" stroke-width="8" stroke-dasharray="0 283" stroke-linecap="round" style="transition:all 1.5s ease"></circle>
+        </svg>
+        <div class="mini-val"><span id="valCo2">0.0</span><div class="mini-unit">PSI / BAR</div></div>
       </div>
-      <div class="keg-bubbles" id="bubblePool"></div>
     </div>
-    <div class="beer-logo-badge">
-      <div id="logoContainer" class="logo-img">🍺</div>
-      <div class="beer-name-badge" id="beerName">Connecting...</div>
+
+    <!-- THE KEG -->
+    <div class="keg-container">
+      <div class="keg-backlight" id="kegGlow"></div>
+      
+      <div class="pct-wall">
+        <div class="pct-active-label" id="pctFloating" style="top: 100%;">100%</div>
+        <div class="pct-marker"></div>
+        <div class="pct-marker"></div>
+        <div class="pct-marker"></div>
+        <div class="pct-marker"></div>
+        <div class="pct-marker"></div>
+      </div>
+
+      <svg class="keg-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" class="stop-side" stop-color="#333" />
+            <stop offset="50%" class="stop-main" stop-color="#aaa" />
+            <stop offset="100%" class="stop-side" stop-color="#333" />
+          </linearGradient>
+          <mask id="kegMask">
+            <rect x="0" y="0" width="500" height="900" fill="white" />
+            <rect x="20" y="80" width="460" height="740" rx="40" ry="40" fill="black" />
+          </mask>
+        </defs>
+
+        <style>
+          #metalGrad .stop-side { transition: stop-color 1s ease; }
+          #metalGrad .stop-main { transition: stop-color 1s ease; }
+          [data-theme="industrial"] .stop-side { stop-color: #333; }
+          [data-theme="industrial"] .stop-main { stop-color: #aaa; }
+          [data-theme="modern"] .stop-side { stop-color: #1e3a8a; }
+          [data-theme="modern"] .stop-main { stop-color: #3b82f6; }
+          [data-theme="crafthouse"] .stop-side { stop-color: #78350f; }
+          [data-theme="crafthouse"] .stop-main { stop-color: #b45309; }
+        </style>
+
+        <!-- Back Shell -->
+        <rect x="0" y="0" width="500" height="900" rx="80" ry="80" fill="#111" />
+        
+        <!-- Liquid Logic -->
+        <g id="beerGroup">
+          <rect id="beerFill" x="25" y="800" width="450" height="0" fill="var(--beer-main)" opacity="0.8">
+            <animate attributeName="opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite" />
+          </rect>
+          <!-- Animated Top Wave -->
+          <path id="wavePath" d="M 25 800 Q 125 790 250 800 T 475 800 V 900 H 25 Z" fill="var(--beer-main)" opacity="0.9" />
+          <path id="foamPath" d="M 25 800 Q 100 780 250 800 T 475 800" fill="none" stroke="var(--foam)" stroke-width="15" stroke-linecap="round" opacity="0.6" />
+        </g>
+
+        <!-- Bubbles Layer (handled in JS) -->
+        <g id="bubbleLayer"></g>
+
+        <!-- Front Metal Shell with Cutout -->
+        <rect x="0" y="0" width="500" height="900" rx="80" ry="80" fill="url(#metalGrad)" mask="url(#kegMask)" opacity="0.9" />
+        
+        <!-- Glass Sheen -->
+        <rect x="30" y="90" width="80" height="720" rx="40" fill="white" opacity="0.05" />
+        
+        <!-- Keg Rims (3D effect) -->
+        <rect x="0" y="200" width="500" height="30" fill="black" opacity="0.3" />
+        <rect x="0" y="650" width="500" height="30" fill="black" opacity="0.3" />
+      </svg>
+
+      <div class="beer-badge">
+        <div id="badgeLogoContainer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">🍺</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <div class="beer-name" id="txtName">BEER NAME</div>
+    <div class="flow-wrap">
+      <div class="flow-num" id="txtFlow">0.0</div>
+      <div class="flow-lbl">LIVE FLOWING<br>LITERS / MIN</div>
     </div>
   </div>
 
-  <div class="bottom-section">
-    <div class="flow-label">Pour Rate</div>
-    <div class="flow-value">
-      <div class="flow-icon">🍺</div>
-      <div class="flow-num" id="valFlow">0.00</div>
-      <div class="flow-unit">LITERS /<br>MINUTE</div>
-    </div>
-
-    <div class="alert-bar" id="alertBar">
-      <span style="font-size:32px">⚠️</span>
-      <span class="alert-text" id="alertText">LOW LEVEL WARNING</span>
-    </div>
-  </div>
 </div>
 
 <script>
+  const params = new URLSearchParams(window.location.search);
+  const theme = params.get('theme') || 'industrial';
+  document.body.setAttribute('data-theme', theme);
+
   const DISPLAY_ID = window.location.pathname.split('/').pop();
-  let currentKegIndex = 0;
-  let allKegs = [];
-  let updateInterval = null;
-
-  // UI Elements
-  const elLevel = document.getElementById('liquidLevel');
-  const elBeerName = document.getElementById('beerName');
-  const elLogo = document.getElementById('logoContainer');
-  const elCo2Num = document.getElementById('valCo2');
-  const elTempNum = document.getElementById('valTemp');
-  const elFlowNum = document.getElementById('valFlow');
-  const elGaugeCo2 = document.getElementById('gaugeCo2');
-  const elGaugeTemp = document.getElementById('gaugeTemp');
-  const elAlert = document.getElementById('alertBar');
-  const elAlertText = document.getElementById('alertText');
+  
+  // DOM
+  const elLevel = document.getElementById('beerFill');
+  const elWave = document.getElementById('wavePath');
+  const elFoam = document.getElementById('foamPath');
   const elGlow = document.getElementById('kegGlow');
+  const elLogo = document.getElementById('badgeLogoContainer');
+  const elAlert = document.getElementById('alertOverlay');
 
-  function updateGauge(circle, value, max) {
-    const circumference = 722;
-    const progress = Math.min(value / max, 1);
-    const dash = progress * circumference;
-    circle.style.strokeDasharray = `${dash} ${circumference}`;
+  let flowIntensity = 0;
+  let waveTime = 0;
+
+  function setGauge(id, val, max) {
+    const el = document.getElementById(id);
+    const circ = 283;
+    const progress = Math.min(val/max, 1);
+    el.style.strokeDasharray = `${progress * circ} ${circ}`;
   }
 
-  function renderKeg(keg) {
-    if (!keg) return;
-
-    // Transition effect
-    const container = document.getElementById('mainContainer');
-    container.classList.remove('fade-switch');
-    void container.offsetWidth; // trigger reflow
-    container.classList.add('fade-switch');
-
-    // Data updates
-    elBeerName.textContent = keg.beer_name;
-    elLevel.style.height = `${keg.remaining_pct}%`;
+  function updateVisuals(k) {
+    const name = k.beer_name || "EMPTY TAP";
+    const pct = k.remaining_pct || 0;
+    const ltr = k.remaining_liters || 0;
+    const temp = k.current_temp || 0;
+    const co2 = k.current_co2 || 0;
+    const flow = k.current_flow || 0;
     
-    // Values
-    elCo2Num.textContent = (keg.current_co2 || 0).toFixed(1);
-    elTempNum.textContent = (keg.current_temp || 0).toFixed(1);
-    elFlowNum.textContent = (keg.current_flow || 0).toFixed(2);
+    flowIntensity = flow > 0 ? flow : 0;
 
-    // Gauges (optimized for 30 PSI / 20 °C max visual)
-    updateGauge(elGaugeCo2, keg.current_co2 || 0, 30); 
-    updateGauge(elGaugeTemp, keg.current_temp || 0, 20); 
+    document.getElementById('txtName').textContent = name;
+    document.getElementById('txtPct').textContent = Math.round(pct) + '%';
+    document.getElementById('txtFlow').textContent = flow.toFixed(1);
+    document.getElementById('valTemp').textContent = temp.toFixed(1);
+    document.getElementById('valFlow').textContent = flow.toFixed(1);
+    document.getElementById('valCo2').textContent = co2.toFixed(1);
 
-    // Logo
-    if (keg.logo_path) {
-      elLogo.innerHTML = `<img src="${keg.logo_path}" style="width:100%;height:100%;object-fit:contain">`;
+    setGauge('gTemp', temp, 20);
+    setGauge('gCo2', co2, 30);
+    setGauge('gFlow', flow, 10);
+
+    // Liquid Height Logic (SVG y: 80 to 820)
+    const startY = 820;
+    const endY = 80;
+    const currentY = startY - ((startY - endY) * (pct / 100));
+    
+    elLevel.setAttribute('y', currentY);
+    elLevel.setAttribute('height', 820 - currentY);
+    
+    // Wave Control
+    window.currentLiquidY = currentY;
+    document.getElementById('pctFloating').style.top = `${100 - pct}%`;
+    document.getElementById('pctFloating').textContent = Math.round(pct) + '%';
+
+    if (k.logo_path || k.library_logo) {
+      elLogo.innerHTML = `<img src="${k.library_logo || k.logo_path}" class="badge-img">`;
     } else {
-      elLogo.textContent = '🍺';
-      elLogo.style.fontSize = '120px';
+      elLogo.innerHTML = '<span style="font-size:120px">🍺</span>';
     }
 
-    // Alerts
-    if (keg.remaining_pct < (keg.alert_low_pct || 20)) {
-      elAlert.style.display = 'flex';
-      elAlertText.textContent = `CRITICAL: ${Math.round(keg.remaining_liters)}L LEFT`;
-    } else {
-      elAlert.style.display = 'none';
-    }
-
-    // Glow color based on temp
-    const t = keg.current_temp || 0;
-    if (t > 8) elGlow.style.background = 'radial-gradient(circle, rgba(239,68,68,0.2) 0%, transparent 70%)';
-    else if (t < 4) elGlow.style.background = 'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)';
-    else elGlow.style.background = 'radial-gradient(circle, rgba(245,158,11,0.2) 0%, transparent 70%)';
+    elAlert.style.display = (pct < 15) ? 'flex' : 'none';
   }
 
-  // Carousel Logic
-  function startCarousel() {
-    if (updateInterval) clearInterval(updateInterval);
-    if (allKegs.length <= 1) return;
+  // Liquid Physics Engine
+  function animateLiquid() {
+    waveTime += 0.05 + (flowIntensity * 0.05);
+    const y = window.currentLiquidY || 820;
+    const amp = 5 + (flowIntensity * 15);
+    const freq = 0.02;
 
-    updateInterval = setInterval(() => {
-      currentKegIndex = (currentKegIndex + 1) % allKegs.length;
-      renderKeg(allKegs[currentKegIndex]);
-    }, 10000); // 10 seconds for HD viewing
+    const x1 = 25, x2 = 125, x3 = 250, x4 = 375, x5 = 475;
+    const w1 = y + Math.sin(waveTime) * amp;
+    const w2 = y + Math.cos(waveTime * 0.8) * amp;
+    const w3 = y + Math.sin(waveTime * 1.2) * amp;
+
+    const d = `M ${x1} ${y} Q ${x2} ${w1} ${x3} ${w2} T ${x5} ${w3} V 900 H ${x1} Z`;
+    const dFoam = `M ${x1} ${y} Q ${x2} ${w1} ${x3} ${w2} T ${x5} ${w3}`;
+    
+    elWave.setAttribute('d', d);
+    elFoam.setAttribute('d', dFoam);
+
+    requestAnimationFrame(animateLiquid);
   }
 
-  // ── Bubbles ──
-  function createBubbles() {
-    const container = document.getElementById('bubblePool');
-    setInterval(() => {
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      const size = Math.random() * 12 + 4;
-      bubble.style.width = size + 'px';
-      bubble.style.height = size + 'px';
-      bubble.style.left = Math.random() * 100 + '%';
-      bubble.style.animationDuration = (Math.random() * 4 + 3) + 's';
-      container.appendChild(bubble);
-      setTimeout(() => bubble.remove(), 6000);
-    }, 300);
+  // Particle System (Bubbles)
+  const bubbleLayer = document.getElementById('bubbleLayer');
+  function spawnBubble() {
+    if (window.currentLiquidY > 810) return; // empty
+    
+    const b = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const r = Math.random() * 3 + 1;
+    const x = 50 + Math.random() * 400;
+    b.setAttribute('cx', x);
+    b.setAttribute('cy', 850);
+    b.setAttribute('r', r);
+    b.setAttribute('fill', 'white');
+    b.setAttribute('opacity', Math.random() * 0.5);
+    bubbleLayer.appendChild(b);
+
+    const speed = 2 + Math.random() * 4 + (flowIntensity * 5);
+    let curY = 850;
+    
+    const up = () => {
+      curY -= speed;
+      b.setAttribute('cy', curY);
+      if (curY < (window.currentLiquidY || 820)) {
+        b.remove();
+      } else {
+        requestAnimationFrame(up);
+      }
+    };
+    up();
   }
 
-  // ── Real-time Connection ──
+  setInterval(() => {
+    const total = 1 + Math.floor(flowIntensity * 5);
+    for(let i=0; i<total; i++) spawnBubble();
+  }, 200);
+
+  // SSE Stream
   function initStream() {
     const source = new EventSource('/api/mqtt/stream');
     source.onmessage = (event) => {
@@ -463,21 +427,20 @@
         const topic = msg.data.topic;
         const data = msg.data.data;
 
+        // Custom logic: if topic matches display-specific or general tap update
+        // For simplicity, let's assume the server pushes /keghero/display/:id/kegs
         if (topic === `keghero/display/${DISPLAY_ID}/kegs`) {
-          allKegs = data.kegs || [];
-          if (allKegs.length > 0) {
-            renderKeg(allKegs[currentKegIndex] || allKegs[0]);
-            startCarousel();
+          if (data.kegs && data.kegs.length > 0) {
+            updateVisuals(data.kegs[0]);
           }
         }
       }
     };
   }
 
-  // Initial setup
-  createBubbles();
   initStream();
-  
+  animateLiquid();
+
 </script>
 </body>
 </html>
