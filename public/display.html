@@ -69,9 +69,9 @@
       transition: background-image 1.5s ease-in-out;
     }
     
-    [data-theme="industrial"] .kiosk-wrapper { background-image: url('/public/img/skin_industrial.png'); }
-    [data-theme="modern"] .kiosk-wrapper { background-image: url('/public/img/skin_modern.png'); }
-    [data-theme="crafthouse"] .kiosk-wrapper { background-image: url('/public/img/skin_crafthouse.png'); }
+    [data-theme="industrial"] .kiosk-wrapper { background-image: var(--bg); }
+    [data-theme="modern"] .kiosk-wrapper { background-image: var(--bg); }
+    [data-theme="crafthouse"] .kiosk-wrapper { background-image: var(--bg); }
 
     /* ── LIQUID WINDOW (Positioned over the skin's window) ── */
     /* ── LIQUID WINDOW ALIGNMENT V2 ── */
@@ -84,18 +84,18 @@
     }
     
     [data-theme="industrial"] .liquid-window { 
-      width: 140px; height: 500px;
-      top: 242px; left: 50%; transform: translateX(-50%);
-      border-radius: 70px;
+      width: 145px; height: 600px;
+      top: 236px; left: 50%; transform: translateX(-50%);
+      border-radius: 72px;
     }
     [data-theme="modern"] .liquid-window { 
-      width: 154px; height: 350px;
-      top: 25%; left: 50%; transform: translateX(-50%);
-      border-radius: 77px;
+      width: 120px; height: 350px;
+      top: 36%; left: 50%; transform: translateX(-50%);
+      border-radius: 60px;
     }
     [data-theme="crafthouse"] .liquid-window { 
-      width: 200px; height: 420px;
-      top: 326px; left: 50%; transform: translateX(-40px);
+      width: 220px; height: 435px;
+      top: 334px; left: 71%; transform: translateX(-50%);
       border-radius: 20px;
     }
 
@@ -117,14 +117,14 @@
       text-transform: uppercase;
     }
 
-    [data-theme="industrial"] .card-temp { top: 410px; left: 160px; }
-    [data-theme="industrial"] .card-psi { top: 410px; right: 160px; }
+    [data-theme="industrial"] .card-temp { top: 435px; left: 140px; }
+    [data-theme="industrial"] .card-psi { top: 435px; right: 140px; }
 
-    [data-theme="modern"] .card-temp { top: 25%; left: 15%; }
-    [data-theme="modern"] .card-psi { top: 25%; right: 15%; }
+    [data-theme="modern"] .card-temp { top: 320px; left: 160px; }
+    [data-theme="modern"] .card-psi { top: 600px; left: 160px; }
 
-    [data-theme="crafthouse"] .card-temp { top: 380px; left: 240px; }
-    [data-theme="crafthouse"] .card-psi { top: 730px; left: 240px; }
+    [data-theme="crafthouse"] .card-temp { top: 388px; left: 322px; transform: translateX(-50%); }
+    [data-theme="crafthouse"] .card-psi { top: 604px; left: 322px; transform: translateX(-50%); }
 
     .mist-layer {
       position: absolute; inset: 0;
