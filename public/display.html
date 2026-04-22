@@ -82,7 +82,13 @@
     }
     
     [data-theme="modern"] .liquid-window { width: 230px; height: 460px; top: 25%; }
-    [data-theme="crafthouse"] .liquid-window { width: 220px; height: 350px; top: 30%; border-radius: 110px; }
+    [data-theme="crafthouse"] {
+      --interior-glow: rgba(180, 83, 9, 0.6);
+    }
+    [data-theme="crafthouse"] .liquid-window { 
+      width: 250px; height: 380px; top: 30.2%; border-radius: 120px; 
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+    }
     [data-theme="industrial"] .liquid-window { width: 310px; height: 550px; top: 18%; border-radius: 80px; }
 
     /* ── LIVE BEER TEXTURE ── */
@@ -92,13 +98,36 @@
       background-size: cover;
       background-repeat: repeat-y;
       animation: rise-bubbles 40s linear infinite;
-      opacity: 0.8; mix-blend-mode: screen;
+      opacity: 0.95; mix-blend-mode: screen;
+      filter: brightness(1.6) contrast(1.4) saturate(1.2);
     }
     
-    @keyframes rise-bubbles {
-      from { background-position: 0 0; }
-      to { background-position: 0 -1000px; }
+    /* ── ANALOG NEEDLES ── */
+    .analog-needle {
+      position: absolute;
+      width: 4px; height: 75px;
+      background: linear-gradient(to bottom, #d4af37, #8b4513);
+      bottom: 50%; left: 50%;
+      margin-left: -2px;
+      transform-origin: bottom center;
+      transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border-radius: 4px;
+      z-index: 12;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
     }
+    .needle-cap {
+      position: absolute; width: 12px; height: 12px;
+      background: #8b4513; border-radius: 50%;
+      top: 100%; left: 50%; margin-left: -6px; margin-top: -6px;
+      border: 2px solid #d4af37;
+    }
+    
+    .gauge-wrapper {
+      position: absolute; width: 156px; height: 156px;
+      pointer-events: none; z-index: 11;
+    }
+    .g-left { top: 412px; left: 146px; }
+    .g-right { top: 412px; right: 146px; }
 
     /* ── CINEMATIC OVERLAYS ── */
     .mist-layer {
@@ -212,23 +241,24 @@
     .brand-overlay {
       position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
       font-family: var(--ft); font-size: 32px; font-weight: 900; letter-spacing: 6px;
-      opacity: 0.5; text-shadow: 0 1px 5px rgba(0,0,0,0.5); z-index: 10;
+      opacity: 0.4; text-shadow: 0 1px 5px rgba(0,0,0,0.5); z-index: 10;
     }
     
     .logo-badge-overlay {
       position: absolute; top: 41%; left: 50%; transform: translate(-50%, -50%);
-      width: 320px; height: 320px; z-index: 3; /* Behind the liquid window for refraction */
+      width: 320px; height: 320px; z-index: 3;
       display: flex; align-items: center; justify-content: center;
       transition: filter 0.8s ease-in-out;
     }
     .badge-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 30px var(--glow)); transform: scale(1.1); }
 
     /* ── FOOTER DATA ── */
-    .footer { width: 100%; text-align: center; padding-bottom: 60px; }
-    .beer-name { font-family: var(--ft); font-size: 64px; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 4px; }
-    .flow-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; }
-    .flow-num { font-size: 80px; font-family: var(--fmono); font-weight: 800; line-height: 1; }
-    .flow-lbl { font-size: 16px; opacity: 0.4; text-align: left; line-height: 1.2; font-weight: 700; }
+    .footer { width: 100%; text-align: center; padding: 20px 0 80px 0; }
+    .brand-logo-img { max-width: 380px; filter: drop-shadow(0 5px 20px rgba(0,0,0,0.8)); opacity: 0.95; }
+    
+    .remaining-tag {
+      margin-top: -20px; font-family: var(--fmono); font-size: 24px; color: var(--beer-main); font-weight: 800; letter-spacing: 2px;
+    }
 
     /* ── ALERT OVERLAY ── */
     #alertOverlay {
@@ -249,14 +279,16 @@
   
   <div class="brand-overlay">KEGHERO</div>
 
-  <div class="data-overlay overlay-temp">
-    <div class="ov-val"><span id="valTemp">0.0</span>°</div>
-    <div class="ov-lbl">TEMPERATURE</div>
+  <div class="gauge-wrapper g-left">
+    <div id="needleTemp" class="analog-needle">
+      <div class="needle-cap"></div>
+    </div>
   </div>
 
-  <div class="data-overlay overlay-co2">
-    <div class="ov-val"><span id="valCo2">0.0</span></div>
-    <div class="ov-lbl">PSI PRESSURE</div>
+  <div class="gauge-wrapper g-right">
+    <div id="needleCo2" class="analog-needle">
+      <div class="needle-cap"></div>
+    </div>
   </div>
 
   <div class="liquid-window">
@@ -297,12 +329,8 @@
   </div>
 
   <div class="footer">
-    <div class="beer-name" id="txtName">BEER NAME</div>
-    <div class="flow-wrap">
-      <div class="flow-num" id="txtFlow">0.0</div>
-      <div class="flow-lbl">LIVE FLOWING<br>LITERS / MIN</div>
-    </div>
-    <div style="margin-top:20px; font-family:var(--fmono); font-size:24px; color:var(--beer-main); font-weight: 800;">
+    <img src="/public/img/brand_logo.png" class="brand-logo-img">
+    <div class="remaining-tag">
       REMAINING: <span id="txtPct">0%</span>
     </div>
   </div>
@@ -347,14 +375,12 @@
 
     document.getElementById('txtName').textContent = name;
     document.getElementById('txtPct').textContent = Math.round(pct) + '%';
-    document.getElementById('txtFlow').textContent = flow.toFixed(1);
-    document.getElementById('valTemp').textContent = temp.toFixed(1);
-    document.getElementById('valFlow').textContent = flow.toFixed(1);
-    document.getElementById('valCo2').textContent = co2.toFixed(1);
-
-    setGauge('gTemp', temp, 20);
-    setGauge('gCo2', co2, 30);
-    setGauge('gFlow', flow, 10);
+    
+    // ANALOG NEEDLES: Map temp (-10 to 40) and co2 (0 to 30) to angles
+    const tempAngle = ((temp + 10) / 50 * 220) - 110;
+    const co2Angle = (co2 / 30 * 220) - 110;
+    document.getElementById('needleTemp').style.transform = `rotate(${tempAngle}deg)`;
+    document.getElementById('needleCo2').style.transform = `rotate(${co2Angle}deg)`;
 
     // ADAPTIVE LIGHTING: More interior glow when empty
     const glowScale = 0.5 + (1 - (pct/100)) * 0.5;
