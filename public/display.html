@@ -100,7 +100,30 @@
       to { background-position: 0 -1000px; }
     }
 
-    .liquid-svg { width: 100%; height: 100%; display: block; position: absolute; inset: 0; z-index: 2; }
+    /* ── CINEMATIC OVERLAYS ── */
+    .mist-layer {
+      position: absolute; inset: 0;
+      background: url('/public/img/mist.png');
+      background-size: cover;
+      opacity: 0.35; mix-blend-mode: lighten;
+      pointer-events: none; z-index: 10;
+      filter: contrast(1.2) brightness(1.1);
+    }
+    
+    .refraction-container {
+      position: absolute; inset: 0;
+      z-index: 4; /* Behind the frame/mist, on top of the liquid */
+      pointer-events: none;
+    }
+
+    .liquid-svg { 
+      width: 100%; height: 100%; display: block; position: absolute; inset: 0; z-index: 2; 
+      will-change: transform; transform: translate3d(0,0,0); /* Hardware Acceleration */
+    }
+    
+    [data-theme="crafthouse"] {
+      --interior-glow: rgba(180, 83, 9, 0.4);
+    }
 
     /* ── TOP HEADER ── */
     .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 40px; }
@@ -194,10 +217,11 @@
     
     .logo-badge-overlay {
       position: absolute; top: 41%; left: 50%; transform: translate(-50%, -50%);
-      width: 320px; height: 320px; z-index: 20;
+      width: 320px; height: 320px; z-index: 3; /* Behind the liquid window for refraction */
       display: flex; align-items: center; justify-content: center;
+      transition: filter 0.8s ease-in-out;
     }
-    .badge-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 30px var(--glow)); transform: scale(1.2); }
+    .badge-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 30px var(--glow)); transform: scale(1.1); }
 
     /* ── FOOTER DATA ── */
     .footer { width: 100%; text-align: center; padding-bottom: 60px; }
@@ -236,12 +260,17 @@
   </div>
 
   <div class="liquid-window">
-    <!-- Live Carbonation Layer -->
+    <div class="mist-layer"></div>
     <div class="beer-live-texture"></div>
     
-    <!-- SVG Physics Layer (Waves & Filling) -->
     <svg class="liquid-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
       <defs>
+        <!-- REFRACTION SHADER -->
+        <filter id="liquidRefraction" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+
         <mask id="windowMask">
           <rect id="beerFill" x="0" y="800" width="500" height="900" fill="white" />
           <path id="wavePath" d="" fill="white" />
@@ -326,6 +355,19 @@
     setGauge('gTemp', temp, 20);
     setGauge('gCo2', co2, 30);
     setGauge('gFlow', flow, 10);
+
+    // ADAPTIVE LIGHTING: More interior glow when empty
+    const glowScale = 0.5 + (1 - (pct/100)) * 0.5;
+    document.querySelector('.liquid-window').style.boxShadow = `inset 0 0 ${80 * glowScale}px var(--interior-glow)`;
+    
+    // DYNAMIC REFRACTION: Only refract if submerged
+    const badge = document.querySelector('.logo-badge-overlay');
+    if (pct > 60) {
+      badge.style.filter = 'url(#liquidRefraction) drop-shadow(0 0 20px rgba(255,255,255,0.2)) blur(1px)';
+    } else {
+      badge.style.filter = 'none';
+      badge.style.zIndex = '20'; // Bring to front when above water
+    }
 
     // Liquid Height Logic (SVG y: 80 to 820)
     const startY = 820;
