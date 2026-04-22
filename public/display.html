@@ -77,15 +77,30 @@
       width: 280px; height: 500px;
       overflow: hidden; z-index: 5;
       border-radius: 60px;
-      mask-image: radial-gradient(circle, white 100%, transparent 100%);
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.9);
+      background: #000;
     }
     
     [data-theme="modern"] .liquid-window { width: 230px; height: 460px; top: 25%; }
     [data-theme="crafthouse"] .liquid-window { width: 220px; height: 350px; top: 30%; border-radius: 110px; }
     [data-theme="industrial"] .liquid-window { width: 310px; height: 550px; top: 18%; border-radius: 80px; }
 
-    .liquid-svg { width: 100%; height: 100%; display: block; }
+    /* ── LIVE BEER TEXTURE ── */
+    .beer-live-texture {
+      position: absolute; inset: 0;
+      background: url('/public/img/beer_live.png');
+      background-size: cover;
+      background-repeat: repeat-y;
+      animation: rise-bubbles 40s linear infinite;
+      opacity: 0.8; mix-blend-mode: screen;
+    }
+    
+    @keyframes rise-bubbles {
+      from { background-position: 0 0; }
+      to { background-position: 0 -1000px; }
+    }
+
+    .liquid-svg { width: 100%; height: 100%; display: block; position: absolute; inset: 0; z-index: 2; }
 
     /* ── TOP HEADER ── */
     .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 40px; }
@@ -221,12 +236,27 @@
   </div>
 
   <div class="liquid-window">
+    <!-- Live Carbonation Layer -->
+    <div class="beer-live-texture"></div>
+    
+    <!-- SVG Physics Layer (Waves & Filling) -->
     <svg class="liquid-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
-      <!-- Background Interior is now transparent to show the 3D skin background -->
-      <g id="beerGroup">
-        <rect id="beerFill" x="0" y="800" width="500" height="900" fill="var(--beer-main)" opacity="0.5" />
-        <path id="wavePath" d="" fill="var(--beer-main)" opacity="0.8" />
-        <path id="foamPath" d="" fill="none" stroke="var(--foam)" stroke-width="20" stroke-linecap="round" opacity="0.6" />
+      <defs>
+        <mask id="windowMask">
+          <rect id="beerFill" x="0" y="800" width="500" height="900" fill="white" />
+          <path id="wavePath" d="" fill="white" />
+        </mask>
+      </defs>
+      
+      <!-- Interior Background -->
+      <rect x="0" y="0" width="500" height="900" fill="#0c0701" opacity="0.4" />
+
+      <!-- The 'Head' (Foam) -->
+      <path id="foamPath" d="" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="40" stroke-linecap="round" filter="blur(5px)" />
+      
+      <!-- Liquid Fill (Tinting the texture) -->
+      <g mask="url(#windowMask)">
+         <rect x="0" y="0" width="500" height="900" fill="var(--beer-main)" opacity="0.3" />
       </g>
 
       <g id="bubbleLayer"></g>
@@ -253,6 +283,7 @@
 <script>
   const params = new URLSearchParams(window.location.search);
   const theme = params.get('theme') || 'industrial';
+  const testLevel = params.get('testLevel'); // For easy user testing
   document.body.setAttribute('data-theme', theme);
 
   const DISPLAY_ID = window.location.pathname.split('/').pop();
@@ -397,6 +428,18 @@
   initStream();
   animateLiquid();
 
+  // Handle Testing Levels
+  if (testLevel !== null) {
+    setTimeout(() => {
+      updateVisuals({
+        beer_name: 'TEST MODE: ' + testLevel + '%',
+        remaining_pct: parseFloat(testLevel),
+        current_temp: 4.2,
+        current_flow: 0,
+        current_co2: 12.5
+      });
+    }, 500);
+  }
 </script>
 </body>
 </html>
