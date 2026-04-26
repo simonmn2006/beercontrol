@@ -177,8 +177,8 @@
       display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .gauge-label {
-      font-size: 14px; font-weight: 800; letter-spacing: 4px;
-      text-transform: uppercase; opacity: 0.4;
+      font-size: 20px; font-weight: 900; letter-spacing: 3px;
+      text-transform: uppercase; opacity: 0.7;
     }
     .gauge-minmax {
       display: flex; gap: 30px;
@@ -193,8 +193,8 @@
     }
 
     .level-header {
-      font-size: 14px; font-weight: 800; letter-spacing: 4px;
-      opacity: 0.35; text-transform: uppercase; margin-bottom: 20px;
+      font-size: 20px; font-weight: 900; letter-spacing: 4px;
+      opacity: 0.7; text-transform: uppercase; margin-bottom: 20px;
     }
 
     .level-frame {
@@ -500,13 +500,13 @@
           </svg>
           <div class="gauge-center">
             <span class="gauge-value" id="gValCo2" style="color:#38bdf8;text-shadow:0 0 40px rgba(56,189,248,0.7)">0.0</span>
-            <span class="gauge-unit">PSI</span>
+            <span class="gauge-unit">BAR</span>
           </div>
         </div>
       </div>
       <div class="gauge-footer">
         <span class="gauge-label">CO₂ Pressure</span>
-        <div class="gauge-minmax"><span>0 PSI</span><span>30 PSI</span></div>
+        <div class="gauge-minmax"><span>0 BAR</span><span>5 BAR</span></div>
       </div>
     </div>
 
@@ -761,9 +761,9 @@
     setGaugeFill('gFillTemp', 'gGlowTemp', temp, 0, 20);
     document.getElementById('gValTemp').textContent = temp.toFixed(1);
 
-    /* CO2 gauge */
-    setGaugeFill('gFillCo2', 'gGlowCo2', co2, 0, 30);
-    document.getElementById('gValCo2').textContent = co2.toFixed(1);
+    /* CO2 gauge — scaled to BAR (0-5) */
+    setGaugeFill('gFillCo2', 'gGlowCo2', co2, 0, 5);
+    document.getElementById('gValCo2').textContent = co2.toFixed(2);
 
     /* Canvas beer level — set target fill */
     beerTargetLevel = pct / 100;
@@ -813,10 +813,10 @@
     } else if (pct < 30) {
       pill.textContent   = 'KEG RUNNING LOW';
       pill.style.color   = '#f97316';
-    } else if (co2 > 25) {
+    } else if (co2 > 2.8) {
       pill.textContent   = 'CO2 HIGH';
       pill.style.color   = '#38bdf8';
-    } else if (co2 < 6) {
+    } else if (co2 < 0.4) {
       pill.textContent   = 'CO2 LOW';
       pill.style.color   = '#a78bfa';
     } else if (temp > 8) {
@@ -832,8 +832,8 @@
     const alertText  = document.getElementById('alertText');
     const alertSub   = document.getElementById('alertSub');
     
-    const co2High = co2 > 25;
-    const co2Low  = co2 < 6;
+    const co2High = co2 > 2.8;
+    const co2Low  = co2 < 0.4;
 
     if (pct < 15) {
       alertEl.classList.add('show');
@@ -848,14 +848,14 @@
       alertEl.style.background  = 'rgba(56,189,248,0.1)';
       alertText.textContent  = 'CO2 PRESSURE HIGH';
       alertText.style.color  = '#38bdf8';
-      alertSub.textContent   = `Current: ${co2.toFixed(1)} PSI — Check regulator`;
+      alertSub.textContent   = `Current: ${co2.toFixed(2)} BAR — Check regulator`;
     } else if (co2Low) {
       alertEl.classList.add('show');
       alertEl.style.borderColor = '#a78bfa';
       alertEl.style.background  = 'rgba(167,139,250,0.1)';
       alertText.textContent  = 'CO2 TANK EMPTY';
       alertText.style.color  = '#a78bfa';
-      alertSub.textContent   = `Pressure at ${co2.toFixed(1)} PSI — Replace bottle`;
+      alertSub.textContent   = `Pressure at ${co2.toFixed(2)} BAR — Replace bottle`;
     } else {
       alertEl.classList.remove('show');
     }
@@ -905,7 +905,7 @@
         beer_name: 'Heineken Draft',
         remaining_pct: 82,
         current_temp: 4.2,
-        current_co2: 14.5,
+        current_co2: 1.45,  // BAR
         current_flow: 0
       },
       {
@@ -913,7 +913,7 @@
         beer_name: 'Heineken Draft',
         remaining_pct: 80,
         current_temp: 4.3,
-        current_co2: 14.2,
+        current_co2: 1.42,
         current_flow: 1.8
       },
       {
@@ -921,7 +921,7 @@
         beer_name: 'Guinness Stout',
         remaining_pct: 24,
         current_temp: 5.1,
-        current_co2: 13.8,
+        current_co2: 1.38,
         current_flow: 0
       },
       {
@@ -929,7 +929,7 @@
         beer_name: 'Guinness Stout',
         remaining_pct: 9,
         current_temp: 5.4,
-        current_co2: 13.5,
+        current_co2: 1.35,
         current_flow: 0
       },
       {
@@ -937,7 +937,7 @@
         beer_name: 'Stella Artois',
         remaining_pct: 61,
         current_temp: 4.8,
-        current_co2: 27.4,
+        current_co2: 3.1,   // HIGH BAR
         current_flow: 0
       },
       {
@@ -945,7 +945,7 @@
         beer_name: 'Stella Artois',
         remaining_pct: 55,
         current_temp: 4.6,
-        current_co2: 3.2,
+        current_co2: 0.2,   // EMPTY BAR
         current_flow: 0
       },
       {
@@ -953,7 +953,7 @@
         beer_name: 'Corona Extra',
         remaining_pct: 47,
         current_temp: 9.8,
-        current_co2: 15.1,
+        current_co2: 1.51,
         current_flow: 0
       }
     ];
@@ -984,7 +984,7 @@
       beer_name: 'TEST MODE',
       remaining_pct: parseFloat(testLevel),
       current_temp: 4.2,
-      current_co2: 14.5,
+      current_co2: 1.45,
       current_flow: 0
     });
   }
