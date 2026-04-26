@@ -100,34 +100,44 @@
       border-radius: 80px;
     }
 
-    /* ── DATA CARDS V3 (Production Clarity) ── */
+    /* ── DATA CARDS V4 (Dynamic Production) ── */
     .data-card {
       position: absolute;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       pointer-events: none; z-index: 15;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 24px;
-      padding: 20px;
-      width: 220px;
+      padding: 15px;
+      width: 200px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transition: all 0.5s ease;
     }
-    .card-temp { top: 440px; left: 40px; }
-    .card-psi { top: 440px; right: 40px; }
+    .card-temp { top: 380px; left: 40px; }
+    .card-psi { top: 380px; right: 40px; }
+    .card-pints { bottom: 280px; left: 50%; transform: translateX(-50%); width: 320px; }
     
     .card-val { 
       font-size: 85px; font-family: var(--fmono); font-weight: 900; 
       line-height: 1; color: var(--accent); 
       filter: drop-shadow(0 0 15px var(--accent));
-      margin-bottom: 5px;
     }
+    .trend-arrow { font-size: 24px; vertical-align: middle; margin-left: 5px; opacity: 0.6; }
     .card-lbl { 
-      font-size: 16px; font-weight: 800; letter-spacing: 2px; opacity: 0.8;
-      text-transform: uppercase; color: #fff;
+      font-size: 14px; font-weight: 800; letter-spacing: 2px; opacity: 0.7;
+      text-transform: uppercase; color: #fff; margin-top: 5px;
     }
+
+    /* States */
+    .state-warning { --accent: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+    .state-critical { --accent: #ef4444; border-color: rgba(239, 68, 68, 0.5); animation: cardPulse 1s infinite; }
+    @keyframes cardPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } }
+    
+    .pouring-active { animation: shake 0.2s infinite; }
+    @keyframes shake { 0% { transform: translate(-50.5%, 0); } 100% { transform: translate(-49.5%, 0); } }
 
     .mist-layer {
       position: absolute; inset: 0;
@@ -316,6 +326,11 @@
     <div class="card-lbl">PSI PRESSURE</div>
   </div>
 
+  <div class="data-card card-pints">
+    <div class="card-val"><span id="valPints">0</span></div>
+    <div class="card-lbl">EST. PINTS REMAINING</div>
+  </div>
+
   <div class="liquid-window">
     <div class="mist-layer"></div>
     <div class="beer-live-texture"></div>
@@ -375,9 +390,12 @@
   const elGlow = document.getElementById('kegGlow');
   const elLogo = document.getElementById('badgeLogoContainer');
   const elAlert = document.getElementById('alertOverlay');
+  const elAlertMsg = elAlert.querySelector('.alert-msg');
+  const elWindow = document.querySelector('.liquid-window');
 
   let flowIntensity = 0;
   let waveTime = 0;
+  let lastTemp = null;
 
   function setGauge(id, val, max) {
     const el = document.getElementById(id);
@@ -401,14 +419,43 @@
     document.getElementById('valTemp').textContent = temp.toFixed(1);
     document.getElementById('valCo2').textContent = co2.toFixed(1);
     
-    // Status Logic
+    // Pints Calculation (Assuming 50L Keg = ~88 Pints)
+    const totalPints = 88;
+    const pintsLeft = Math.floor((pct / 100) * totalPints);
+    document.getElementById('valPints').textContent = pintsLeft;
+
+    // Temperature Trend
+    const elTempVal = document.getElementById('valTemp');
+    if (lastTemp !== null && lastTemp !== temp) {
+      const arrow = temp > lastTemp ? '↑' : '↓';
+      elTempVal.innerHTML = `${temp.toFixed(1)}<span class="trend-arrow">${arrow}</span>`;
+    }
+    lastTemp = temp;
+    
+    // Status & Color States
     const elStatus = document.getElementById('txtStatus');
+    const cards = document.querySelectorAll('.data-card');
+    
+    // Reset classes
+    cards.forEach(c => c.classList.remove('state-warning', 'state-critical'));
+    elWindow.classList.remove('pouring-active');
+    
     if (flow > 0) {
       elStatus.textContent = "POURING NOW";
-      elStatus.style.color = "#22c55e"; // Green
-    } else if (temp > 8) {
+      elStatus.style.color = "#22c55e";
+      elWindow.classList.add('pouring-active');
+    } else if (pct < 15) {
+      elStatus.textContent = "KEG CRITICAL";
+      elStatus.style.color = "#ef4444";
+      cards.forEach(c => c.classList.add('state-critical'));
+      elAlertMsg.textContent = "REPLACE KEG NOW";
+    } else if (pct < 30) {
+      elStatus.textContent = "KEG LOW";
+      elStatus.style.color = "#f59e0b";
+      cards.forEach(c => c.classList.add('state-warning'));
+    } else if (temp > 7) {
       elStatus.textContent = "TEMP WARNING";
-      elStatus.style.color = "#f59e0b"; // Amber
+      elStatus.style.color = "#f59e0b";
     } else {
       elStatus.textContent = "STABLE / READY";
       elStatus.style.color = "var(--accent)";
