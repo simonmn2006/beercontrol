@@ -652,50 +652,29 @@
   canvas.height = CH * 2;
   ctx.scale(2, 2);
 
-  // Keg geometry
-  const RING_H  = 62;          // top & bottom steel ring height
-  const BEVEL   = 18;          // outer corner radius
-  const B_INSET = 14;          // body narrower than rings
-  const BX      = B_INSET;     // body left x
-  const BW      = CW - B_INSET * 2; // body width (172px)
-  const B_TOP   = RING_H + 6;  // inner beer area top y
-  const B_BOT   = CH - RING_H - 6; // inner beer area bottom y
-  const B_H     = B_BOT - B_TOP;  // ~576px beer height
+  // 3D Cylinder geometry
+  const CYL_W_OUTER = CW;
+  const CYL_W_INNER = CW - 24; 
+  const CYL_X_INNER = 12;
+  const CYL_Y_TOP = 80;
+  const CYL_Y_BOT = CH - 80;
+  const EL_H_OUTER = 22; 
+  const EL_H_INNER = 18; 
 
-  // Keg outer path (used for clip & fill)
-  function kegOuterPath() {
-    ctx.beginPath();
-    ctx.moveTo(BEVEL, 0);
-    ctx.lineTo(CW - BEVEL, 0);
-    ctx.arcTo(CW, 0, CW, BEVEL, BEVEL);
-    ctx.lineTo(CW, RING_H);
-    ctx.lineTo(CW - B_INSET, RING_H + 6);
-    ctx.lineTo(CW - B_INSET, CH - RING_H - 6);
-    ctx.lineTo(CW, CH - RING_H);
-    ctx.lineTo(CW, CH - BEVEL);
-    ctx.arcTo(CW, CH, CW - BEVEL, CH, BEVEL);
-    ctx.lineTo(BEVEL, CH);
-    ctx.arcTo(0, CH, 0, CH - BEVEL, BEVEL);
-    ctx.lineTo(0, CH - RING_H);
-    ctx.lineTo(B_INSET, CH - RING_H - 6);
-    ctx.lineTo(B_INSET, RING_H + 6);
-    ctx.lineTo(0, RING_H);
-    ctx.lineTo(0, BEVEL);
-    ctx.arcTo(0, 0, BEVEL, 0, BEVEL);
-    ctx.closePath();
-  }
-
-  let beerTargetLevel = 0; // 0-1
+  const LIQ_TOP = CYL_Y_TOP + 10;
+  const LIQ_BOT = CYL_Y_BOT - 10;
+  const LIQ_H = LIQ_BOT - LIQ_TOP;
+  
+  let beerTargetLevel = 0;
   let beerCurrentLevel = 0;
   let waveTime = 0;
 
-  // Bubble pool
   const bubbles = [];
   function spawnCanvasBubble() {
     if (beerCurrentLevel < 0.02) return;
     bubbles.push({
-      x: 8 + Math.random() * (CW - 16),
-      y: CH, // start at bottom
+      x: CYL_X_INNER + 10 + Math.random() * (CYL_W_INNER - 20),
+      y: LIQ_BOT,
       r: 1 + Math.random() * 3.5,
       speed: 0.4 + Math.random() * 0.8,
       opacity: 0.3 + Math.random() * 0.4,
@@ -705,69 +684,67 @@
   }
   setInterval(spawnCanvasBubble, 300);
 
+  function cylinderPath(ctx, x, yTop, yBot, w, rh) {
+    ctx.beginPath();
+    ctx.ellipse(x + w/2, yTop, w/2, rh, 0, Math.PI, 0); 
+    ctx.lineTo(x + w, yBot);
+    ctx.ellipse(x + w/2, yBot, w/2, rh, 0, 0, Math.PI); 
+    ctx.lineTo(x, yTop);
+    ctx.closePath();
+  }
+
   function renderBeer() {
     beerCurrentLevel += (beerTargetLevel - beerCurrentLevel) * 0.012;
     waveTime += 0.022;
     ctx.clearRect(0, 0, CW, CH);
 
-    const rawSurf = B_BOT - beerCurrentLevel * B_H;
+    const rawSurf = LIQ_BOT - beerCurrentLevel * LIQ_H;
     const amp     = 4 + (flowActive ? 5 : 0);
 
-    // ── 1. KEG BODY BACKGROUND (dark interior) ──
+    // ── 1. BACKGROUND (Dark inside of glass) ──
     ctx.save();
-    kegOuterPath();
-    ctx.fillStyle = '#0a0608';
+    cylinderPath(ctx, CYL_X_INNER, CYL_Y_TOP, CYL_Y_BOT, CYL_W_INNER, EL_H_INNER);
+    ctx.fillStyle = '#060302';
     ctx.fill();
     ctx.restore();
 
-    // ── 2. BEER FILL (clipped to inner body) ──
+    // ── 2. BEER LIQUID ──
     if (beerCurrentLevel > 0.005) {
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(BX + 1, B_TOP, BW - 2, B_H);
+      cylinderPath(ctx, CYL_X_INNER, CYL_Y_TOP, CYL_Y_BOT, CYL_W_INNER, EL_H_INNER);
       ctx.clip();
 
-      // Wave surface path
       ctx.beginPath();
-      ctx.moveTo(BX, CH);
-      ctx.lineTo(BX, rawSurf + Math.sin(waveTime) * amp);
-      for (let x = BX; x <= BX + BW; x++) {
-        const y = rawSurf
-          + Math.sin(waveTime + (x - BX) * 0.05) * amp
-          + Math.cos(waveTime * 0.6 + (x - BX) * 0.08) * amp * 0.5
-          + Math.sin(waveTime * 1.4 + (x - BX) * 0.03) * amp * 0.25;
-        ctx.lineTo(x, y);
+      ctx.moveTo(CYL_X_INNER, rawSurf);
+      for (let x = CYL_X_INNER; x <= CYL_X_INNER + CYL_W_INNER; x++) {
+        const waveY = rawSurf
+          + Math.sin(waveTime + (x - CYL_X_INNER) * 0.05) * amp
+          + Math.cos(waveTime * 0.6 + (x - CYL_X_INNER) * 0.08) * amp * 0.5;
+        ctx.lineTo(x, waveY);
       }
-      ctx.lineTo(BX + BW, CH);
+      ctx.lineTo(CYL_X_INNER + CYL_W_INNER, LIQ_BOT);
+      ctx.ellipse(CW/2, LIQ_BOT, CYL_W_INNER/2, EL_H_INNER, 0, 0, Math.PI);
+      ctx.lineTo(CYL_X_INNER, LIQ_BOT);
       ctx.closePath();
-      ctx.clip();
-
-      // Beer gradient
+      
       const bg = ctx.createLinearGradient(0, rawSurf, 0, CH);
       bg.addColorStop(0.00, 'rgba(255,215,55,0.97)');
       bg.addColorStop(0.12, 'rgba(240,165,18,0.98)');
       bg.addColorStop(0.45, 'rgba(208,112,8,0.99)');
       bg.addColorStop(0.80, 'rgba(165,65,5,1.00)');
       bg.addColorStop(1.00, 'rgba(110,35,3,1.00)');
-      ctx.fillStyle = bg; ctx.fillRect(BX, 0, BW, CH);
+      ctx.fillStyle = bg;
+      ctx.fill();
 
-      // Caustic shimmer
-      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * BW + BX;
+      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * CYL_W_INNER + CYL_X_INNER;
       const lg = ctx.createLinearGradient(sx - 18, 0, sx + 38, CH);
       lg.addColorStop(0,    'rgba(255,255,200,0)');
       lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
       lg.addColorStop(0.6,  `rgba(255,255,210,${0.14 + Math.cos(waveTime*0.7)*0.05})`);
       lg.addColorStop(1,    'rgba(255,255,200,0)');
-      ctx.fillStyle = lg; ctx.fillRect(BX, rawSurf, BW, CH);
+      ctx.fillStyle = lg;
+      ctx.fill();
 
-      // Left shine
-      const sg = ctx.createLinearGradient(BX, 0, BX + BW * 0.3, 0);
-      sg.addColorStop(0,    'rgba(255,255,255,0.12)');
-      sg.addColorStop(0.2,  'rgba(255,255,255,0.04)');
-      sg.addColorStop(1,    'rgba(255,255,255,0)');
-      ctx.fillStyle = sg; ctx.fillRect(BX, rawSurf, BW, CH);
-
-      // Bubbles
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i];
         b.y -= b.speed; b.wobble += b.wobbleSpeed;
@@ -779,10 +756,8 @@
         ctx.strokeStyle = `rgba(255,255,255,${b.opacity})`;
         ctx.lineWidth = 0.6; ctx.stroke();
       }
-      ctx.restore();
 
-      // Foam
-      const fH = Math.max(12, BW * 0.1);
+      const fH = Math.max(12, CYL_W_INNER * 0.1);
       const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
       foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
       foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
@@ -790,99 +765,82 @@
       foamG.addColorStop(1.0, 'rgba(245,225,170,0.5)');
       ctx.fillStyle = foamG;
       ctx.beginPath();
-      for (let x = BX; x <= BX + BW; x++) {
-        const fy = rawSurf + Math.sin(waveTime + (x-BX)*0.05)*amp + Math.cos(waveTime*0.6+(x-BX)*0.08)*amp*0.5 - fH*0.5;
-        if (x === BX) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
+      for (let x = CYL_X_INNER; x <= CYL_X_INNER + CYL_W_INNER; x++) {
+        const fy = rawSurf + Math.sin(waveTime + (x-CYL_X_INNER)*0.05)*amp + Math.cos(waveTime*0.6+(x-CYL_X_INNER)*0.08)*amp*0.5 - fH*0.5;
+        if (x === CYL_X_INNER) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
       }
-      ctx.lineTo(BX + BW, rawSurf + 6); ctx.lineTo(BX, rawSurf + 6); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.32)';
-      for (let i = 0; i < 14; i++) {
-        const fx = BX + 5 + (i/14)*(BW-10) + Math.sin(waveTime+i)*5;
-        const fy = rawSurf - fH*0.4 + Math.cos(waveTime*0.8+i*1.1)*5;
-        ctx.beginPath(); ctx.arc(fx, fy, 1.4+Math.sin(waveTime+i)*0.8, 0, Math.PI*2); ctx.fill();
-      }
+      ctx.lineTo(CYL_X_INNER + CYL_W_INNER, rawSurf + 6); ctx.lineTo(CYL_X_INNER, rawSurf + 6); ctx.closePath(); ctx.fill();
+      ctx.restore();
     }
 
-    // ── 3. STEEL FRAME OVERLAY ──
-    ctx.save();
-    // Metallic horizontal gradient (dark edges → bright center = cylindrical)
+    // ── 3. METALLIC CAPS & GLASS FRAME ──
+    const drawEllipse = (x, y, w, rh, grad) => {
+      ctx.beginPath();
+      ctx.ellipse(x + w/2, y, w/2, rh, 0, 0, Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    };
+
     const mG = ctx.createLinearGradient(0, 0, CW, 0);
     mG.addColorStop(0.00, '#111');
-    mG.addColorStop(0.10, '#252525');
-    mG.addColorStop(0.28, '#555');
-    mG.addColorStop(0.46, '#c8c8c8');
-    mG.addColorStop(0.54, '#e8e8e8');
-    mG.addColorStop(0.72, '#666');
-    mG.addColorStop(0.90, '#2a2a2a');
-    mG.addColorStop(1.00, '#0e0e0e');
+    mG.addColorStop(0.15, '#4a4a4a');
+    mG.addColorStop(0.30, '#888');
+    mG.addColorStop(0.45, '#e0e0e0');
+    mG.addColorStop(0.55, '#ffffff');
+    mG.addColorStop(0.70, '#888');
+    mG.addColorStop(0.85, '#222');
+    mG.addColorStop(1.00, '#0a0a0a');
 
-    // Draw ONLY the steel parts (rings + body edges) using composite
-    // Top ring
-    ctx.beginPath();
-    ctx.moveTo(BEVEL, 0); ctx.lineTo(CW-BEVEL, 0);
-    ctx.arcTo(CW,0,CW,BEVEL,BEVEL);
-    ctx.lineTo(CW,RING_H);
-    ctx.lineTo(CW-B_INSET, RING_H+6);
-    ctx.lineTo(B_INSET, RING_H+6);
-    ctx.lineTo(0, RING_H); ctx.lineTo(0, BEVEL);
-    ctx.arcTo(0,0,BEVEL,0,BEVEL);
-    ctx.closePath();
+    const mG_lip = ctx.createLinearGradient(0, 0, CW, 0);
+    mG_lip.addColorStop(0, '#333'); mG_lip.addColorStop(0.5, '#ddd'); mG_lip.addColorStop(1, '#111');
+
+    // Bottom Base
+    cylinderPath(ctx, 0, CYL_Y_BOT, CH - EL_H_OUTER, CW, EL_H_OUTER);
     ctx.fillStyle = mG; ctx.fill();
+    drawEllipse(0, CYL_Y_BOT, CW, EL_H_OUTER, mG_lip);
 
-    // Bottom ring
-    ctx.beginPath();
-    ctx.moveTo(0, CH-RING_H); ctx.lineTo(B_INSET, CH-RING_H-6);
-    ctx.lineTo(CW-B_INSET, CH-RING_H-6); ctx.lineTo(CW, CH-RING_H);
-    ctx.lineTo(CW, CH-BEVEL);
-    ctx.arcTo(CW,CH,CW-BEVEL,CH,BEVEL);
-    ctx.lineTo(BEVEL, CH);
-    ctx.arcTo(0,CH,0,CH-BEVEL,BEVEL);
-    ctx.closePath();
+    // Top Cap
+    cylinderPath(ctx, 0, EL_H_OUTER, CYL_Y_TOP, CW, EL_H_OUTER);
     ctx.fillStyle = mG; ctx.fill();
+    drawEllipse(0, EL_H_OUTER, CW, EL_H_OUTER, mG_lip);
 
-    // Left body strip
+    // Inner recess in top cap
+    drawEllipse(6, EL_H_OUTER + 2, CW - 12, EL_H_OUTER - 4, '#151515');
+    // Bung in center
+    drawEllipse(CW/2 - 16, EL_H_OUTER + 2, 32, 12, mG);
+
+    // Thick glass sides reflection
     ctx.fillStyle = mG;
-    ctx.fillRect(0, RING_H+6, B_INSET, B_H + 12);
-    // Right body strip
-    ctx.fillRect(CW-B_INSET, RING_H+6, B_INSET, B_H + 12);
+    ctx.fillRect(0, CYL_Y_TOP, CYL_X_INNER, CYL_Y_BOT - CYL_Y_TOP);
+    ctx.fillRect(CW - CYL_X_INNER, CYL_Y_TOP, CYL_X_INNER, CYL_Y_BOT - CYL_Y_TOP);
 
-    // Middle hoop band
-    const midY = CH / 2;
-    const rG2 = ctx.createLinearGradient(0, 0, CW, 0);
-    rG2.addColorStop(0.00, '#0d0d0d'); rG2.addColorStop(0.12, '#222');
-    rG2.addColorStop(0.38, '#606060'); rG2.addColorStop(0.50, '#aaa');
-    rG2.addColorStop(0.62, '#606060'); rG2.addColorStop(0.88, '#222');
-    rG2.addColorStop(1.00, '#0d0d0d');
-    ctx.fillStyle = rG2;
-    ctx.fillRect(B_INSET, midY - 14, BW, 28);
-    // Hoop highlights
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(B_INSET, midY - 14, BW, 4);
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fillRect(B_INSET, midY + 10, BW, 4);
+    // Glass curve lines top & bottom
+    ctx.beginPath();
+    ctx.ellipse(CW/2, CYL_Y_BOT, CYL_W_INNER/2, EL_H_INNER, 0, 0, Math.PI);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.stroke();
 
-    // Bung fitting (top center)
-    const bungX = CW / 2, bungY = RING_H * 0.55;
-    ctx.beginPath(); ctx.ellipse(bungX, bungY, 18, 10, 0, 0, Math.PI*2);
-    const bungG = ctx.createRadialGradient(bungX-4, bungY-3, 1, bungX, bungY, 18);
-    bungG.addColorStop(0, '#bbb'); bungG.addColorStop(0.5, '#555'); bungG.addColorStop(1, '#222');
-    ctx.fillStyle = bungG; ctx.fill();
-    ctx.strokeStyle = '#444'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Protective Ribs (Hoops)
+    const midY1 = CYL_Y_TOP + (CYL_Y_BOT - CYL_Y_TOP) * 0.33;
+    const midY2 = CYL_Y_TOP + (CYL_Y_BOT - CYL_Y_TOP) * 0.66;
+    [midY1, midY2].forEach(y => {
+      cylinderPath(ctx, -2, y - 6, y + 6, CW + 4, EL_H_OUTER + 2);
+      ctx.fillStyle = mG; ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(CW/2, y + 6, (CW+4)/2, EL_H_OUTER + 2, 0, 0, Math.PI);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
+    });
 
-    // Outer keg border/edge
-    kegOuterPath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1.5; ctx.stroke();
-
-    // Specular highlight (left-center vertical gleam)
-    const specG = ctx.createLinearGradient(CW*0.2, 0, CW*0.38, 0);
-    specG.addColorStop(0,    'rgba(255,255,255,0)');
-    specG.addColorStop(0.4,  'rgba(255,255,255,0.12)');
-    specG.addColorStop(0.7,  'rgba(255,255,255,0.07)');
-    specG.addColorStop(1,    'rgba(255,255,255,0)');
-    kegOuterPath();
+    // Glass front highlight
+    ctx.save();
+    cylinderPath(ctx, CYL_X_INNER, CYL_Y_TOP, CYL_Y_BOT, CYL_W_INNER, EL_H_INNER);
     ctx.clip();
-    ctx.fillStyle = specG;
+    const gG = ctx.createLinearGradient(CW*0.2, 0, CW*0.45, 0);
+    gG.addColorStop(0, 'rgba(255,255,255,0)');
+    gG.addColorStop(0.5, 'rgba(255,255,255,0.18)');
+    gG.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gG;
     ctx.fillRect(0, 0, CW, CH);
     ctx.restore();
 
