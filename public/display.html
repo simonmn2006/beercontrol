@@ -1004,6 +1004,7 @@
     const es = new EventSource(`/api/mqtt/stream`);
     es.onmessage = e => {
       try {
+        if (params.get('demo') === 'true') return; // Ignore live feed in demo mode
         const msg = JSON.parse(e.data);
         const topic = `keghero/display/${DISPLAY_ID}/kegs`;
         if (msg.topic === topic) {
@@ -1034,7 +1035,7 @@
 
   let demoIdx = 0;
   function runScenario() {
-    if (dataReceived) return; // Stop if real data is here
+    if (dataReceived && params.get('demo') !== 'true') return; // Stop if real data is here
     const s = scenarios[demoIdx];
     updateVisuals({
       beer_name:      s.beer_name + ' (DEMO)',
