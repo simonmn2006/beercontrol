@@ -234,10 +234,10 @@
     /* ── OUTSIDE INFO PANEL ── */
     .level-info-panel {
       position: absolute;
-      right: calc(100% + 36px);
+      right: calc(100% + 110px);
       top: 50%; transform: translateY(-50%);
-      width: 210px;
-      display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+      width: 240px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
     }
 
     /* Huge glowing % */
@@ -674,20 +674,20 @@
     const rawSurf = LIQ_BOT - beerCurrentLevel * LIQ_H;
     const amp     = 4 + (flowActive ? 5 : 0);
 
-    // ── 1. INNER TUBE (Dark inside glass) ──
+    // ── 1. INNER TUBE (Silver/White inside glass) ──
     ctx.save();
     drawTubeBody(ctx);
     ctx.clip();
     
-    // Background color of the glass
-    ctx.fillStyle = '#060301';
+    // Background color of the glass (Silver/White)
+    ctx.fillStyle = '#e8ecef';
     ctx.fill();
 
     // Inner back reflection
     const backRelf = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
-    backRelf.addColorStop(0, 'rgba(255,255,255,0.02)');
-    backRelf.addColorStop(0.5, 'rgba(255,255,255,0.0)');
-    backRelf.addColorStop(1, 'rgba(255,255,255,0.05)');
+    backRelf.addColorStop(0, 'rgba(0,0,0,0.15)');
+    backRelf.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+    backRelf.addColorStop(1, 'rgba(0,0,0,0.05)');
     ctx.fillStyle = backRelf;
     ctx.fill();
 
@@ -762,16 +762,16 @@
       ctx.lineTo(CX + T_R, rawSurf + 6); ctx.lineTo(CX - T_R, rawSurf + 6); ctx.closePath(); ctx.fill();
     }
     
-    // ── 3. FRONT TUBE GLASS (3D Specular Highlights) ──
+    // ── 3. FRONT TUBE GLASS (3D Specular Highlights for Silver) ──
     const glassG = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
-    glassG.addColorStop(0.00, 'rgba(0,0,0, 0.85)');
-    glassG.addColorStop(0.12, 'rgba(255,255,255, 0.5)'); // Strong left glare
-    glassG.addColorStop(0.20, 'rgba(0,0,0, 0.1)');
-    glassG.addColorStop(0.40, 'rgba(255,255,255, 0.0)');
-    glassG.addColorStop(0.70, 'rgba(255,255,255, 0.05)');
-    glassG.addColorStop(0.85, 'rgba(0,0,0, 0.4)');
-    glassG.addColorStop(0.95, 'rgba(255,255,255, 0.6)'); // Sharp right rim light
-    glassG.addColorStop(1.00, 'rgba(0,0,0, 0.90)');
+    glassG.addColorStop(0.00, 'rgba(0,0,0, 0.4)');
+    glassG.addColorStop(0.12, 'rgba(255,255,255, 0.9)'); // Strong left glare
+    glassG.addColorStop(0.20, 'rgba(0,0,0, 0.05)');
+    glassG.addColorStop(0.40, 'rgba(255,255,255, 0.2)');
+    glassG.addColorStop(0.70, 'rgba(255,255,255, 0.4)');
+    glassG.addColorStop(0.85, 'rgba(0,0,0, 0.15)');
+    glassG.addColorStop(0.95, 'rgba(255,255,255, 0.8)'); // Sharp right rim light
+    glassG.addColorStop(1.00, 'rgba(0,0,0, 0.5)');
     
     ctx.fillStyle = glassG;
     ctx.fill();
@@ -782,7 +782,7 @@
     ctx.lineTo(CX - T_R + 12, T_BOT);
     ctx.arc(CX, T_BOT, T_R - 12, Math.PI, Math.PI*0.75, true);
     ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.stroke();
 
     ctx.restore();
