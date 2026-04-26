@@ -359,9 +359,8 @@
 
 <div id="alertOverlay">
   <div class="alert-box">
-    <span class="alert-icon">⚠️</span>
-    <div class="alert-text">REPLACE KEG</div>
-    <div class="alert-sub">Level Critical — Act Now</div>
+    <div class="alert-text" id="alertText">REPLACE KEG</div>
+    <div class="alert-sub" id="alertSub">Level Critical — Act Now</div>
   </div>
 </div>
 
@@ -655,27 +654,63 @@
 
     pctEl.style.color = pct < 15 ? '#ef4444' : pct < 30 ? '#f97316' : '#f59e0b';
 
-    /* Status pill */
+    /* Status pill — no emojis */
     const pill = document.getElementById('txtStatus');
     if (flow > 0) {
-      pill.textContent   = '⚡ POURING NOW';
+      pill.textContent   = 'POURING NOW';
       pill.style.color   = '#22c55e';
     } else if (pct < 15) {
-      pill.textContent   = '🔴 KEG CRITICAL';
+      pill.textContent   = 'KEG CRITICAL';
       pill.style.color   = '#ef4444';
     } else if (pct < 30) {
-      pill.textContent   = '🟠 KEG RUNNING LOW';
+      pill.textContent   = 'KEG RUNNING LOW';
       pill.style.color   = '#f97316';
+    } else if (co2 > 25) {
+      pill.textContent   = 'CO2 HIGH';
+      pill.style.color   = '#38bdf8';
+    } else if (co2 < 6) {
+      pill.textContent   = 'CO2 LOW';
+      pill.style.color   = '#a78bfa';
     } else if (temp > 8) {
-      pill.textContent   = '🌡 TEMP WARNING';
+      pill.textContent   = 'TEMP WARNING';
       pill.style.color   = '#f59e0b';
     } else {
-      pill.textContent   = '✅ STABLE';
+      pill.textContent   = 'STABLE';
       pill.style.color   = 'rgba(255,255,255,0.4)';
     }
 
-    /* Alert overlay */
-    document.getElementById('alertOverlay').classList.toggle('show', pct < 15);
+    /* Alert overlay — supports keg AND co2 alerts */
+    const alertEl    = document.getElementById('alertOverlay');
+    const alertText  = document.getElementById('alertText');
+    const alertSub   = document.getElementById('alertSub');
+    
+    const co2High = co2 > 25;
+    const co2Low  = co2 < 6;
+
+    if (pct < 15) {
+      alertEl.classList.add('show');
+      alertEl.style.borderColor = '#ef4444';
+      alertEl.style.background  = 'rgba(239,68,68,0.15)';
+      alertText.textContent  = 'REPLACE KEG';
+      alertText.style.color  = '#ef4444';
+      alertSub.textContent   = `Level Critical — ${Math.round(pct)}% remaining`;
+    } else if (co2High) {
+      alertEl.classList.add('show');
+      alertEl.style.borderColor = '#38bdf8';
+      alertEl.style.background  = 'rgba(56,189,248,0.1)';
+      alertText.textContent  = 'CO2 PRESSURE HIGH';
+      alertText.style.color  = '#38bdf8';
+      alertSub.textContent   = `Current: ${co2.toFixed(1)} PSI — Check regulator`;
+    } else if (co2Low) {
+      alertEl.classList.add('show');
+      alertEl.style.borderColor = '#a78bfa';
+      alertEl.style.background  = 'rgba(167,139,250,0.1)';
+      alertText.textContent  = 'CO2 TANK EMPTY';
+      alertText.style.color  = '#a78bfa';
+      alertSub.textContent   = `Pressure at ${co2.toFixed(1)} PSI — Replace bottle`;
+    } else {
+      alertEl.classList.remove('show');
+    }
   }
 
   /* ── Bubble particle system ── */
@@ -713,35 +748,85 @@
   }
   initStream();
 
-  /* ── Demo Mode ── */
+  /* ── SHOWCASE DEMO — cycles through all states ── */
   if (params.get('demo') === 'true') {
-    let demoPct  = 78;
-    let demoTemp = 4.2;
-    let demoCo2  = 14.5;
 
-    updateVisuals({
-      beer_name: 'Heineken Draft',
-      remaining_pct: demoPct,
-      current_temp: demoTemp,
-      current_co2: demoCo2,
-      current_flow: 0
-    });
-
-    setInterval(() => {
-      demoPct  = Math.max(0, demoPct - 0.15);
-      demoTemp += (Math.random() - 0.5) * 0.3;
-      demoCo2  += (Math.random() - 0.5) * 0.2;
-      demoCo2   = Math.max(10, Math.min(20, demoCo2));
-      demoTemp  = Math.max(2, Math.min(12, demoTemp));
-
-      updateVisuals({
+    const scenarios = [
+      {
+        label: 'Normal Operation',
         beer_name: 'Heineken Draft',
-        remaining_pct: demoPct,
-        current_temp: demoTemp,
-        current_co2: demoCo2,
-        current_flow: Math.random() > 0.85 ? 1.5 : 0
+        remaining_pct: 82,
+        current_temp: 4.2,
+        current_co2: 14.5,
+        current_flow: 0
+      },
+      {
+        label: 'Pouring',
+        beer_name: 'Heineken Draft',
+        remaining_pct: 80,
+        current_temp: 4.3,
+        current_co2: 14.2,
+        current_flow: 1.8
+      },
+      {
+        label: 'Keg Running Low',
+        beer_name: 'Guinness Stout',
+        remaining_pct: 24,
+        current_temp: 5.1,
+        current_co2: 13.8,
+        current_flow: 0
+      },
+      {
+        label: 'KEG CRITICAL',
+        beer_name: 'Guinness Stout',
+        remaining_pct: 9,
+        current_temp: 5.4,
+        current_co2: 13.5,
+        current_flow: 0
+      },
+      {
+        label: 'CO2 Pressure High',
+        beer_name: 'Stella Artois',
+        remaining_pct: 61,
+        current_temp: 4.8,
+        current_co2: 27.4,
+        current_flow: 0
+      },
+      {
+        label: 'CO2 Tank Empty',
+        beer_name: 'Stella Artois',
+        remaining_pct: 55,
+        current_temp: 4.6,
+        current_co2: 3.2,
+        current_flow: 0
+      },
+      {
+        label: 'Temp Warning',
+        beer_name: 'Corona Extra',
+        remaining_pct: 47,
+        current_temp: 9.8,
+        current_co2: 15.1,
+        current_flow: 0
+      }
+    ];
+
+    let idx = 0;
+
+    function runScenario() {
+      const s = scenarios[idx];
+      // Add small random variation so values feel live
+      updateVisuals({
+        beer_name:      s.beer_name,
+        remaining_pct:  s.remaining_pct + (Math.random() - 0.5) * 2,
+        current_temp:   s.current_temp  + (Math.random() - 0.5) * 0.3,
+        current_co2:    s.current_co2   + (Math.random() - 0.5) * 0.4,
+        current_flow:   s.current_flow
       });
-    }, 2500);
+      idx = (idx + 1) % scenarios.length;
+    }
+
+    runScenario();
+    setInterval(runScenario, 4000); // switch scenario every 4 seconds
   }
 
   /* ── Test Level ── */
