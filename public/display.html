@@ -23,27 +23,29 @@
       --fmono: 'JetBrains Mono', monospace;
     }
 
-    /* ── THEME TOKENS V5 (Level-Focused 720x1560) ── */
+    /* ── THEME TOKENS V7 (Analog Industrial) ── */
+    [data-theme="analog"] {
+      --bg: url('/public/img/v7_analog_industrial.png');
+      --accent: #ffcc00; /* Brass Gold */
+      --beer-main: #f59e0b;
+      --ft: 'Big Shoulders Display', sans-serif;
+      --fmono: 'JetBrains Mono', monospace;
+    }
+    /* ... keeping other v5 themes for backward compatibility ... */
     [data-theme="industrial"] {
       --bg: url('/public/img/v5_industrial_level.png');
-      --accent: #ffb433; /* Neon Amber */
+      --accent: #ffb433;
       --beer-main: #f59e0b;
-      --ft: 'Oswald', sans-serif;
-      --fmono: 'Share Tech Mono', monospace;
     }
     [data-theme="modern"] {
       --bg: url('/public/img/v5_modern_level.png');
-      --accent: #00f2ff; /* Neon Cyan */
+      --accent: #00f2ff;
       --beer-main: #fef08a;
-      --ft: 'Inter', sans-serif;
-      --fmono: 'Roboto Mono', monospace;
     }
     [data-theme="crafthouse"] {
       --bg: url('/public/img/v5_crafthouse_level.png');
-      --accent: #fcd34d; /* Brass Gold */
+      --accent: #fcd34d;
       --beer-main: #d97706;
-      --ft: 'Playfair Display', serif;
-      --fmono: 'Space Mono', monospace;
     }
 
     * { margin:0; padding:0; box-sizing:border-box; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
@@ -84,60 +86,48 @@
       will-change: transform;
     }
     
-    [data-theme="industrial"] .liquid-window { 
-      width: 160px; height: 700px;
-      top: 340px; left: 50%; transform: translateX(-50%);
-      border-radius: 80px;
+    [data-theme="analog"] .liquid-window { 
+      width: 140px; height: 550px;
+      top: 380px; left: 50%; transform: translateX(-50%);
+      border-radius: 70px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
     }
-    [data-theme="modern"] .liquid-window { 
-      width: 160px; height: 700px;
-      top: 340px; left: 50%; transform: translateX(-50%);
-      border-radius: 80px;
-    }
+    [data-theme="industrial"] .liquid-window,
+    [data-theme="modern"] .liquid-window,
     [data-theme="crafthouse"] .liquid-window { 
       width: 160px; height: 700px;
       top: 340px; left: 50%; transform: translateX(-50%);
       border-radius: 80px;
     }
 
-    /* ── DATA CARDS V4 (Dynamic Production) ── */
-    .data-card {
-      position: absolute;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      pointer-events: none; z-index: 15;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      padding: 15px;
-      width: 200px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      transition: all 0.5s ease;
+    /* ── ANALOG GAUGES (Needles) ── */
+    .analog-gauge {
+      position: absolute; width: 180px; height: 180px;
+      z-index: 10; display: flex; align-items: center; justify-content: center;
+      display: none; /* Only show in analog theme */
     }
-    .card-temp { top: 380px; left: 40px; }
-    .card-psi { top: 380px; right: 40px; }
-    .card-pints { bottom: 280px; left: 50%; transform: translateX(-50%); width: 320px; }
+    [data-theme="analog"] .analog-gauge { display: flex; }
     
-    .card-val { 
-      font-size: 85px; font-family: var(--fmono); font-weight: 900; 
-      line-height: 1; color: var(--accent); 
-      filter: drop-shadow(0 0 15px var(--accent));
-    }
-    .trend-arrow { font-size: 24px; vertical-align: middle; margin-left: 5px; opacity: 0.6; }
-    .card-lbl { 
-      font-size: 14px; font-weight: 800; letter-spacing: 2px; opacity: 0.7;
-      text-transform: uppercase; color: #fff; margin-top: 5px;
-    }
-
-    /* States */
-    .state-warning { --accent: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
-    .state-critical { --accent: #ef4444; border-color: rgba(239, 68, 68, 0.5); animation: cardPulse 1s infinite; }
-    @keyframes cardPulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.05); } }
+    .gauge-temp { top: 295px; left: 100px; }
+    .gauge-psi { top: 295px; right: 100px; }
     
-    .pouring-active { animation: shake 0.2s infinite; }
-    @keyframes shake { 0% { transform: translate(-50.5%, 0); } 100% { transform: translate(-49.5%, 0); } }
+    .needle {
+      width: 4px; height: 70px; background: #cc3300;
+      position: absolute; bottom: 50%; transform-origin: bottom center;
+      border-radius: 2px; box-shadow: 0 0 5px rgba(0,0,0,0.5);
+      transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2;
+    }
+    .needle-cap {
+      width: 16px; height: 16px; background: #333; border-radius: 50%;
+      border: 2px solid #555; z-index: 3;
+    }
+    
+    .analog-val {
+      position: absolute; bottom: -40px; font-family: var(--fmono);
+      font-size: 24px; font-weight: 800; color: #fff;
+      text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    }
 
     .mist-layer {
       position: absolute; inset: 0;
@@ -314,8 +304,25 @@
     <div class="brand" id="txtName">SELECT BEER</div>
     <div class="status-tag" id="txtStatus">SYSTEM READY</div>
   </div>
+
+  <!-- ANALOG OVERLAYS -->
+  <div class="analog-gauge gauge-temp">
+    <div class="needle" id="needleTemp"></div>
+    <div class="needle-cap"></div>
+    <div class="analog-val"><span id="valTempAnalog">0.0</span>°C</div>
+  </div>
   
-  <!-- DATA CARDS (Top Priority) -->
+  <div class="analog-gauge gauge-psi">
+    <div class="needle" id="needlePsi"></div>
+    <div class="needle-cap"></div>
+    <div class="analog-val"><span id="valPsiAnalog">0.0</span> PSI</div>
+  </div>
+  
+  <!-- DATA CARDS (Hidden in Analog Theme via CSS if needed, or repurposed) -->
+  <style>
+    [data-theme="analog"] .card-temp, [data-theme="analog"] .card-psi { display: none; }
+  </style>
+
   <div class="data-card card-temp">
     <div class="card-val"><span id="valTemp">0.0</span>°</div>
     <div class="card-lbl">PRODUCT TEMP</div>
@@ -461,6 +468,19 @@
       elStatus.style.color = "var(--accent)";
     }
 
+    // Analog Needle Rotation
+    if (theme === 'analog') {
+      // Temp: range -5 to 30. Scale: -120deg to 120deg
+      const tempDeg = ((temp + 5) / 35) * 240 - 120;
+      document.getElementById('needleTemp').style.transform = `rotate(${tempDeg}deg)`;
+      document.getElementById('valTempAnalog').textContent = temp.toFixed(1);
+      
+      // PSI: range 0 to 30. Scale: -120deg to 120deg
+      const psiDeg = (co2 / 30) * 240 - 120;
+      document.getElementById('needlePsi').style.transform = `rotate(${psiDeg}deg)`;
+      document.getElementById('valPsiAnalog').textContent = co2.toFixed(1);
+    }
+
     // ADAPTIVE LIGHTING
     const glowScale = 0.5 + (1 - (pct/100)) * 0.5;
     document.querySelector('.liquid-window').style.boxShadow = `inset 0 0 ${100 * glowScale}px rgba(0,0,0,0.9)`;
@@ -575,7 +595,7 @@
   initStream();
   animateLiquid();
 
-  // Handle Testing Levels
+  // Handle Testing & Demo Data
   if (testLevel !== null) {
     setTimeout(() => {
       updateVisuals({
@@ -586,6 +606,26 @@
         current_co2: 12.5
       });
     }, 500);
+  } else if (params.get('demo') === 'true') {
+    // START DEMO LOOP
+    let demoPct = 95;
+    let demoTemp = 3.8;
+    let demoPsi = 14.2;
+    
+    setInterval(() => {
+      demoPct -= 0.1;
+      demoTemp += (Math.random() - 0.5) * 0.2;
+      demoPsi += (Math.random() - 0.5) * 0.1;
+      if (demoPct < 0) demoPct = 100;
+      
+      updateVisuals({
+        beer_name: 'DEMO BREW PRO',
+        remaining_pct: demoPct,
+        current_temp: demoTemp,
+        current_flow: Math.random() > 0.8 ? 1.5 : 0,
+        current_co2: demoPsi
+      });
+    }, 2000);
   }
 </script>
 </body>
