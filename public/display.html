@@ -3,707 +3,604 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=750, height=1560, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>KegHero | Live Display HD</title>
+  <title>KegHero Live Display</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Inter:wght@400;700;800&family=JetBrains+Mono:wght@700;800&display=swap');
-
-    :root {
-      /* Base Colors (Industrial Theme Default) */
-      --bg: #050506;
-      --keg-metal: #a1a1aa;
-      --keg-rim: #52525b;
-      --beer-main: #f59e0b;
-      --beer-dark: #b45309;
-      --foam: #fdf6e3;
-      --amber: #f8fafc;
-      --accent: #3b82f6;
-      --text: #ffffff;
-      --fm: 'Inter', sans-serif;
-      --ft: 'Big Shoulders Display', sans-serif;
-      --fmono: 'JetBrains Mono', monospace;
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-user-select: none; user-select: none;
     }
 
-    /* ── THEME TOKENS V10 (Production v1.0 Spec) ── */
-    [data-theme="v1_production"] {
-      --bg: url('/public/img/v10_production_v1.png');
-      --accent: #ff9900; /* Amber Neon */
-      --beer-main: #f59e0b;
-      --ft: 'Oswald', sans-serif;
-      --fmono: 'Share Tech Mono', monospace;
-      --glow: #ff9900;
-    }
-    /* ... keeping others ... */
-    [data-theme="modern_hud"] {
-      --bg: url('/public/img/v9_modern_hud.png');
-      --accent: #00f2ff;
-      --secondary: #f59e0b;
-    }
-
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-    
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--fm);
-      width: 750px;
-      height: 1560px;
+    body, html {
+      width: 750px; height: 1560px;
+      background: #0a0a0f;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
       overflow: hidden;
-      margin: 0;
-      padding: 0;
+    }
+
+    /* ── BACKGROUND ── */
+    .screen {
+      width: 750px; height: 1560px;
       position: relative;
-      /* Immersive Background */
-      background: radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 70%), var(--bg);
+      background:
+        radial-gradient(ellipse 600px 400px at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 800px 600px at 50% 100%, rgba(30,20,5,0.9) 0%, transparent 80%),
+        linear-gradient(180deg, #0d0d12 0%, #080810 50%, #0a0906 100%);
     }
 
-    /* ── MESH GRIDS & LIGHTS ── */
-    .kiosk-wrapper {
-      width: 100%; height: 100%; position: relative;
-      background-size: 100% 100%; 
-      background-position: center;
-      background-repeat: no-repeat;
-      display: flex; flex-direction: column; align-items: center;
-      transition: background-image 1.5s ease-in-out;
-    }
-    
-    [data-theme="industrial"] .kiosk-wrapper { background-image: var(--bg); }
-    [data-theme="modern"] .kiosk-wrapper { background-image: var(--bg); }
-    [data-theme="crafthouse"] .kiosk-wrapper { background-image: var(--bg); }
-
-    /* ── LIQUID WINDOW (Positioned over the skin's window) ── */
-    /* ── LIQUID WINDOW ALIGNMENT V2 ── */
-    .liquid-window {
-      position: absolute;
-      overflow: hidden; z-index: 5;
-      background: #000;
-      box-shadow: inset 0 0 80px rgba(0,0,0,0.9);
-      will-change: transform;
-    }
-    
-    [data-theme="v1_production"] .liquid-window { 
-      width: 580px; height: 800px;
-      top: 520px; left: 50%; transform: translateX(-50%);
-      border-radius: 40px;
-      border: 4px solid rgba(255, 153, 0, 0.1);
-      box-shadow: 0 0 50px rgba(255, 153, 0, 0.05);
-    }
-    .liquid-window {
-      position: absolute; overflow: hidden; z-index: 5; background: #000;
-    }
-    
-    /* Small Top Gauge */
-    .top-level-gauge {
-      position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
-      width: 100px; height: 240px; z-index: 10; display: none;
-      background: rgba(0,0,0,0.4); border-radius: 50px; overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.05);
-    }
-    [data-theme="v1_production"] .top-level-gauge { display: block; }
-    
-    .top-level-fill {
-      position: absolute; bottom: 0; width: 100%; background: var(--beer-main);
-      transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 20px var(--accent);
-    }
-    [data-theme="industrial"] .liquid-window,
-    [data-theme="modern"] .liquid-window,
-    [data-theme="crafthouse"] .liquid-window { 
-      width: 160px; height: 700px;
-      top: 340px; left: 50%; transform: translateX(-50%);
-      border-radius: 80px;
+    /* ── HEADER ── */
+    .header {
+      position: absolute; top: 0; left: 0; right: 0;
+      padding: 50px 50px 30px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
     }
 
-    /* ── V1.0 PRODUCTION GAUGES ── */
-    .prod-gauge {
-      position: absolute; width: 340px; height: 340px;
-      z-index: 10; display: none; align-items: center; justify-content: center;
+    .live-badge {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 700; letter-spacing: 3px;
+      color: rgba(255,255,255,0.4); text-transform: uppercase;
     }
-    [data-theme="v1_production"] .prod-gauge { display: flex; flex-direction: column; }
-    
-    .prod-gauge-left { top: 110px; left: 20px; }
-    .prod-gauge-right { top: 110px; right: 20px; }
-    
-    .prod-val {
-      font-size: 110px; font-family: var(--fmono); font-weight: 950;
-      color: #fff; text-shadow: 0 0 30px var(--glow); line-height: 0.9;
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 12px #22c55e;
+      animation: blink 2s infinite;
     }
-    .prod-lbl {
-      font-size: 18px; font-weight: 800; letter-spacing: 4px; opacity: 0.6;
-      text-transform: uppercase; margin-top: 10px;
-    }
-    .prod-unit { font-size: 24px; opacity: 0.4; margin-top: 5px; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .mist-layer {
+    .beer-name {
+      font-size: 72px; font-weight: 900;
+      text-align: center; line-height: 1;
+      text-shadow: 0 0 60px rgba(245,158,11,0.4);
+      letter-spacing: -1px;
+    }
+
+    .status-pill {
+      padding: 8px 28px; border-radius: 100px;
+      font-size: 15px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase;
+      border: 1px solid currentColor;
+      transition: all 0.4s ease;
+    }
+
+    /* ── GAUGES ROW ── */
+    .gauges-row {
+      position: absolute; top: 320px; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 0 40px;
+    }
+
+    .gauge-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+
+    .gauge-ring {
+      position: relative; width: 280px; height: 280px;
+    }
+    .gauge-ring svg {
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+      overflow: visible;
+    }
+    .g-bg {
+      fill: none;
+      stroke: rgba(255,255,255,0.04);
+      stroke-width: 10;
+    }
+    .g-track {
+      fill: none;
+      stroke: rgba(255,255,255,0.07);
+      stroke-width: 10;
+      stroke-dasharray: 659 659;
+    }
+    .g-fill {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 0 659;
+      transition: stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  stroke 0.5s ease;
+    }
+    .g-tick { stroke: rgba(255,255,255,0.08); stroke-width: 2; }
+
+    .gauge-center {
       position: absolute; inset: 0;
-      background: url('/public/img/mist.png');
-      background-size: cover;
-      opacity: 0.2; mix-blend-mode: lighten;
-      pointer-events: none; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
     }
-    
-    .refraction-container {
+    .gauge-value {
+      font-size: 80px; font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+      transition: color 0.5s ease, text-shadow 0.5s ease;
+    }
+    .gauge-unit {
+      font-size: 18px; font-weight: 700;
+      opacity: 0.4; margin-top: 4px; letter-spacing: 2px;
+    }
+    .gauge-label {
+      font-size: 15px; font-weight: 800; letter-spacing: 3px;
+      text-transform: uppercase; opacity: 0.5;
+    }
+    .trend { font-size: 22px; margin-left: 4px; vertical-align: middle; }
+
+    /* ── BEER LEVEL COLUMN ── */
+    .level-section {
+      position: absolute; top: 740px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0;
+    }
+
+    .level-header {
+      font-size: 14px; font-weight: 800; letter-spacing: 4px;
+      opacity: 0.35; text-transform: uppercase; margin-bottom: 20px;
+    }
+
+    .level-frame {
+      position: relative;
+      width: 130px; height: 600px;
+    }
+
+    /* Outer casing */
+    .level-casing {
       position: absolute; inset: 0;
-      z-index: 4; /* Behind the frame/mist, on top of the liquid */
+      border-radius: 65px;
+      border: 2px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      box-shadow:
+        inset 0 0 40px rgba(0,0,0,0.8),
+        0 0 0 1px rgba(255,255,255,0.03);
+    }
+
+    /* Inner fill track */
+    .level-track {
+      position: absolute; inset: 8px;
+      border-radius: 57px;
+      background: rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    .level-fill {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      border-radius: 57px;
+      transition: height 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  background 0.8s ease, box-shadow 0.8s ease;
+      background: linear-gradient(180deg, #fde68a 0%, #f59e0b 40%, #d97706 100%);
+      box-shadow: 0 -10px 40px rgba(245,158,11,0.5), 0 0 80px rgba(245,158,11,0.2);
+    }
+
+    /* Wave on top of fill */
+    .wave-overlay {
+      position: absolute; top: 0; left: 0; right: 0; height: 30px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+      border-radius: 57px 57px 0 0;
+    }
+
+    /* Tick marks */
+    .level-ticks {
+      position: absolute; top: 8px; right: -28px; bottom: 8px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      align-items: flex-start;
+    }
+    .tick {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      color: rgba(255,255,255,0.25);
+    }
+    .tick-line { width: 10px; height: 1px; background: rgba(255,255,255,0.15); }
+    .tick.major .tick-line { width: 16px; background: rgba(255,255,255,0.3); }
+
+    /* Floating % indicator */
+    .pct-indicator {
+      position: absolute; left: -90px;
+      transform: translateY(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 36px; font-weight: 800;
+      transition: top 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  color 0.5s ease;
+      text-align: right; white-space: nowrap;
+    }
+
+    /* Bubbles */
+    .bubble-layer {
+      position: absolute; inset: 8px; border-radius: 57px; overflow: hidden;
       pointer-events: none;
     }
-
-    .liquid-svg { 
-      width: 100%; height: 100%; display: block; position: absolute; inset: 0; z-index: 2; 
-      will-change: transform; transform: translate3d(0,0,0); /* Hardware Acceleration */
-    }
-    
-    [data-theme="crafthouse"] {
-      --interior-glow: rgba(180, 83, 9, 0.4);
-    }
-
-    /* ── TOP HEADER V2 ── */
-    .header { 
-      width: 100%; position: absolute; top: 0; left: 0;
-      display: flex; flex-direction: column; align-items: center;
-      padding: 60px 40px; z-index: 20;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
-    }
-    .live-tag {
-      background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 40px; padding: 6px 16px;
-      display: flex; align-items: center; gap: 8px; font-family: var(--fmono); font-size: 14px; color: #ef4444; text-transform: uppercase; letter-spacing: 1px;
-      margin-bottom: 15px;
-    }
-    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: blink 1s infinite; }
-    @keyframes blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
-
-    .brand { 
-      font-family: var(--ft); font-size: 64px; font-weight: 900; 
-      letter-spacing: 4px; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-      text-align: center; line-height: 1.1; margin-bottom: 5px;
-    }
-    .status-tag {
-      font-family: var(--fmono); font-size: 18px; font-weight: 700;
-      letter-spacing: 2px; color: var(--accent); opacity: 0.9;
-      text-transform: uppercase;
-    }
-
-    /* ── MAIN DISPLAY AREA ── */
-    .main-body { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
-
-    /* GAUGES */
-    .gauge-column { position: absolute; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 400px; z-index: 10; }
-    .gauge-left { left: 40px; }
-    .gauge-right { right: 40px; }
-
-    .gauge-mini { text-align: center; }
-    .mini-label { font-family: var(--ft); font-size: 20px; color: rgba(255,255,255,0.4); margin-bottom: 8px; letter-spacing: 2px; text-transform: uppercase; }
-    .mini-svg { width: 140px; height: 140px; }
-    .mini-val { font-family: var(--fmono); font-size: 32px; font-weight: 700; margin-top: -85px; }
-    .mini-unit { font-size: 12px; opacity: 0.4; font-weight: 600; margin-top: 4px; }
-
-    /* ── THE KEG ── */
-    .keg-container { position: relative; width: 500px; height: 900px; }
-    
-    /* Keg Shine/Glow */
-    .keg-backlight { 
-      position: absolute; inset: -50px; 
-      background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%); 
-      filter: blur(40px); z-index: 0;
-    }
-
-    /* Vertical Percentage on Side */
-    .pct-wall {
-      position: absolute; right: 20px; top: 100px; bottom: 100px; width: 40px;
-      display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-      font-family: var(--fmono); font-size: 11px; color: rgba(255,255,255,0.2); z-index: 5;
-    }
-    .pct-marker { width: 10px; height: 1px; background: rgba(255,255,255,0.1); }
-    .pct-active-label { 
-      position: absolute; right: 45px; transform: translateY(-50%);
-      font-size: 18px; font-weight: 800; color: var(--beer-main); transition: top 0.5s ease;
-    }
-
-    .keg-svg { width: 100%; height: 100%; filter: drop-shadow(0 40px 80px rgba(0,0,0,0.8)); transition: filter 1s ease; }
-
-    /* Theme Adjustments */
-    [data-theme="modern"] .keg-backlight { background: radial-gradient(circle, rgba(34, 211, 238, 0.15) 0%, transparent 70%); }
-    [data-theme="crafthouse"] .keg-backlight { background: radial-gradient(circle, rgba(180, 83, 9, 0.15) 0%, transparent 70%); }
-
-    [data-theme="modern"] .mini-svg circle#gTemp { stroke: #22d3ee; filter: drop-shadow(0 0 5px #22d3ee); }
-    [data-theme="modern"] .mini-svg circle#gFlow { stroke: #60a5fa; filter: drop-shadow(0 0 5px #60a5fa); }
-    [data-theme="modern"] .mini-svg circle#gCo2 { stroke: #818cf8; filter: drop-shadow(0 0 5px #818cf8); }
-
-    [data-theme="crafthouse"] {
-      background: radial-gradient(circle at 50% 20%, #1c1917 0%, #0c0a09 100%);
-    }
-    [data-theme="crafthouse"] .mini-svg circle { stroke-width: 10; }
-    [data-theme="crafthouse"] .mini-label { color: #fcd34d; font-family: serif; }
-
-    /* GAUGES CLUSTER */
-    .gauge-mini {
-      text-align: center; width: 140px; margin-bottom: 40px;
-      background: radial-gradient(circle at 30% 30%, #1a1a1a, #000);
-      border: 4px solid #111; border-radius: 50%;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05);
-      position: relative; padding: 15px;
-    }
-    
-    /* DATA OVERLAYS */
-    .data-overlay { position: absolute; z-index: 10; pointer-events: none; }
-    
-    .overlay-temp { top: 410px; left: 160px; text-align: center; }
-    .overlay-co2 { top: 410px; right: 160px; text-align: center; }
-    
-    [data-theme="modern"] .overlay-temp { top: 380px; left: 240px; }
-    [data-theme="modern"] .overlay-co2 { top: 380px; right: 240px; }
-
-    .ov-val { font-family: var(--fmono); font-size: 28px; font-weight: 900; color: #fff; text-shadow: 0 0 10px var(--glow); }
-    .ov-lbl { font-size: 10px; font-weight: 800; opacity: 0.6; letter-spacing: 1px; color: var(--accent); }
-
-    .brand-overlay {
-      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
-      font-family: var(--ft); font-size: 32px; font-weight: 900; letter-spacing: 6px;
-      opacity: 0.4; text-shadow: 0 1px 5px rgba(0,0,0,0.5); z-index: 10;
-    }
-    
-    /* ── ALIVE EFFECTS ── */
-    .slosh-container {
-      position: absolute; width: 100%; height: 100%;
-      transform-origin: center 20%;
-      transition: transform 0.2s ease-out;
-    }
-    
-    .bubbles { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
     .bubble {
-      position: absolute; bottom: -20px; background: rgba(255, 255, 255, 0.4);
-      border-radius: 50%; animation: rise var(--d) infinite linear;
+      position: absolute; border-radius: 50%;
+      background: rgba(255,255,255,0.35);
+      animation: rise linear infinite;
     }
-    @keyframes rise { 
-      0% { transform: translateY(0) scale(1); opacity: 0; }
-      10% { opacity: 0.6; }
-      90% { opacity: 0.3; }
-      100% { transform: translateY(-1000px) scale(0.5); opacity: 0; } 
-    }
-    
-    .mist-layer {
-      position: absolute; inset: 0;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 70%);
-      pointer-events: none; z-index: 10;
+    @keyframes rise {
+      from { transform: translateY(0) scale(1); opacity: 0.5; }
+      to { transform: translateY(-620px) scale(0.3); opacity: 0; }
     }
 
-    /* ── FOOTER DATA ── */
-    .footer { width: 100%; text-align: center; padding: 0; position: absolute; bottom: 80px; left: 0; }
-    .brand-logo-img { max-width: 280px; opacity: 0.8; }
-    
-    .remaining-tag {
-      margin-top: 10px; font-family: var(--fmono); font-size: 32px; color: var(--beer-main); font-weight: 900; letter-spacing: 2px;
-      text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    /* ── FOOTER ── */
+    .footer {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 40px 50px 60px;
+      background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
 
-    /* ── ALERT OVERLAY V2 ── */
+    .pints-row {
+      display: flex; align-items: baseline; gap: 10px;
+    }
+    .pints-val {
+      font-size: 60px; font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pints-lbl {
+      font-size: 16px; font-weight: 700; letter-spacing: 3px;
+      opacity: 0.4; text-transform: uppercase;
+    }
+
+    .beer-logo {
+      font-size: 60px;
+      filter: drop-shadow(0 0 20px rgba(245,158,11,0.5));
+    }
+
+    /* ── ALERT OVERLAY ── */
     #alertOverlay {
-      position: fixed; inset: 0; 
-      background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(0,0,0,0.8) 100%);
-      backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100;
-      animation: alertPulse 1.5s infinite ease-in-out; pointer-events: none;
+      position: fixed; inset: 0; z-index: 999;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(239, 68, 68, 0.15);
+      backdrop-filter: blur(6px);
+    }
+    #alertOverlay.show { display: flex; }
+    .alert-box {
+      text-align: center;
+      animation: alertPulse 1.2s infinite ease-in-out;
+    }
+    .alert-icon { font-size: 100px; display: block; }
+    .alert-text {
+      font-size: 72px; font-weight: 900; letter-spacing: 4px;
+      color: #ef4444;
+      text-shadow: 0 0 60px rgba(239,68,68,0.8);
+    }
+    .alert-sub {
+      font-size: 22px; opacity: 0.6; margin-top: 10px; letter-spacing: 2px;
+    }
+    /* Red pulsing border */
+    #alertOverlay::before {
+      content: ''; position: fixed; inset: 0;
       border: 20px solid #ef4444;
+      animation: borderPulse 1.2s infinite ease-in-out;
+      pointer-events: none;
     }
-    @keyframes alertPulse { 
-      0%, 100% { opacity: 1; border-width: 20px; } 
-      50% { opacity: 0.7; border-width: 40px; } 
+    @keyframes alertPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+    @keyframes borderPulse { 0%,100%{opacity:0.8} 50%{opacity:0.2} }
+
+    /* ── LEVEL STATE COLORS ── */
+    .level--ok    .level-fill {
+      background: linear-gradient(180deg, #fde68a 0%, #f59e0b 40%, #d97706 100%);
+      box-shadow: 0 -10px 40px rgba(245,158,11,0.5), 0 0 60px rgba(245,158,11,0.15);
     }
-    .alert-msg { 
-      font-family: var(--ft); font-size: 100px; font-weight: 950; color: #fff; 
-      text-shadow: 0 0 60px #ef4444; text-transform: uppercase; letter-spacing: 5px;
+    .level--low   .level-fill {
+      background: linear-gradient(180deg, #fed7aa 0%, #f97316 40%, #ea580c 100%);
+      box-shadow: 0 -10px 40px rgba(249,115,22,0.7), 0 0 60px rgba(249,115,22,0.2);
+    }
+    .level--crit  .level-fill {
+      background: linear-gradient(180deg, #fecaca 0%, #ef4444 40%, #dc2626 100%);
+      box-shadow: 0 -10px 40px rgba(239,68,68,0.8), 0 0 60px rgba(239,68,68,0.3);
+      animation: critPulse 1.2s infinite;
+    }
+    @keyframes critPulse {
+      0%,100% { box-shadow: 0 -10px 40px rgba(239,68,68,0.8); }
+      50%     { box-shadow: 0 -20px 80px rgba(239,68,68,1.0); }
     }
 
+    /* pour animation */
+    .pouring .level-fill { animation: pourShimmer 0.3s infinite; }
+    @keyframes pourShimmer { 0%,100%{opacity:1} 50%{opacity:0.85} }
   </style>
 </head>
 <body>
 
-<div id="alertOverlay"><span class="alert-msg">LOW KEG LEVEL</span></div>
+<div id="alertOverlay">
+  <div class="alert-box">
+    <span class="alert-icon">⚠️</span>
+    <div class="alert-text">REPLACE KEG</div>
+    <div class="alert-sub">Level Critical — Act Now</div>
+  </div>
+</div>
 
-<div class="kiosk-wrapper">
-  
+<div class="screen">
+
+  <!-- HEADER -->
   <div class="header">
-    <div class="live-tag"><div class="live-dot"></div> LIVE TAP FEED</div>
-    <div class="brand" id="txtName">SELECT BEER</div>
-    <div class="status-tag" id="txtStatus">SYSTEM READY</div>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE TAP FEED
+    </div>
+    <div class="beer-name" id="txtName">LOADING…</div>
+    <div class="status-pill" id="txtStatus">SYSTEM READY</div>
   </div>
 
-  <!-- V1.0 PRODUCTION OVERLAYS -->
-  <div class="prod-gauge prod-gauge-left">
-    <div class="prod-val" id="valPressureProd">0.0</div>
-    <div class="prod-unit">BAR</div>
-    <div class="prod-lbl">CO2 PRESSURE</div>
+  <!-- GAUGES -->
+  <div class="gauges-row">
+
+    <!-- TEMPERATURE -->
+    <div class="gauge-wrap">
+      <div class="gauge-ring">
+        <svg viewBox="0 0 100 100">
+          <!-- tick marks -->
+          <g transform="translate(50,50)">
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-135)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(-90)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-45)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(0)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(45)"/>
+          </g>
+          <circle class="g-bg" cx="50" cy="50" r="42"/>
+          <circle class="g-track" cx="50" cy="50" r="42"
+            stroke-dasharray="220 659"
+            stroke-dashoffset="-110"/>
+          <circle class="g-fill" id="gFillTemp" cx="50" cy="50" r="42"
+            stroke="#f59e0b"
+            stroke-dashoffset="-110"/>
+        </svg>
+        <div class="gauge-center">
+          <span class="gauge-value" id="gValTemp" style="color:#f59e0b; text-shadow:0 0 30px rgba(245,158,11,0.6)">0.0</span>
+          <span class="gauge-unit">°C</span>
+        </div>
+      </div>
+      <span class="gauge-label">Temperature</span>
+    </div>
+
+    <!-- CO2 PRESSURE -->
+    <div class="gauge-wrap">
+      <div class="gauge-ring">
+        <svg viewBox="0 0 100 100">
+          <g transform="translate(50,50)">
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-135)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(-90)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-45)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(0)"/>
+            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(45)"/>
+          </g>
+          <circle class="g-bg" cx="50" cy="50" r="42"/>
+          <circle class="g-track" cx="50" cy="50" r="42"
+            stroke-dasharray="220 659"
+            stroke-dashoffset="-110"/>
+          <circle class="g-fill" id="gFillCo2" cx="50" cy="50" r="42"
+            stroke="#38bdf8"
+            stroke-dashoffset="-110"/>
+        </svg>
+        <div class="gauge-center">
+          <span class="gauge-value" id="gValCo2" style="color:#38bdf8; text-shadow:0 0 30px rgba(56,189,248,0.6)">0.0</span>
+          <span class="gauge-unit">PSI</span>
+        </div>
+      </div>
+      <span class="gauge-label">CO₂ Pressure</span>
+    </div>
+
   </div>
 
-  <div class="prod-gauge prod-gauge-right">
-    <div class="prod-val" id="valTempProd">0.0</div>
-    <div class="prod-unit">°C</div>
-    <div class="prod-lbl">BEER TEMP</div>
-  </div>
+  <!-- BEER LEVEL COLUMN -->
+  <div class="level-section">
+    <div class="level-header">Beer Remaining</div>
 
-  <div class="top-level-gauge">
-    <div class="top-level-fill" id="fillTopLevel"></div>
-  </div>
+    <div class="level-frame" id="levelFrame">
+      <div class="level-casing"></div>
+      <div class="level-track">
+        <div class="level-fill" id="levelFill" style="height:0%">
+          <div class="wave-overlay"></div>
+        </div>
+        <div class="bubble-layer" id="bubbleLayer"></div>
+      </div>
 
-  <!-- MODERN HUD OVERLAYS -->
-  <div class="hud-gauge gauge-left">
-    <svg class="gauge-svg" viewBox="0 0 100 100">
-      <circle class="gauge-track" cx="50" cy="50" r="40" />
-      <circle class="gauge-fill" id="fillTemp" cx="50" cy="50" r="40" stroke="#00f2ff" />
-    </svg>
-    <div class="hud-val">
-      <span id="txtTempHud">0.0</span>
-      <span class="hud-unit">°C TEMP</span>
+      <!-- Tick marks -->
+      <div class="level-ticks">
+        <div class="tick major"><div class="tick-line"></div>100%</div>
+        <div class="tick"><div class="tick-line"></div>75%</div>
+        <div class="tick major"><div class="tick-line"></div>50%</div>
+        <div class="tick"><div class="tick-line"></div>25%</div>
+        <div class="tick major"><div class="tick-line"></div>0%</div>
+      </div>
+
+      <!-- Floating % -->
+      <div class="pct-indicator" id="pctIndicator" style="top:100%; color:#f59e0b">0%</div>
     </div>
   </div>
 
-  <div class="hud-gauge gauge-right">
-    <svg class="gauge-svg" viewBox="0 0 100 100">
-      <circle class="gauge-track" cx="50" cy="50" r="40" />
-      <circle class="gauge-fill" id="fillPsi" cx="50" cy="50" r="40" stroke="#f59e0b" />
-    </svg>
-    <div class="hud-val">
-      <span id="txtPsiHud">0.0</span>
-      <span class="hud-unit">PSI CO2</span>
-    </div>
-  </div>
-
-  <!-- ANALOG OVERLAYS -->
-  <div class="analog-gauge gauge-temp">
-    <div class="needle" id="needleTemp"></div>
-    <div class="needle-cap"></div>
-    <div class="analog-val"><span id="valTempAnalog">0.0</span>°C</div>
-  </div>
-  
-  <div class="analog-gauge gauge-psi">
-    <div class="needle" id="needlePsi"></div>
-    <div class="needle-cap"></div>
-    <div class="analog-val"><span id="valPsiAnalog">0.0</span> PSI</div>
-  </div>
-  
-  <!-- DATA CARDS (Hidden in Analog Theme via CSS if needed, or repurposed) -->
-  <style>
-    [data-theme="analog"] .card-temp, [data-theme="analog"] .card-psi { display: none; }
-  </style>
-
-  <div class="data-card card-temp">
-    <div class="card-val"><span id="valTemp">0.0</span>°</div>
-    <div class="card-lbl">PRODUCT TEMP</div>
-  </div>
-
-  <div class="data-card card-psi">
-    <div class="card-val"><span id="valCo2">0.0</span></div>
-    <div class="card-lbl">PSI PRESSURE</div>
-  </div>
-
-  <div class="data-card card-pints">
-    <div class="card-val"><span id="valPints">0</span></div>
-    <div class="card-lbl">EST. PINTS REMAINING</div>
-  </div>
-
-  <div class="liquid-window">
-    <div class="slosh-container" id="sloshWrap">
-      <div class="mist-layer"></div>
-      <div class="beer-live-texture"></div>
-      <div class="bubbles" id="bubbleContainer"></div>
-      
-      <svg class="liquid-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <filter id="liquidRefraction" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-          <mask id="windowMask">
-            <rect id="beerFill" x="0" y="800" width="500" height="900" fill="white" />
-            <path id="wavePath" d="" fill="white" />
-          </mask>
-        </defs>
-        
-        <g filter="url(#liquidRefraction)">
-          <rect width="500" height="900" fill="#000" />
-          <rect id="liquidBody" width="500" height="900" fill="var(--beer-main)" mask="url(#windowMask)" />
-        </g>
-      </svg>
-    </div>
-  </div>
-      
-      <!-- Interior Background -->
-      <rect x="0" y="0" width="500" height="900" fill="#0c0701" opacity="0.4" />
-
-      <!-- The 'Head' (Foam) -->
-      <path id="foamPath" d="" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="40" stroke-linecap="round" filter="blur(5px)" />
-      
-      <!-- Liquid Fill (Tinting the texture) -->
-      <g mask="url(#windowMask)">
-         <rect x="0" y="0" width="500" height="900" fill="var(--beer-main)" opacity="0.3" />
-      </g>
-
-      <g id="bubbleLayer"></g>
-    </svg>
-  </div>
-
-  <div class="logo-badge-overlay">
-    <div id="badgeLogoContainer">🍺</div>
-  </div>
-
+  <!-- FOOTER -->
   <div class="footer">
-    <img src="/public/img/brand_logo.png" class="brand-logo-img">
-    <div class="remaining-tag" id="txtPct">0% REMAINING</div>
+    <div id="beerLogo" class="beer-logo">🍺</div>
+    <div class="pints-row">
+      <span class="pints-val" id="pintsVal">--</span>
+      <span class="pints-lbl">pints left</span>
+    </div>
   </div>
 
 </div>
 
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const theme = params.get('theme') || 'industrial';
-  const testLevel = params.get('testLevel'); // For easy user testing
-  document.body.setAttribute('data-theme', theme);
-
+  const params     = new URLSearchParams(window.location.search);
   const DISPLAY_ID = window.location.pathname.split('/').pop();
-  
-  // DOM
-  const elLevel = document.getElementById('beerFill');
-  const elWave = document.getElementById('wavePath');
-  const elFoam = document.getElementById('foamPath');
-  const elGlow = document.getElementById('kegGlow');
-  const elLogo = document.getElementById('badgeLogoContainer');
-  const elAlert = document.getElementById('alertOverlay');
-  const elAlertMsg = elAlert.querySelector('.alert-msg');
-  const elWindow = document.querySelector('.liquid-window');
 
-  let flowIntensity = 0;
-  let waveTime = 0;
-  let lastTemp = null;
+  let lastTemp    = null;
+  let curLevel    = 0;
+  let flowActive  = false;
 
-  function setGauge(id, val, max) {
-    const el = document.getElementById(id);
-    const circ = 283;
-    const progress = Math.min(val/max, 1);
-    el.style.strokeDasharray = `${progress * circ} ${circ}`;
+  /* ── Gauge arc helper ── */
+  // Gauge uses a 270° sweep (from -135° to +135°).
+  // Circumference of r=42: 2π*42 ≈ 263.9
+  // 270° of that = 263.9 * 0.75 ≈ 197.9
+  const CIRC = 2 * Math.PI * 42;
+  const ARC  = CIRC * 0.75;
+
+  function setGaugeFill(id, value, min, max) {
+    const pct = Math.min(Math.max((value - min) / (max - min), 0), 1);
+    const dash = pct * ARC;
+    document.getElementById(id).style.strokeDasharray = `${dash} ${CIRC}`;
   }
 
+  /* ── Update UI ── */
   function updateVisuals(k) {
-    const name = k.beer_name || "EMPTY TAP";
-    const pct = k.remaining_pct || 0;
-    const ltr = k.remaining_liters || 0;
-    const temp = k.current_temp || 0;
-    const co2 = k.current_co2 || 0;
-    const flow = k.current_flow || 0;
-    
-    flowIntensity = flow > 0 ? flow : 0;
+    const name  = k.beer_name        || 'EMPTY TAP';
+    const pct   = k.remaining_pct    || 0;
+    const temp  = k.current_temp     || 0;
+    const co2   = k.current_co2      || 0;
+    const flow  = k.current_flow     || 0;
+    const logo  = k.library_logo     || k.logo_path || null;
 
+    curLevel   = pct;
+    flowActive = flow > 0;
+
+    /* Name */
     document.getElementById('txtName').textContent = name;
-    document.getElementById('txtPct').textContent = Math.round(pct) + '% REMAINING';
-    document.getElementById('valTemp').textContent = temp.toFixed(1);
-    document.getElementById('valCo2').textContent = co2.toFixed(1);
-    
-    // Pints Calculation (Assuming 50L Keg = ~88 Pints)
-    const totalPints = 88;
-    const pintsLeft = Math.floor((pct / 100) * totalPints);
-    document.getElementById('valPints').textContent = pintsLeft;
 
-    // Temperature Trend
-    const elTempVal = document.getElementById('valTemp');
-    if (lastTemp !== null && lastTemp !== temp) {
-      const arrow = temp > lastTemp ? '↑' : '↓';
-      elTempVal.innerHTML = `${temp.toFixed(1)}<span class="trend-arrow">${arrow}</span>`;
+    /* Logo */
+    document.getElementById('beerLogo').innerHTML = logo
+      ? `<img src="${logo}" style="height:70px;object-fit:contain;filter:drop-shadow(0 0 16px rgba(245,158,11,0.5))">`
+      : '🍺';
+
+    /* Pints */
+    const pints = Math.floor((pct / 100) * 88);
+    document.getElementById('pintsVal').textContent = pints;
+
+    /* Temperature gauge */
+    setGaugeFill('gFillTemp', temp, 0, 20);
+    document.getElementById('gValTemp').textContent = temp.toFixed(1);
+
+    /* CO2 gauge */
+    setGaugeFill('gFillCo2', co2, 0, 30);
+    document.getElementById('gValCo2').textContent = co2.toFixed(1);
+
+    /* Level bar */
+    const fill = document.getElementById('levelFill');
+    fill.style.height = pct + '%';
+
+    /* Floating % label — top = 100% - pct% from bottom */
+    const pctEl = document.getElementById('pctIndicator');
+    pctEl.style.top   = (100 - pct) + '%';
+    pctEl.textContent = Math.round(pct) + '%';
+
+    /* Level state */
+    const frame = document.getElementById('levelFrame');
+    frame.className = 'level-frame';
+    if (pct < 15)      frame.classList.add('level--crit');
+    else if (pct < 30) frame.classList.add('level--low');
+    else               frame.classList.add('level--ok');
+
+    if (flowActive) frame.classList.add('pouring');
+
+    /* Gauge colour on warning */
+    const tempEl = document.getElementById('gValTemp');
+    if (temp > 8) {
+      tempEl.style.color      = '#ef4444';
+      tempEl.style.textShadow = '0 0 30px rgba(239,68,68,0.7)';
+      document.getElementById('gFillTemp').style.stroke = '#ef4444';
+    } else {
+      tempEl.style.color      = '#f59e0b';
+      tempEl.style.textShadow = '0 0 30px rgba(245,158,11,0.6)';
+      document.getElementById('gFillTemp').style.stroke = '#f59e0b';
     }
-    lastTemp = temp;
-    
-    // Status & Color States
-    const elStatus = document.getElementById('txtStatus');
-    const cards = document.querySelectorAll('.data-card');
-    
-    // Reset classes
-    cards.forEach(c => c.classList.remove('state-warning', 'state-critical'));
-    elWindow.classList.remove('pouring-active');
-    
+
+    pctEl.style.color = pct < 15 ? '#ef4444' : pct < 30 ? '#f97316' : '#f59e0b';
+
+    /* Status pill */
+    const pill = document.getElementById('txtStatus');
     if (flow > 0) {
-      elStatus.textContent = "POURING NOW";
-      elStatus.style.color = "#22c55e";
-      elWindow.classList.add('pouring-active');
+      pill.textContent   = '⚡ POURING NOW';
+      pill.style.color   = '#22c55e';
     } else if (pct < 15) {
-      elStatus.textContent = "KEG CRITICAL";
-      elStatus.style.color = "#ef4444";
-      cards.forEach(c => c.classList.add('state-critical'));
-      elAlertMsg.textContent = "REPLACE KEG NOW";
+      pill.textContent   = '🔴 KEG CRITICAL';
+      pill.style.color   = '#ef4444';
     } else if (pct < 30) {
-      elStatus.textContent = "KEG LOW";
-      elStatus.style.color = "#f59e0b";
-      cards.forEach(c => c.classList.add('state-warning'));
-    } else if (temp > 7) {
-      elStatus.textContent = "TEMP WARNING";
-      elStatus.style.color = "#f59e0b";
+      pill.textContent   = '🟠 KEG RUNNING LOW';
+      pill.style.color   = '#f97316';
+    } else if (temp > 8) {
+      pill.textContent   = '🌡 TEMP WARNING';
+      pill.style.color   = '#f59e0b';
     } else {
-      elStatus.textContent = "STABLE / READY";
-      elStatus.style.color = "var(--accent)";
+      pill.textContent   = '✅ STABLE';
+      pill.style.color   = 'rgba(255,255,255,0.4)';
     }
 
-    // Analog Needle Rotation
-    if (theme === 'analog') {
-      const tempDeg = ((temp + 5) / 35) * 240 - 120;
-      document.getElementById('needleTemp').style.transform = `rotate(${tempDeg}deg)`;
-      document.getElementById('valTempAnalog').textContent = temp.toFixed(1);
-      
-      const psiDeg = (co2 / 30) * 240 - 120;
-      document.getElementById('needlePsi').style.transform = `rotate(${psiDeg}deg)`;
-      document.getElementById('valPsiAnalog').textContent = co2.toFixed(1);
-    }
-
-    // V1.0 Production Logic
-    if (theme === 'v1_production') {
-      document.getElementById('valPressureProd').textContent = co2.toFixed(2);
-      document.getElementById('valTempProd').textContent = temp.toFixed(1);
-      document.getElementById('fillTopLevel').style.height = pct + '%';
-      
-      // Slosh Effect intensity
-      const sloshAmp = flow > 0 ? 3 : 0.5;
-      document.querySelector('.slosh-container').style.setProperty('--slosh-angle', (sloshAmp * Math.sin(Date.now()/500)) + 'deg');
-      document.querySelector('.slosh-container').style.setProperty('--slosh-y', (sloshAmp * 2) + 'px');
-    }
-
-    // ADAPTIVE LIGHTING
-    const glowScale = 0.5 + (1 - (pct/100)) * 0.5;
-    document.querySelector('.liquid-window').style.boxShadow = `inset 0 0 ${100 * glowScale}px rgba(0,0,0,0.9)`;
-    
-    // DYNAMIC REFRACTION: Only refract if submerged
-    const badge = document.querySelector('.logo-badge-overlay');
-    if (pct > 60) {
-      badge.style.filter = 'url(#liquidRefraction) drop-shadow(0 0 20px rgba(255,255,255,0.2)) blur(1px)';
-    } else {
-      badge.style.filter = 'none';
-      badge.style.zIndex = '20'; // Bring to front when above water
-    }
-
-    // Liquid Height Logic (SVG y: 80 to 820)
-    const startY = 820;
-    const endY = 80;
-    const currentY = startY - ((startY - endY) * (pct / 100));
-    
-    elLevel.setAttribute('y', currentY);
-    elLevel.setAttribute('height', 820 - currentY);
-    
-    // Wave Control
-    window.currentLiquidY = currentY;
-    document.getElementById('pctFloating').style.top = `${100 - pct}%`;
-    document.getElementById('pctFloating').textContent = Math.round(pct) + '%';
-
-    if (k.logo_path || k.library_logo) {
-      elLogo.innerHTML = `<img src="${k.library_logo || k.logo_path}" class="badge-img">`;
-    } else {
-      elLogo.innerHTML = '<span style="font-size:120px">🍺</span>';
-    }
-
-    elAlert.style.display = (pct < 15) ? 'flex' : 'none';
+    /* Alert overlay */
+    document.getElementById('alertOverlay').classList.toggle('show', pct < 15);
   }
 
-  // Liquid Physics Engine
-  function animateLiquid() {
-    waveTime += 0.05 + (flowIntensity * 0.05);
-    const y = window.currentLiquidY || 820;
-    const amp = 5 + (flowIntensity * 15);
-    const freq = 0.02;
-
-    const x1 = 25, x2 = 125, x3 = 250, x4 = 375, x5 = 475;
-    const w1 = y + Math.sin(waveTime) * amp;
-    const w2 = y + Math.cos(waveTime * 0.8) * amp;
-    const w3 = y + Math.sin(waveTime * 1.2) * amp;
-
-    const d = `M ${x1} ${y} Q ${x2} ${w1} ${x3} ${w2} T ${x5} ${w3} V 900 H ${x1} Z`;
-    const dFoam = `M ${x1} ${y} Q ${x2} ${w1} ${x3} ${w2} T ${x5} ${w3}`;
-    
-    elWave.setAttribute('d', d);
-    elFoam.setAttribute('d', dFoam);
-
-    requestAnimationFrame(animateLiquid);
-  }
-
-  // Particle System (Bubbles)
-  const bubbleLayer = document.getElementById('bubbleLayer');
+  /* ── Bubble particle system ── */
   function spawnBubble() {
-    if (window.currentLiquidY > 810) return; // empty
-    
-    const b = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    const r = Math.random() * 3 + 1;
-    const x = 50 + Math.random() * 400;
-    b.setAttribute('cx', x);
-    b.setAttribute('cy', 850);
-    b.setAttribute('r', r);
-    b.setAttribute('fill', 'white');
-    b.setAttribute('opacity', Math.random() * 0.5);
-    bubbleLayer.appendChild(b);
+    if (curLevel < 3) return;
+    const layer  = document.getElementById('bubbleLayer');
+    const b      = document.createElement('div');
+    const size   = 3 + Math.random() * 6;
+    const left   = 10 + Math.random() * 80;
+    const dur    = 3 + Math.random() * 4 + (flowActive ? -1 : 0);
 
-    const speed = 2 + Math.random() * 4 + (flowIntensity * 5);
-    let curY = 850;
-    
-    const up = () => {
-      curY -= speed;
-      b.setAttribute('cy', curY);
-      if (curY < (window.currentLiquidY || 820)) {
-        b.remove();
-      } else {
-        requestAnimationFrame(up);
-      }
-    };
-    up();
+    b.className = 'bubble';
+    b.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${left}%; bottom:0%;
+      animation-duration:${dur}s;
+      animation-delay:${Math.random() * 2}s;
+    `;
+    layer.appendChild(b);
+    setTimeout(() => b.remove(), (dur + 2) * 1000);
   }
+  setInterval(spawnBubble, 600);
 
-  setInterval(() => {
-    const total = 1 + Math.floor(flowIntensity * 5);
-    for(let i=0; i<total; i++) spawnBubble();
-  }, 200);
-
-  // SSE Stream
+  /* ── SSE Stream ── */
   function initStream() {
-    const source = new EventSource('/api/mqtt/stream');
-    source.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      if (msg.type === 'message') {
-        const topic = msg.data.topic;
-        const data = msg.data.data;
-
-        // Custom logic: if topic matches display-specific or general tap update
-        // For simplicity, let's assume the server pushes /keghero/display/:id/kegs
-        if (topic === `keghero/display/${DISPLAY_ID}/kegs`) {
-          if (data.kegs && data.kegs.length > 0) {
-            updateVisuals(data.kegs[0]);
-          }
-        }
-      }
+    const es = new EventSource(`/api/mqtt/stream`);
+    es.onmessage = e => {
+      try {
+        const msg = JSON.parse(e.data);
+        const topic = `keghero/display/${DISPLAY_ID}/kegs`;
+        if (msg.topic === topic) updateVisuals(msg.payload);
+      } catch {}
     };
+    es.onerror = () => setTimeout(initStream, 3000);
   }
-
   initStream();
-  animateLiquid();
 
-  // Handle Testing & Demo Data
-  if (testLevel !== null) {
-    setTimeout(() => {
-      updateVisuals({
-        beer_name: 'TEST MODE: ' + testLevel + '%',
-        remaining_pct: parseFloat(testLevel),
-        current_temp: 4.2,
-        current_flow: 0,
-        current_co2: 12.5
-      });
-    }, 500);
-  } else if (params.get('demo') === 'true') {
-    // START DEMO LOOP
-    let demoPct = 95;
-    let demoTemp = 3.8;
-    let demoPsi = 14.2;
-    
+  /* ── Demo Mode ── */
+  if (params.get('demo') === 'true') {
+    let demoPct  = 78;
+    let demoTemp = 4.2;
+    let demoCo2  = 14.5;
+
+    updateVisuals({
+      beer_name: 'DEMO BREW PRO',
+      remaining_pct: demoPct,
+      current_temp: demoTemp,
+      current_co2: demoCo2,
+      current_flow: 0
+    });
+
     setInterval(() => {
-      demoPct -= 0.1;
-      demoTemp += (Math.random() - 0.5) * 0.2;
-      demoPsi += (Math.random() - 0.5) * 0.1;
-      if (demoPct < 0) demoPct = 100;
-      
+      demoPct  = Math.max(0, demoPct - 0.15);
+      demoTemp += (Math.random() - 0.5) * 0.3;
+      demoCo2  += (Math.random() - 0.5) * 0.2;
+      demoCo2   = Math.max(10, Math.min(20, demoCo2));
+      demoTemp  = Math.max(2, Math.min(12, demoTemp));
+
       updateVisuals({
         beer_name: 'DEMO BREW PRO',
         remaining_pct: demoPct,
         current_temp: demoTemp,
-        current_flow: Math.random() > 0.8 ? 1.5 : 0,
-        current_co2: demoPsi
+        current_co2: demoCo2,
+        current_flow: Math.random() > 0.85 ? 1.5 : 0
       });
-    }, 2000);
+    }, 2500);
+  }
+
+  /* ── Test Level ── */
+  const testLevel = params.get('testLevel');
+  if (testLevel !== null) {
+    updateVisuals({
+      beer_name: 'TEST MODE',
+      remaining_pct: parseFloat(testLevel),
+      current_temp: 4.2,
+      current_co2: 14.5,
+      current_flow: 0
+    });
   }
 </script>
 </body>
