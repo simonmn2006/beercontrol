@@ -188,7 +188,7 @@
 
     /* ── BEER LEVEL COLUMN ── */
     .level-section {
-      position: absolute; top: 740px; left: 50%; transform: translateX(-50%);
+      position: absolute; top: 700px; right: 40px;
       display: flex; flex-direction: column; align-items: center; gap: 0;
     }
 
@@ -199,7 +199,7 @@
 
     .level-frame {
       position: relative;
-      width: 130px; height: 600px;
+      width: 200px; height: 720px;
     }
 
     /* Outer casing */
@@ -646,12 +646,44 @@
   const canvas = document.getElementById('beerCanvas');
   const ctx    = canvas.getContext('2d');
 
-  // Set canvas to 2x resolution for crisp display
-  const TRACK = document.querySelector('.level-track');
-  const CW = 114, CH = 584; // inner track px (130 - 8*2, 600 - 8*2)
+  // 3D Keg dimensions (2× retina)
+  const CW = 200, CH = 720;
   canvas.width  = CW * 2;
   canvas.height = CH * 2;
-  ctx.scale(2, 2); // retina
+  ctx.scale(2, 2);
+
+  // Keg geometry
+  const RING_H  = 62;          // top & bottom steel ring height
+  const BEVEL   = 18;          // outer corner radius
+  const B_INSET = 14;          // body narrower than rings
+  const BX      = B_INSET;     // body left x
+  const BW      = CW - B_INSET * 2; // body width (172px)
+  const B_TOP   = RING_H + 6;  // inner beer area top y
+  const B_BOT   = CH - RING_H - 6; // inner beer area bottom y
+  const B_H     = B_BOT - B_TOP;  // ~576px beer height
+
+  // Keg outer path (used for clip & fill)
+  function kegOuterPath() {
+    ctx.beginPath();
+    ctx.moveTo(BEVEL, 0);
+    ctx.lineTo(CW - BEVEL, 0);
+    ctx.arcTo(CW, 0, CW, BEVEL, BEVEL);
+    ctx.lineTo(CW, RING_H);
+    ctx.lineTo(CW - B_INSET, RING_H + 6);
+    ctx.lineTo(CW - B_INSET, CH - RING_H - 6);
+    ctx.lineTo(CW, CH - RING_H);
+    ctx.lineTo(CW, CH - BEVEL);
+    ctx.arcTo(CW, CH, CW - BEVEL, CH, BEVEL);
+    ctx.lineTo(BEVEL, CH);
+    ctx.arcTo(0, CH, 0, CH - BEVEL, BEVEL);
+    ctx.lineTo(0, CH - RING_H);
+    ctx.lineTo(B_INSET, CH - RING_H - 6);
+    ctx.lineTo(B_INSET, RING_H + 6);
+    ctx.lineTo(0, RING_H);
+    ctx.lineTo(0, BEVEL);
+    ctx.arcTo(0, 0, BEVEL, 0, BEVEL);
+    ctx.closePath();
+  }
 
   let beerTargetLevel = 0; // 0-1
   let beerCurrentLevel = 0;
@@ -674,120 +706,185 @@
   setInterval(spawnCanvasBubble, 300);
 
   function renderBeer() {
-    // Smoothly approach target level
-    beerCurrentLevel += (beerTargetLevel - beerCurrentLevel) * 0.015;
-    waveTime += 0.025;
-
+    beerCurrentLevel += (beerTargetLevel - beerCurrentLevel) * 0.012;
+    waveTime += 0.022;
     ctx.clearRect(0, 0, CW, CH);
 
-    if (beerCurrentLevel < 0.005) {
-      requestAnimationFrame(renderBeer);
-      return;
-    }
+    const rawSurf = B_BOT - beerCurrentLevel * B_H;
+    const amp     = 4 + (flowActive ? 5 : 0);
 
-    const surfaceY = CH * (1 - beerCurrentLevel);
-    const foamH    = Math.max(10, CW * 0.15);
-    const amp      = 3 + (flowActive ? 4 : 0);
-
-    // ─ Build wave surface path ─
+    // ── 1. KEG BODY BACKGROUND (dark interior) ──
     ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0, CH);
-    ctx.lineTo(0, surfaceY + Math.sin(waveTime) * amp);
-    for (let x = 1; x <= CW; x++) {
-      const y = surfaceY
-        + Math.sin(waveTime + x * 0.04) * amp
-        + Math.cos(waveTime * 0.6 + x * 0.07) * amp * 0.6
-        + Math.sin(waveTime * 1.3 + x * 0.02) * amp * 0.3;
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(CW, CH);
-    ctx.closePath();
-    ctx.clip();
-
-    // ─ Beer body gradient ─
-    const beerGrad = ctx.createLinearGradient(0, surfaceY, 0, CH);
-    beerGrad.addColorStop(0.00, 'rgba(255, 215, 60, 0.97)');
-    beerGrad.addColorStop(0.10, 'rgba(240, 170, 20, 0.98)');
-    beerGrad.addColorStop(0.40, 'rgba(210, 115, 8,  0.99)');
-    beerGrad.addColorStop(0.75, 'rgba(170,  70, 5,  1.00)');
-    beerGrad.addColorStop(1.00, 'rgba(120,  40, 3,  1.00)');
-    ctx.fillStyle = beerGrad;
-    ctx.fillRect(0, 0, CW, CH);
-
-    // ─ Internal light caustics (diagonal shimmer) ─
-    const shimmerX = (Math.sin(waveTime * 0.5) * 0.5 + 0.5) * CW;
-    const lightGrad = ctx.createLinearGradient(shimmerX - 20, 0, shimmerX + 40, CH);
-    lightGrad.addColorStop(0,    'rgba(255,255,200,0)');
-    lightGrad.addColorStop(0.35, `rgba(255,245,160,${0.08 + Math.sin(waveTime) * 0.04})`);
-    lightGrad.addColorStop(0.5,  `rgba(255,255,200,${0.12 + Math.cos(waveTime * 0.7) * 0.05})`);
-    lightGrad.addColorStop(0.65, `rgba(255,220,100,${0.08 + Math.sin(waveTime * 1.2) * 0.03})`);
-    lightGrad.addColorStop(1,    'rgba(255,255,200,0)');
-    ctx.fillStyle = lightGrad;
-    ctx.fillRect(0, surfaceY, CW, CH - surfaceY);
-
-    // ─ Left-side glass shine ─
-    const shineGrad = ctx.createLinearGradient(0, 0, CW * 0.35, 0);
-    shineGrad.addColorStop(0,    'rgba(255,255,255,0.10)');
-    shineGrad.addColorStop(0.15, 'rgba(255,255,255,0.04)');
-    shineGrad.addColorStop(1,    'rgba(255,255,255,0)');
-    ctx.fillStyle = shineGrad;
-    ctx.fillRect(0, surfaceY, CW, CH - surfaceY);
-
-    // ─ Bubbles ─
-    for (let i = bubbles.length - 1; i >= 0; i--) {
-      const b = bubbles[i];
-      b.y -= b.speed;
-      b.wobble += b.wobbleSpeed;
-      b.x += Math.sin(b.wobble) * 0.4;
-      const bubbleSurfY = surfaceY + Math.sin(waveTime + b.x * 0.04) * amp;
-      if (b.y < bubbleSurfY) { bubbles.splice(i, 1); continue; }
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,245,200,${b.opacity * 0.3})`;
-      ctx.fill();
-      ctx.strokeStyle = `rgba(255,255,255,${b.opacity})`;
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
-    }
-
+    kegOuterPath();
+    ctx.fillStyle = '#0a0608';
+    ctx.fill();
     ctx.restore();
 
-    // ─ Foam layer (above clip) ─
-    if (beerCurrentLevel > 0.015) {
-      const foamTopY = surfaceY - foamH;
-      const foamGrad = ctx.createLinearGradient(0, foamTopY, 0, surfaceY + 4);
-      foamGrad.addColorStop(0.0, 'rgba(255,252,240, 0.0)');
-      foamGrad.addColorStop(0.3, 'rgba(255,250,230, 0.85)');
-      foamGrad.addColorStop(0.7, 'rgba(255,245,210, 0.92)');
-      foamGrad.addColorStop(1.0, 'rgba(245,225,170, 0.5)');
-      ctx.fillStyle = foamGrad;
-
-      // Bubbly foam surface
+    // ── 2. BEER FILL (clipped to inner body) ──
+    if (beerCurrentLevel > 0.005) {
+      ctx.save();
       ctx.beginPath();
-      for (let x = 0; x <= CW; x++) {
-        const fy = surfaceY
-          + Math.sin(waveTime + x * 0.04) * amp
-          + Math.cos(waveTime * 0.6 + x * 0.07) * amp * 0.6
-          - foamH * 0.5;
-        if (x === 0) ctx.moveTo(x, fy);
-        else ctx.lineTo(x, fy);
-      }
-      ctx.lineTo(CW, surfaceY + 6);
-      ctx.lineTo(0,  surfaceY + 6);
-      ctx.closePath();
-      ctx.fill();
+      ctx.rect(BX + 1, B_TOP, BW - 2, B_H);
+      ctx.clip();
 
-      // Foam highlight dots
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      for (let i = 0; i < 12; i++) {
-        const fx = 6 + (i / 12) * (CW - 12) + Math.sin(waveTime + i) * 4;
-        const fy = surfaceY - foamH * 0.4 + Math.cos(waveTime * 0.8 + i * 1.1) * 5;
-        ctx.beginPath();
-        ctx.arc(fx, fy, 1.5 + Math.sin(waveTime + i) * 0.8, 0, Math.PI * 2);
-        ctx.fill();
+      // Wave surface path
+      ctx.beginPath();
+      ctx.moveTo(BX, CH);
+      ctx.lineTo(BX, rawSurf + Math.sin(waveTime) * amp);
+      for (let x = BX; x <= BX + BW; x++) {
+        const y = rawSurf
+          + Math.sin(waveTime + (x - BX) * 0.05) * amp
+          + Math.cos(waveTime * 0.6 + (x - BX) * 0.08) * amp * 0.5
+          + Math.sin(waveTime * 1.4 + (x - BX) * 0.03) * amp * 0.25;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(BX + BW, CH);
+      ctx.closePath();
+      ctx.clip();
+
+      // Beer gradient
+      const bg = ctx.createLinearGradient(0, rawSurf, 0, CH);
+      bg.addColorStop(0.00, 'rgba(255,215,55,0.97)');
+      bg.addColorStop(0.12, 'rgba(240,165,18,0.98)');
+      bg.addColorStop(0.45, 'rgba(208,112,8,0.99)');
+      bg.addColorStop(0.80, 'rgba(165,65,5,1.00)');
+      bg.addColorStop(1.00, 'rgba(110,35,3,1.00)');
+      ctx.fillStyle = bg; ctx.fillRect(BX, 0, BW, CH);
+
+      // Caustic shimmer
+      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * BW + BX;
+      const lg = ctx.createLinearGradient(sx - 18, 0, sx + 38, CH);
+      lg.addColorStop(0,    'rgba(255,255,200,0)');
+      lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
+      lg.addColorStop(0.6,  `rgba(255,255,210,${0.14 + Math.cos(waveTime*0.7)*0.05})`);
+      lg.addColorStop(1,    'rgba(255,255,200,0)');
+      ctx.fillStyle = lg; ctx.fillRect(BX, rawSurf, BW, CH);
+
+      // Left shine
+      const sg = ctx.createLinearGradient(BX, 0, BX + BW * 0.3, 0);
+      sg.addColorStop(0,    'rgba(255,255,255,0.12)');
+      sg.addColorStop(0.2,  'rgba(255,255,255,0.04)');
+      sg.addColorStop(1,    'rgba(255,255,255,0)');
+      ctx.fillStyle = sg; ctx.fillRect(BX, rawSurf, BW, CH);
+
+      // Bubbles
+      for (let i = bubbles.length - 1; i >= 0; i--) {
+        const b = bubbles[i];
+        b.y -= b.speed; b.wobble += b.wobbleSpeed;
+        b.x += Math.sin(b.wobble) * 0.4;
+        const bs = rawSurf + Math.sin(waveTime + b.x * 0.05) * amp;
+        if (b.y < bs) { bubbles.splice(i, 1); continue; }
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,245,200,${b.opacity * 0.3})`; ctx.fill();
+        ctx.strokeStyle = `rgba(255,255,255,${b.opacity})`;
+        ctx.lineWidth = 0.6; ctx.stroke();
+      }
+      ctx.restore();
+
+      // Foam
+      const fH = Math.max(12, BW * 0.1);
+      const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
+      foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
+      foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
+      foamG.addColorStop(0.8, 'rgba(255,245,215,0.94)');
+      foamG.addColorStop(1.0, 'rgba(245,225,170,0.5)');
+      ctx.fillStyle = foamG;
+      ctx.beginPath();
+      for (let x = BX; x <= BX + BW; x++) {
+        const fy = rawSurf + Math.sin(waveTime + (x-BX)*0.05)*amp + Math.cos(waveTime*0.6+(x-BX)*0.08)*amp*0.5 - fH*0.5;
+        if (x === BX) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
+      }
+      ctx.lineTo(BX + BW, rawSurf + 6); ctx.lineTo(BX, rawSurf + 6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.32)';
+      for (let i = 0; i < 14; i++) {
+        const fx = BX + 5 + (i/14)*(BW-10) + Math.sin(waveTime+i)*5;
+        const fy = rawSurf - fH*0.4 + Math.cos(waveTime*0.8+i*1.1)*5;
+        ctx.beginPath(); ctx.arc(fx, fy, 1.4+Math.sin(waveTime+i)*0.8, 0, Math.PI*2); ctx.fill();
       }
     }
+
+    // ── 3. STEEL FRAME OVERLAY ──
+    ctx.save();
+    // Metallic horizontal gradient (dark edges → bright center = cylindrical)
+    const mG = ctx.createLinearGradient(0, 0, CW, 0);
+    mG.addColorStop(0.00, '#111');
+    mG.addColorStop(0.10, '#252525');
+    mG.addColorStop(0.28, '#555');
+    mG.addColorStop(0.46, '#c8c8c8');
+    mG.addColorStop(0.54, '#e8e8e8');
+    mG.addColorStop(0.72, '#666');
+    mG.addColorStop(0.90, '#2a2a2a');
+    mG.addColorStop(1.00, '#0e0e0e');
+
+    // Draw ONLY the steel parts (rings + body edges) using composite
+    // Top ring
+    ctx.beginPath();
+    ctx.moveTo(BEVEL, 0); ctx.lineTo(CW-BEVEL, 0);
+    ctx.arcTo(CW,0,CW,BEVEL,BEVEL);
+    ctx.lineTo(CW,RING_H);
+    ctx.lineTo(CW-B_INSET, RING_H+6);
+    ctx.lineTo(B_INSET, RING_H+6);
+    ctx.lineTo(0, RING_H); ctx.lineTo(0, BEVEL);
+    ctx.arcTo(0,0,BEVEL,0,BEVEL);
+    ctx.closePath();
+    ctx.fillStyle = mG; ctx.fill();
+
+    // Bottom ring
+    ctx.beginPath();
+    ctx.moveTo(0, CH-RING_H); ctx.lineTo(B_INSET, CH-RING_H-6);
+    ctx.lineTo(CW-B_INSET, CH-RING_H-6); ctx.lineTo(CW, CH-RING_H);
+    ctx.lineTo(CW, CH-BEVEL);
+    ctx.arcTo(CW,CH,CW-BEVEL,CH,BEVEL);
+    ctx.lineTo(BEVEL, CH);
+    ctx.arcTo(0,CH,0,CH-BEVEL,BEVEL);
+    ctx.closePath();
+    ctx.fillStyle = mG; ctx.fill();
+
+    // Left body strip
+    ctx.fillStyle = mG;
+    ctx.fillRect(0, RING_H+6, B_INSET, B_H + 12);
+    // Right body strip
+    ctx.fillRect(CW-B_INSET, RING_H+6, B_INSET, B_H + 12);
+
+    // Middle hoop band
+    const midY = CH / 2;
+    const rG2 = ctx.createLinearGradient(0, 0, CW, 0);
+    rG2.addColorStop(0.00, '#0d0d0d'); rG2.addColorStop(0.12, '#222');
+    rG2.addColorStop(0.38, '#606060'); rG2.addColorStop(0.50, '#aaa');
+    rG2.addColorStop(0.62, '#606060'); rG2.addColorStop(0.88, '#222');
+    rG2.addColorStop(1.00, '#0d0d0d');
+    ctx.fillStyle = rG2;
+    ctx.fillRect(B_INSET, midY - 14, BW, 28);
+    // Hoop highlights
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(B_INSET, midY - 14, BW, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(B_INSET, midY + 10, BW, 4);
+
+    // Bung fitting (top center)
+    const bungX = CW / 2, bungY = RING_H * 0.55;
+    ctx.beginPath(); ctx.ellipse(bungX, bungY, 18, 10, 0, 0, Math.PI*2);
+    const bungG = ctx.createRadialGradient(bungX-4, bungY-3, 1, bungX, bungY, 18);
+    bungG.addColorStop(0, '#bbb'); bungG.addColorStop(0.5, '#555'); bungG.addColorStop(1, '#222');
+    ctx.fillStyle = bungG; ctx.fill();
+    ctx.strokeStyle = '#444'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Outer keg border/edge
+    kegOuterPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Specular highlight (left-center vertical gleam)
+    const specG = ctx.createLinearGradient(CW*0.2, 0, CW*0.38, 0);
+    specG.addColorStop(0,    'rgba(255,255,255,0)');
+    specG.addColorStop(0.4,  'rgba(255,255,255,0.12)');
+    specG.addColorStop(0.7,  'rgba(255,255,255,0.07)');
+    specG.addColorStop(1,    'rgba(255,255,255,0)');
+    kegOuterPath();
+    ctx.clip();
+    ctx.fillStyle = specG;
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.restore();
 
     requestAnimationFrame(renderBeer);
   }
