@@ -251,15 +251,27 @@
     .tick-line { width: 10px; height: 1px; background: rgba(255,255,255,0.15); }
     .tick.major .tick-line { width: 16px; background: rgba(255,255,255,0.3); }
 
-    /* Floating % indicator */
+    /* Floating side % indicator — small, stays at liquid surface */
     .pct-indicator {
       position: absolute; left: -90px;
       transform: translateY(-50%);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 36px; font-weight: 800;
-      transition: top 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-                  color 0.5s ease;
-      text-align: right; white-space: nowrap;
+      font-size: 28px; font-weight: 800;
+      transition: top 1.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease;
+      text-align: right; white-space: nowrap; opacity: 0.5;
+    }
+
+    /* Big centered % — always in the middle of the tube */
+    .big-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 52px; font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.9);
+      letter-spacing: -2px;
+      z-index: 10; pointer-events: none;
+      transition: color 0.5s ease;
     }
 
     /* Bubbles */
@@ -522,6 +534,9 @@
         <div class="bubble-layer" id="bubbleLayer"></div>
       </div>
 
+      <!-- Big centered % -->
+      <div class="big-pct" id="bigPct">0%</div>
+
       <!-- Tick marks -->
       <div class="level-ticks">
         <div class="tick major"><div class="tick-line"></div>100%</div>
@@ -531,18 +546,12 @@
         <div class="tick major"><div class="tick-line"></div>0%</div>
       </div>
 
-      <!-- Floating % -->
+      <!-- Floating side % -->
       <div class="pct-indicator" id="pctIndicator" style="top:100%; color:#f59e0b">0%</div>
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <div class="footer">
-    <div class="pints-row">
-      <span class="pints-val" id="pintsVal">--</span>
-      <span class="pints-lbl">pints left</span>
-    </div>
-  </div>
+
 
 </div>
 
@@ -605,15 +614,6 @@
     /* Name */
     document.getElementById('txtName').textContent = name;
 
-    /* Logo */
-    document.getElementById('beerLogo').innerHTML = logo
-      ? `<img src="${logo}" style="height:70px;object-fit:contain;filter:drop-shadow(0 0 16px rgba(245,158,11,0.5))">`
-      : '🍺';
-
-    /* Pints */
-    const pints = Math.floor((pct / 100) * 88);
-    document.getElementById('pintsVal').textContent = pints;
-
     /* Temperature gauge */
     setGaugeFill('gFillTemp', 'gGlowTemp', temp, 0, 20);
     document.getElementById('gValTemp').textContent = temp.toFixed(1);
@@ -622,11 +622,13 @@
     setGaugeFill('gFillCo2', 'gGlowCo2', co2, 0, 30);
     document.getElementById('gValCo2').textContent = co2.toFixed(1);
 
-    /* Level bar */
-    const fill = document.getElementById('levelFill');
+    /* Level bar + centered big % */
+    const fill  = document.getElementById('levelFill');
+    const bigPct = document.getElementById('bigPct');
     fill.style.height = pct + '%';
+    bigPct.textContent = Math.round(pct) + '%';
 
-    /* Floating % label — top = 100% - pct% from bottom */
+    /* Floating side % label */
     const pctEl = document.getElementById('pctIndicator');
     pctEl.style.top   = (100 - pct) + '%';
     pctEl.textContent = Math.round(pct) + '%';
