@@ -12,10 +12,68 @@
       -webkit-user-select: none; user-select: none;
     }
 
+    :root {
+      /* Tech (Default) */
+      --bg-base: #0a0a0f;
+      --text-main: #ffffff;
+      --text-muted: rgba(255,255,255,0.4);
+      --accent-glow: rgba(245,158,11,0.4);
+      --screen-grad-1: rgba(245,158,11,0.12);
+      --screen-grad-2: rgba(120,60,10,0.25);
+      --screen-grad-bg: linear-gradient(160deg, #12111e 0%, #1a1628 30%, #1c1510 70%, #151010 100%);
+      --gauge-plate: #0e0e18;
+      --gauge-rim: rgba(255,255,255,0.04);
+      --gauge-rim2: rgba(255,255,255,0.025);
+      --gauge-specular: rgba(255,255,255,0.06);
+      --gauge-bevel-dark: rgba(0,0,0,0.6);
+      --gauge-bevel-light: rgba(255,255,255,0.08);
+      --tick-major: rgba(255,255,255,0.3);
+      --tick-minor: rgba(255,255,255,0.15);
+      --status-bg: rgba(0,0,0,0.6);
+    }
+
+    body.theme-minimal {
+      --bg-base: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: rgba(15,23,42,0.5);
+      --accent-glow: rgba(0,0,0,0.05);
+      --screen-grad-1: rgba(255,255,255,0);
+      --screen-grad-2: rgba(255,255,255,0);
+      --screen-grad-bg: #f8fafc;
+      --gauge-plate: #ffffff;
+      --gauge-rim: rgba(0,0,0,0.08);
+      --gauge-rim2: rgba(0,0,0,0.04);
+      --gauge-specular: rgba(255,255,255,0);
+      --gauge-bevel-dark: rgba(0,0,0,0.0);
+      --gauge-bevel-light: rgba(255,255,255,0.0);
+      --tick-major: rgba(0,0,0,0.2);
+      --tick-minor: rgba(0,0,0,0.08);
+      --status-bg: #ffffff;
+    }
+
+    body.theme-brewery {
+      --bg-base: #110d0a;
+      --text-main: #fde68a;
+      --text-muted: rgba(253,230,138,0.5);
+      --accent-glow: rgba(217,119,6,0.3);
+      --screen-grad-1: rgba(217,119,6,0.15);
+      --screen-grad-2: rgba(0,0,0,0.6);
+      --screen-grad-bg: radial-gradient(circle at 50% 50%, #291e16 0%, #110d0a 100%);
+      --gauge-plate: #26170e;
+      --gauge-rim: rgba(217,119,6,0.2);
+      --gauge-rim2: rgba(217,119,6,0.1);
+      --gauge-specular: rgba(253,230,138,0.05);
+      --gauge-bevel-dark: rgba(0,0,0,0.8);
+      --gauge-bevel-light: rgba(253,230,138,0.1);
+      --tick-major: rgba(253,230,138,0.4);
+      --tick-minor: rgba(253,230,138,0.15);
+      --status-bg: #291e16;
+    }
+
     body, html {
       width: 750px; height: 1560px;
-      background: #0a0a0f;
-      color: #fff;
+      background: var(--bg-base);
+      color: var(--text-main);
       font-family: 'Inter', sans-serif;
       overflow: hidden;
     }
@@ -25,9 +83,9 @@
       width: 750px; height: 1560px;
       position: relative;
       background:
-        radial-gradient(ellipse 500px 300px at 50% 5%,  rgba(245,158,11,0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 700px 500px at 50% 95%, rgba(120,60,10,0.25)   0%, transparent 70%),
-        linear-gradient(160deg, #12111e 0%, #1a1628 30%, #1c1510 70%, #151010 100%);
+        radial-gradient(ellipse 500px 300px at 50% 5%,  var(--screen-grad-1) 0%, transparent 70%),
+        radial-gradient(ellipse 700px 500px at 50% 95%, var(--screen-grad-2) 0%, transparent 70%),
+        var(--screen-grad-bg);
     }
 
     /* ── HEADER ── */
@@ -94,14 +152,14 @@
     }
 
     /* Decorative back plate */
-    .g-plate   { fill: #0e0e18; }
-    .g-rim     { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 1.5; }
-    .g-rim2    { fill: none; stroke: rgba(255,255,255,0.025); stroke-width: 1; }
+    .g-plate   { fill: var(--gauge-plate); }
+    .g-rim     { fill: none; stroke: var(--gauge-rim); stroke-width: 1.5; }
+    .g-rim2    { fill: none; stroke: var(--gauge-rim2); stroke-width: 1; }
 
     /* Track arcs — 270° sweep starting at 135° */
     .g-track {
       fill: none;
-      stroke: rgba(255,255,255,0.05);
+      stroke: var(--gauge-rim);
       stroke-width: 14;
       stroke-linecap: round;
     }
@@ -133,20 +191,20 @@
     /* 3D gauge depth */
     .g-specular {
       fill: none;
-      stroke: rgba(255,255,255,0.06);
+      stroke: var(--gauge-specular);
       stroke-width: 30;
       stroke-linecap: round;
       filter: blur(6px);
     }
     .g-bevel-dark {
       fill: none;
-      stroke: rgba(0,0,0,0.6);
+      stroke: var(--gauge-bevel-dark);
       stroke-width: 6;
       stroke-linecap: round;
     }
     .g-bevel-light {
       fill: none;
-      stroke: rgba(255,255,255,0.08);
+      stroke: var(--gauge-bevel-light);
       stroke-width: 3;
       stroke-linecap: round;
     }
@@ -280,12 +338,12 @@
     .system-status-large {
       position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
       font-size: 26px; font-weight: 900; letter-spacing: 6px;
-      color: rgba(255,255,255,0.8);
+      color: var(--text-main);
       text-transform: uppercase;
       padding: 16px 40px; border-radius: 100px;
-      background: rgba(0,0,0,0.6);
-      border: 2px solid rgba(255,255,255,0.15);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      background: var(--status-bg);
+      border: 2px solid var(--gauge-rim);
+      box-shadow: 0 10px 40px var(--accent-glow);
       transition: all 0.5s ease;
     }
     .system-status-large.flowing {
@@ -597,6 +655,10 @@
   const params     = new URLSearchParams(window.location.search);
   const DISPLAY_ID = window.location.pathname.split('/').pop();
 
+  /* ── THEME INITIALIZATION ── */
+  const activeTheme = params.get('theme') || 'tech';
+  document.body.classList.add(`theme-${activeTheme}`);
+
   let lastTemp    = null;
   let curLevel    = 0;
   let flowActive  = false;
@@ -695,135 +757,248 @@
     const rawSurf = LIQ_BOT - beerCurrentLevel * LIQ_H;
     const amp     = 4 + (flowActive ? 5 : 0);
 
-    // ── 1. INNER TUBE (Silver/White inside glass) ──
-    ctx.save();
-    drawTubeBody(ctx);
-    ctx.clip();
-    
-    // Background color of the glass (Silver/White)
-    ctx.fillStyle = '#e8ecef';
-    ctx.fill();
-
-    // Inner back reflection
-    const backRelf = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
-    backRelf.addColorStop(0, 'rgba(0,0,0,0.15)');
-    backRelf.addColorStop(0.5, 'rgba(255,255,255,0.8)');
-    backRelf.addColorStop(1, 'rgba(0,0,0,0.05)');
-    ctx.fillStyle = backRelf;
-    ctx.fill();
-
-    // ── 2. AMBER BEER LIQUID ──
-    if (beerCurrentLevel > 0.005) {
+    if (activeTheme === 'minimal') {
+      // ── MINIMAL THEME (Flat 2D Bar) ──
+      const B_W = 100;
+      const B_X = (CW - B_W) / 2;
+      
+      // Background bar
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
       ctx.beginPath();
-      ctx.moveTo(CX - T_R, rawSurf);
-      for (let x = CX - T_R; x <= CX + T_R; x++) {
-        const waveY = rawSurf
-          + Math.sin(waveTime + x * 0.05) * amp
-          + Math.cos(waveTime * 0.6 + x * 0.08) * amp * 0.5;
-        ctx.lineTo(x, waveY);
+      ctx.roundRect(B_X, T_TOP, B_W, T_BOT - T_TOP + T_R, 20);
+      ctx.fill();
+
+      // Liquid mask
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(B_X, T_TOP, B_W, T_BOT - T_TOP + T_R, 20);
+      ctx.clip();
+
+      if (beerCurrentLevel > 0.005) {
+        ctx.beginPath();
+        ctx.moveTo(B_X, rawSurf);
+        for (let x = B_X; x <= B_X + B_W; x++) {
+          const waveY = rawSurf + Math.sin(waveTime + x * 0.05) * amp;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.lineTo(B_X + B_W, CH);
+        ctx.lineTo(B_X, CH);
+        ctx.closePath();
+        
+        ctx.fillStyle = '#3b82f6'; // Clean blue
+        if (beerCurrentLevel < 0.15) ctx.fillStyle = '#ef4444';
+        else if (beerCurrentLevel < 0.30) ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+        
+        // Minimal Bubbles
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const b = bubbles[i];
+          b.y -= b.speed * 1.5; b.wobble += b.wobbleSpeed;
+          b.x += Math.sin(b.wobble) * 0.4;
+          if (b.y < rawSurf) { bubbles.splice(i, 1); continue; }
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.8, 0, Math.PI * 2); ctx.fill();
+        }
       }
-      ctx.lineTo(CX + T_R, T_BOT + T_R);
-      ctx.lineTo(CX - T_R, T_BOT + T_R);
+      ctx.restore();
+
+    } else if (activeTheme === 'brewery') {
+      // ── BREWERY THEME (Pint Glass / Copper) ──
+      const P_TOP_W = 130;
+      const P_BOT_W = 80;
+      const P_TOP_X = (CW - P_TOP_W)/2;
+      const P_BOT_X = (CW - P_BOT_W)/2;
+      const P_TOP = T_TOP + 40;
+      const P_BOT = T_BOT + 20;
+      
+      function drawPintPath(ctx) {
+        ctx.beginPath();
+        ctx.moveTo(P_TOP_X, P_TOP);
+        ctx.lineTo(P_BOT_X, P_BOT);
+        ctx.arcTo(CW/2, P_BOT + 20, P_BOT_X + P_BOT_W, P_BOT, 40);
+        ctx.lineTo(P_TOP_X + P_TOP_W, P_TOP);
+        ctx.closePath();
+      }
+
+      ctx.save();
+      drawPintPath(ctx);
+      ctx.clip();
+      
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fill();
+
+      if (beerCurrentLevel > 0.005) {
+        ctx.beginPath();
+        ctx.moveTo(0, rawSurf);
+        for (let x = 0; x <= CW; x++) {
+          const waveY = rawSurf + Math.sin(waveTime + x * 0.05) * amp;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.lineTo(CW, CH); ctx.lineTo(0, CH); ctx.closePath();
+        
+        const bg = ctx.createLinearGradient(0, rawSurf, 0, CH);
+        bg.addColorStop(0.00, '#fcd34d');
+        bg.addColorStop(0.40, '#d97706');
+        bg.addColorStop(1.00, '#451a03');
+        ctx.fillStyle = bg;
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const b = bubbles[i];
+          b.y -= b.speed; b.wobble += b.wobbleSpeed;
+          b.x += Math.sin(b.wobble) * 0.4;
+          if (b.y < rawSurf) { bubbles.splice(i, 1); continue; }
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+        }
+
+        const fH = Math.max(12, T_W * 0.1);
+        ctx.fillStyle = 'rgba(254,243,199,0.9)';
+        ctx.beginPath();
+        for (let x = 0; x <= CW; x++) {
+          const fy = rawSurf + Math.sin(waveTime + x*0.05)*amp - fH;
+          if (x === 0) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
+        }
+        ctx.lineTo(CW, rawSurf + 6); ctx.lineTo(0, rawSurf + 6); ctx.closePath(); ctx.fill();
+      }
+      
+      const glare = ctx.createLinearGradient(P_TOP_X, 0, P_TOP_X + P_TOP_W, 0);
+      glare.addColorStop(0, 'rgba(255,255,255,0.5)');
+      glare.addColorStop(0.15, 'rgba(255,255,255,0.0)');
+      glare.addColorStop(0.85, 'rgba(255,255,255,0.0)');
+      glare.addColorStop(1, 'rgba(255,255,255,0.2)');
+      ctx.fillStyle = glare;
+      ctx.fill();
+
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.moveTo(P_BOT_X, P_BOT);
+      ctx.arcTo(CW/2, P_BOT + 20, P_BOT_X + P_BOT_W, P_BOT, 40);
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.stroke();
+
+    } else {
+      // ── TECH THEME (Original 3D Test Tube) ──
+      ctx.save();
+      drawTubeBody(ctx);
+      ctx.clip();
+      
+      ctx.fillStyle = 'var(--tube-bg)';
+      ctx.fill();
+
+      const backRelf = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
+      backRelf.addColorStop(0, 'rgba(0,0,0,0.15)');
+      backRelf.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+      backRelf.addColorStop(1, 'rgba(0,0,0,0.05)');
+      ctx.fillStyle = backRelf;
+      ctx.fill();
+
+      if (beerCurrentLevel > 0.005) {
+        ctx.beginPath();
+        ctx.moveTo(CX - T_R, rawSurf);
+        for (let x = CX - T_R; x <= CX + T_R; x++) {
+          const waveY = rawSurf
+            + Math.sin(waveTime + x * 0.05) * amp
+            + Math.cos(waveTime * 0.6 + x * 0.08) * amp * 0.5;
+          ctx.lineTo(x, waveY);
+        }
+        ctx.lineTo(CX + T_R, T_BOT + T_R);
+        ctx.lineTo(CX - T_R, T_BOT + T_R);
+        ctx.closePath();
+        
+        const bg = ctx.createLinearGradient(0, rawSurf, 0, T_BOT + T_R);
+        bg.addColorStop(0.00, 'rgba(255,215,55,1.00)');
+        bg.addColorStop(0.12, 'rgba(240,165,18,1.00)');
+        bg.addColorStop(0.45, 'rgba(208,112,8,1.00)');
+        bg.addColorStop(0.80, 'rgba(165,65,5,1.00)');
+        bg.addColorStop(1.00, 'rgba(110,35,3,1.00)');
+        ctx.fillStyle = bg;
+        ctx.fill();
+
+        const liqVol = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
+        liqVol.addColorStop(0.0, 'rgba(0,0,0,0.6)');
+        liqVol.addColorStop(0.15, 'rgba(0,0,0,0.0)');
+        liqVol.addColorStop(0.85, 'rgba(0,0,0,0.0)');
+        liqVol.addColorStop(1.0, 'rgba(0,0,0,0.6)');
+        ctx.fillStyle = liqVol;
+        ctx.fill();
+
+        const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * T_W + (CW - T_W)/2;
+        const lg = ctx.createLinearGradient(sx - 20, 0, sx + 40, CH);
+        lg.addColorStop(0,    'rgba(255,255,200,0)');
+        lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
+        lg.addColorStop(0.6,  `rgba(255,255,210,${0.14 + Math.cos(waveTime*0.7)*0.05})`);
+        lg.addColorStop(1,    'rgba(255,255,200,0)');
+        ctx.fillStyle = lg;
+        ctx.fill();
+
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const b = bubbles[i];
+          b.y -= b.speed; b.wobble += b.wobbleSpeed;
+          b.x += Math.sin(b.wobble) * 0.4;
+          const bs = rawSurf + Math.sin(waveTime + b.x * 0.05) * amp;
+          if (b.y < bs) { bubbles.splice(i, 1); continue; }
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,245,200,${b.opacity * 0.3})`; ctx.fill();
+          ctx.strokeStyle = `rgba(255,255,255,${b.opacity})`;
+          ctx.lineWidth = 0.6; ctx.stroke();
+        }
+
+        const fH = Math.max(12, T_W * 0.1);
+        const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
+        foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
+        foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
+        foamG.addColorStop(0.8, 'rgba(255,245,215,0.94)');
+        foamG.addColorStop(1.0, 'rgba(245,225,170,0.5)');
+        ctx.fillStyle = foamG;
+        ctx.beginPath();
+        for (let x = CX - T_R; x <= CX + T_R; x++) {
+          const fy = rawSurf + Math.sin(waveTime + x*0.05)*amp + Math.cos(waveTime*0.6+x*0.08)*amp*0.5 - fH*0.5;
+          if (x === CX - T_R) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
+        }
+        ctx.lineTo(CX + T_R, rawSurf + 6); ctx.lineTo(CX - T_R, rawSurf + 6); ctx.closePath(); ctx.fill();
+      }
+      
+      const glassG = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
+      glassG.addColorStop(0.00, 'rgba(0,0,0, 0.4)');
+      glassG.addColorStop(0.12, 'rgba(255,255,255, 0.9)'); 
+      glassG.addColorStop(0.20, 'rgba(0,0,0, 0.05)');
+      glassG.addColorStop(0.40, 'rgba(255,255,255, 0.2)');
+      glassG.addColorStop(0.70, 'rgba(255,255,255, 0.4)');
+      glassG.addColorStop(0.85, 'rgba(0,0,0, 0.15)');
+      glassG.addColorStop(0.95, 'rgba(255,255,255, 0.8)'); 
+      glassG.addColorStop(1.00, 'rgba(0,0,0, 0.5)');
+      
+      ctx.fillStyle = glassG;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(CX - T_R + 12, T_TOP + 10);
+      ctx.lineTo(CX - T_R + 12, T_BOT);
+      ctx.arc(CX, T_BOT, T_R - 12, Math.PI, Math.PI*0.75, true);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.stroke();
+
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.ellipse(CX, T_TOP, T_R + 6, 14, 0, 0, Math.PI*2); 
+      ctx.ellipse(CX, T_TOP, T_R, 10, 0, Math.PI*2, 0, true); 
       ctx.closePath();
       
-      const bg = ctx.createLinearGradient(0, rawSurf, 0, T_BOT + T_R);
-      bg.addColorStop(0.00, 'rgba(255,215,55,1.00)');
-      bg.addColorStop(0.12, 'rgba(240,165,18,1.00)');
-      bg.addColorStop(0.45, 'rgba(208,112,8,1.00)');
-      bg.addColorStop(0.80, 'rgba(165,65,5,1.00)');
-      bg.addColorStop(1.00, 'rgba(110,35,3,1.00)');
-      ctx.fillStyle = bg;
+      const lipG = ctx.createLinearGradient(CX - T_R, T_TOP - 14, CX + T_R, T_TOP + 14);
+      lipG.addColorStop(0, 'rgba(255,255,255,0.8)');
+      lipG.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+      lipG.addColorStop(1, 'rgba(255,255,255,0.6)');
+      ctx.fillStyle = lipG;
       ctx.fill();
-
-      // Beer volume shading (darker edges for depth)
-      const liqVol = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
-      liqVol.addColorStop(0.0, 'rgba(0,0,0,0.6)');
-      liqVol.addColorStop(0.15, 'rgba(0,0,0,0.0)');
-      liqVol.addColorStop(0.85, 'rgba(0,0,0,0.0)');
-      liqVol.addColorStop(1.0, 'rgba(0,0,0,0.6)');
-      ctx.fillStyle = liqVol;
-      ctx.fill();
-
-      // Caustics
-      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * T_W + (CW - T_W)/2;
-      const lg = ctx.createLinearGradient(sx - 20, 0, sx + 40, CH);
-      lg.addColorStop(0,    'rgba(255,255,200,0)');
-      lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
-      lg.addColorStop(0.6,  `rgba(255,255,210,${0.14 + Math.cos(waveTime*0.7)*0.05})`);
-      lg.addColorStop(1,    'rgba(255,255,200,0)');
-      ctx.fillStyle = lg;
-      ctx.fill();
-
-      // Bubbles
-      for (let i = bubbles.length - 1; i >= 0; i--) {
-        const b = bubbles[i];
-        b.y -= b.speed; b.wobble += b.wobbleSpeed;
-        b.x += Math.sin(b.wobble) * 0.4;
-        const bs = rawSurf + Math.sin(waveTime + b.x * 0.05) * amp;
-        if (b.y < bs) { bubbles.splice(i, 1); continue; }
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,245,200,${b.opacity * 0.3})`; ctx.fill();
-        ctx.strokeStyle = `rgba(255,255,255,${b.opacity})`;
-        ctx.lineWidth = 0.6; ctx.stroke();
-      }
-
-      // Foam
-      const fH = Math.max(12, T_W * 0.1);
-      const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
-      foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
-      foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
-      foamG.addColorStop(0.8, 'rgba(255,245,215,0.94)');
-      foamG.addColorStop(1.0, 'rgba(245,225,170,0.5)');
-      ctx.fillStyle = foamG;
-      ctx.beginPath();
-      for (let x = CX - T_R; x <= CX + T_R; x++) {
-        const fy = rawSurf + Math.sin(waveTime + x*0.05)*amp + Math.cos(waveTime*0.6+x*0.08)*amp*0.5 - fH*0.5;
-        if (x === CX - T_R) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
-      }
-      ctx.lineTo(CX + T_R, rawSurf + 6); ctx.lineTo(CX - T_R, rawSurf + 6); ctx.closePath(); ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.stroke();
     }
-    
-    // ── 3. FRONT TUBE GLASS (3D Specular Highlights for Silver) ──
-    const glassG = ctx.createLinearGradient(CX - T_R, 0, CX + T_R, 0);
-    glassG.addColorStop(0.00, 'rgba(0,0,0, 0.4)');
-    glassG.addColorStop(0.12, 'rgba(255,255,255, 0.9)'); // Strong left glare
-    glassG.addColorStop(0.20, 'rgba(0,0,0, 0.05)');
-    glassG.addColorStop(0.40, 'rgba(255,255,255, 0.2)');
-    glassG.addColorStop(0.70, 'rgba(255,255,255, 0.4)');
-    glassG.addColorStop(0.85, 'rgba(0,0,0, 0.15)');
-    glassG.addColorStop(0.95, 'rgba(255,255,255, 0.8)'); // Sharp right rim light
-    glassG.addColorStop(1.00, 'rgba(0,0,0, 0.5)');
-    
-    ctx.fillStyle = glassG;
-    ctx.fill();
-
-    // Sharp white reflection line on the left curve
-    ctx.beginPath();
-    ctx.moveTo(CX - T_R + 12, T_TOP + 10);
-    ctx.lineTo(CX - T_R + 12, T_BOT);
-    ctx.arc(CX, T_BOT, T_R - 12, Math.PI, Math.PI*0.75, true);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.stroke();
-
-    ctx.restore();
-
-    // ── 4. TUBE TOP LIP ──
-    ctx.beginPath();
-    ctx.ellipse(CX, T_TOP, T_R + 6, 14, 0, 0, Math.PI*2); // Outer lip
-    ctx.ellipse(CX, T_TOP, T_R, 10, 0, Math.PI*2, 0, true); // Inner hole
-    ctx.closePath();
-    
-    // Glass lip gradient
-    const lipG = ctx.createLinearGradient(CX - T_R, T_TOP - 14, CX + T_R, T_TOP + 14);
-    lipG.addColorStop(0, 'rgba(255,255,255,0.8)');
-    lipG.addColorStop(0.5, 'rgba(255,255,255,0.1)');
-    lipG.addColorStop(1, 'rgba(255,255,255,0.6)');
-    ctx.fillStyle = lipG;
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.stroke();
 
     requestAnimationFrame(renderBeer);
   }
