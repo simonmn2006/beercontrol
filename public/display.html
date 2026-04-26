@@ -23,35 +23,20 @@
       --fmono: 'JetBrains Mono', monospace;
     }
 
-    /* ── THEME TOKENS V9 (Modern HUD) ── */
+    /* ── THEME TOKENS V10 (Production v1.0 Spec) ── */
+    [data-theme="v1_production"] {
+      --bg: url('/public/img/v10_production_v1.png');
+      --accent: #ff9900; /* Amber Neon */
+      --beer-main: #f59e0b;
+      --ft: 'Oswald', sans-serif;
+      --fmono: 'Share Tech Mono', monospace;
+      --glow: #ff9900;
+    }
+    /* ... keeping others ... */
     [data-theme="modern_hud"] {
       --bg: url('/public/img/v9_modern_hud.png');
-      --accent: #00f2ff; /* Neon Cyan */
-      --secondary: #f59e0b; /* Neon Amber */
-      --beer-main: #00f2ff;
-      --ft: 'Inter', sans-serif;
-      --fmono: 'JetBrains Mono', monospace;
-    }
-    /* ... keeping other themes ... */
-    [data-theme="analog"] {
-      --bg: url('/public/img/v8_analog_750.png');
-      --accent: #ffcc00;
-      --beer-main: #f59e0b;
-    }
-    [data-theme="industrial"] {
-      --bg: url('/public/img/v5_industrial_level.png');
-      --accent: #ffb433;
-      --beer-main: #f59e0b;
-    }
-    [data-theme="modern"] {
-      --bg: url('/public/img/v5_modern_level.png');
       --accent: #00f2ff;
-      --beer-main: #fef08a;
-    }
-    [data-theme="crafthouse"] {
-      --bg: url('/public/img/v5_crafthouse_level.png');
-      --accent: #fcd34d;
-      --beer-main: #d97706;
+      --secondary: #f59e0b;
     }
 
     * { margin:0; padding:0; box-sizing:border-box; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
@@ -94,18 +79,30 @@
       will-change: transform;
     }
     
-    [data-theme="modern_hud"] .liquid-window { 
-      width: 180px; height: 750px;
-      top: 360px; left: 50%; transform: translateX(-50%);
-      border-radius: 90px;
-      border: 2px solid rgba(0, 242, 255, 0.2);
+    [data-theme="v1_production"] .liquid-window { 
+      width: 580px; height: 800px;
+      top: 520px; left: 50%; transform: translateX(-50%);
+      border-radius: 40px;
+      border: 4px solid rgba(255, 153, 0, 0.1);
+      box-shadow: 0 0 50px rgba(255, 153, 0, 0.05);
     }
-    [data-theme="analog"] .liquid-window { 
-      width: 100px; height: 620px;
-      top: 470px; left: 63.5%; transform: translateX(-50%);
-      border-radius: 50px;
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.9);
-      background: #000;
+    .liquid-window {
+      position: absolute; overflow: hidden; z-index: 5; background: #000;
+    }
+    
+    /* Small Top Gauge */
+    .top-level-gauge {
+      position: absolute; top: 120px; left: 50%; transform: translateX(-50%);
+      width: 100px; height: 240px; z-index: 10; display: none;
+      background: rgba(0,0,0,0.4); border-radius: 50px; overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.05);
+    }
+    [data-theme="v1_production"] .top-level-gauge { display: block; }
+    
+    .top-level-fill {
+      position: absolute; bottom: 0; width: 100%; background: var(--beer-main);
+      transition: height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 20px var(--accent);
     }
     [data-theme="industrial"] .liquid-window,
     [data-theme="modern"] .liquid-window,
@@ -115,25 +112,25 @@
       border-radius: 80px;
     }
 
-    /* ── MODERN HUD GAUGES ── */
-    .hud-gauge {
-      position: absolute; width: 220px; height: 220px;
+    /* ── V1.0 PRODUCTION GAUGES ── */
+    .prod-gauge {
+      position: absolute; width: 340px; height: 340px;
       z-index: 10; display: none; align-items: center; justify-content: center;
     }
-    [data-theme="modern_hud"] .hud-gauge { display: flex; }
+    [data-theme="v1_production"] .prod-gauge { display: flex; flex-direction: column; }
     
-    .gauge-left { top: 400px; left: 60px; }
-    .gauge-right { top: 400px; right: 60px; }
+    .prod-gauge-left { top: 110px; left: 20px; }
+    .prod-gauge-right { top: 110px; right: 20px; }
     
-    .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-    .gauge-track { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
-    .gauge-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray 1s ease; }
-    
-    .hud-val {
-      position: absolute; font-family: var(--fmono); font-size: 38px; font-weight: 900;
-      display: flex; flex-direction: column; align-items: center;
+    .prod-val {
+      font-size: 110px; font-family: var(--fmono); font-weight: 950;
+      color: #fff; text-shadow: 0 0 30px var(--glow); line-height: 0.9;
     }
-    .hud-unit { font-size: 14px; opacity: 0.5; font-weight: 600; margin-top: -5px; }
+    .prod-lbl {
+      font-size: 18px; font-weight: 800; letter-spacing: 4px; opacity: 0.6;
+      text-transform: uppercase; margin-top: 10px;
+    }
+    .prod-unit { font-size: 24px; opacity: 0.4; margin-top: 5px; }
 
     .mist-layer {
       position: absolute; inset: 0;
@@ -263,12 +260,30 @@
       opacity: 0.4; text-shadow: 0 1px 5px rgba(0,0,0,0.5); z-index: 10;
     }
     
-    .logo-badge-overlay {
-      position: absolute; top: 140px; left: 50%; transform: translate(-50%, -50%);
-      width: 200px; height: 200px; z-index: 20;
-      display: flex; align-items: center; justify-content: center;
+    /* ── ALIVE EFFECTS ── */
+    .slosh-container {
+      position: absolute; width: 100%; height: 100%;
+      transform-origin: center 20%;
+      transition: transform 0.2s ease-out;
     }
-    .badge-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(0,0,0,0.8)); mix-blend-mode: multiply; }
+    
+    .bubbles { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+    .bubble {
+      position: absolute; bottom: -20px; background: rgba(255, 255, 255, 0.4);
+      border-radius: 50%; animation: rise var(--d) infinite linear;
+    }
+    @keyframes rise { 
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      10% { opacity: 0.6; }
+      90% { opacity: 0.3; }
+      100% { transform: translateY(-1000px) scale(0.5); opacity: 0; } 
+    }
+    
+    .mist-layer {
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none; z-index: 10;
+    }
 
     /* ── FOOTER DATA ── */
     .footer { width: 100%; text-align: center; padding: 0; position: absolute; bottom: 80px; left: 0; }
@@ -308,6 +323,23 @@
     <div class="live-tag"><div class="live-dot"></div> LIVE TAP FEED</div>
     <div class="brand" id="txtName">SELECT BEER</div>
     <div class="status-tag" id="txtStatus">SYSTEM READY</div>
+  </div>
+
+  <!-- V1.0 PRODUCTION OVERLAYS -->
+  <div class="prod-gauge prod-gauge-left">
+    <div class="prod-val" id="valPressureProd">0.0</div>
+    <div class="prod-unit">BAR</div>
+    <div class="prod-lbl">CO2 PRESSURE</div>
+  </div>
+
+  <div class="prod-gauge prod-gauge-right">
+    <div class="prod-val" id="valTempProd">0.0</div>
+    <div class="prod-unit">°C</div>
+    <div class="prod-lbl">BEER TEMP</div>
+  </div>
+
+  <div class="top-level-gauge">
+    <div class="top-level-fill" id="fillTopLevel"></div>
   </div>
 
   <!-- MODERN HUD OVERLAYS -->
@@ -367,22 +399,30 @@
   </div>
 
   <div class="liquid-window">
-    <div class="mist-layer"></div>
-    <div class="beer-live-texture"></div>
-    
-    <svg class="liquid-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <!-- REFRACTION SHADER -->
-        <filter id="liquidRefraction" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-
-        <mask id="windowMask">
-          <rect id="beerFill" x="0" y="800" width="500" height="900" fill="white" />
-          <path id="wavePath" d="" fill="white" />
-        </mask>
-      </defs>
+    <div class="slosh-container" id="sloshWrap">
+      <div class="mist-layer"></div>
+      <div class="beer-live-texture"></div>
+      <div class="bubbles" id="bubbleContainer"></div>
+      
+      <svg class="liquid-svg" viewBox="0 0 500 900" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="liquidRefraction" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <mask id="windowMask">
+            <rect id="beerFill" x="0" y="800" width="500" height="900" fill="white" />
+            <path id="wavePath" d="" fill="white" />
+          </mask>
+        </defs>
+        
+        <g filter="url(#liquidRefraction)">
+          <rect width="500" height="900" fill="#000" />
+          <rect id="liquidBody" width="500" height="900" fill="var(--beer-main)" mask="url(#windowMask)" />
+        </g>
+      </svg>
+    </div>
+  </div>
       
       <!-- Interior Background -->
       <rect x="0" y="0" width="500" height="900" fill="#0c0701" opacity="0.4" />
@@ -507,17 +547,16 @@
       document.getElementById('valPsiAnalog').textContent = co2.toFixed(1);
     }
 
-    // Modern HUD Gauge Rotation
-    if (theme === 'modern_hud') {
-      const circ = 2 * Math.PI * 40;
+    // V1.0 Production Logic
+    if (theme === 'v1_production') {
+      document.getElementById('valPressureProd').textContent = co2.toFixed(2);
+      document.getElementById('valTempProd').textContent = temp.toFixed(1);
+      document.getElementById('fillTopLevel').style.height = pct + '%';
       
-      const tempPct = Math.min(Math.max((temp + 5) / 35, 0), 1);
-      document.getElementById('fillTemp').style.strokeDasharray = `${tempPct * circ} ${circ}`;
-      document.getElementById('txtTempHud').textContent = temp.toFixed(1);
-      
-      const psiPct = Math.min(Math.max(co2 / 30, 0), 1);
-      document.getElementById('fillPsi').style.strokeDasharray = `${psiPct * circ} ${circ}`;
-      document.getElementById('txtPsiHud').textContent = co2.toFixed(1);
+      // Slosh Effect intensity
+      const sloshAmp = flow > 0 ? 3 : 0.5;
+      document.querySelector('.slosh-container').style.setProperty('--slosh-angle', (sloshAmp * Math.sin(Date.now()/500)) + 'deg');
+      document.querySelector('.slosh-container').style.setProperty('--slosh-y', (sloshAmp * 2) + 'px');
     }
 
     // ADAPTIVE LIGHTING
