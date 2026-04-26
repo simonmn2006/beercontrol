@@ -130,9 +130,26 @@
       transition: stroke-dasharray 1.4s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s ease;
     }
 
-    /* Fine tick marks */
-    .g-tick-minor { stroke: rgba(255,255,255,0.07); stroke-width: 1.5; }
-    .g-tick-major { stroke: rgba(255,255,255,0.18); stroke-width: 2.5; }
+    /* 3D gauge depth */
+    .g-specular {
+      fill: none;
+      stroke: rgba(255,255,255,0.06);
+      stroke-width: 30;
+      stroke-linecap: round;
+      filter: blur(6px);
+    }
+    .g-bevel-dark {
+      fill: none;
+      stroke: rgba(0,0,0,0.6);
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .g-bevel-light {
+      fill: none;
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
 
     /* Center readout */
     .gauge-center {
@@ -375,11 +392,22 @@
                 <stop offset="0%" stop-color="#f59e0b"/>
                 <stop offset="100%" stop-color="#fde68a"/>
               </linearGradient>
+              <radialGradient id="plateTG" cx="32%" cy="28%" r="65%">
+                <stop offset="0%" stop-color="#28283c"/>
+                <stop offset="100%" stop-color="#090910"/>
+              </radialGradient>
             </defs>
-            <!-- Back plate -->
-            <circle class="g-plate" cx="100" cy="100" r="99"/>
-            <!-- Outer rim -->
-            <circle class="g-rim" cx="100" cy="100" r="97"/>
+            <!-- 3D back plate -->
+            <circle cx="100" cy="100" r="99" fill="url(#plateTG)"/>
+            <!-- Bevel dark (bottom-right) -->
+            <circle class="g-bevel-dark" cx="100" cy="100" r="97"
+              stroke-dasharray="240 612" stroke-dashoffset="-72"/>
+            <!-- Bevel light (top-left) -->
+            <circle class="g-bevel-light" cx="100" cy="100" r="97"
+              stroke-dasharray="200 612" stroke-dashoffset="348"/>
+            <!-- Specular gleam -->
+            <circle class="g-specular" cx="100" cy="100" r="80"
+              stroke-dasharray="70 503" stroke-dashoffset="62"/>
             <circle class="g-rim2" cx="100" cy="100" r="90"/>
             <!-- Fine tick marks (20 ticks over 270°) -->
             <g id="ticksTemp" transform="translate(100,100)">
@@ -411,7 +439,6 @@
             <circle class="g-rim2" cx="100" cy="100" r="62"/>
           </svg>
           <div class="gauge-center">
-            <span class="gauge-icon">🌡</span>
             <span class="gauge-value" id="gValTemp" style="color:#f59e0b;text-shadow:0 0 40px rgba(245,158,11,0.7)">0.0</span>
             <span class="gauge-unit">°C</span>
           </div>
@@ -433,9 +460,22 @@
                 <stop offset="0%" stop-color="#38bdf8"/>
                 <stop offset="100%" stop-color="#bae6fd"/>
               </linearGradient>
+              <radialGradient id="plateCG" cx="32%" cy="28%" r="65%">
+                <stop offset="0%" stop-color="#0e1e30"/>
+                <stop offset="100%" stop-color="#060810"/>
+              </radialGradient>
             </defs>
-            <circle class="g-plate" cx="100" cy="100" r="99"/>
-            <circle class="g-rim" cx="100" cy="100" r="97"/>
+            <!-- 3D back plate -->
+            <circle cx="100" cy="100" r="99" fill="url(#plateCG)"/>
+            <!-- Bevel dark (bottom-right) -->
+            <circle class="g-bevel-dark" cx="100" cy="100" r="97"
+              stroke-dasharray="240 612" stroke-dashoffset="-72"/>
+            <!-- Bevel light (top-left) -->
+            <circle class="g-bevel-light" cx="100" cy="100" r="97"
+              stroke-dasharray="200 612" stroke-dashoffset="348"/>
+            <!-- Specular gleam -->
+            <circle class="g-specular" cx="100" cy="100" r="80"
+              stroke-dasharray="70 503" stroke-dashoffset="62"/>
             <circle class="g-rim2" cx="100" cy="100" r="90"/>
             <g id="ticksCo2" transform="translate(100,100)"></g>
             <circle class="g-track" cx="100" cy="100" r="76"
@@ -459,7 +499,6 @@
             <circle class="g-rim2" cx="100" cy="100" r="62"/>
           </svg>
           <div class="gauge-center">
-            <span class="gauge-icon">💨</span>
             <span class="gauge-value" id="gValCo2" style="color:#38bdf8;text-shadow:0 0 40px rgba(56,189,248,0.7)">0.0</span>
             <span class="gauge-unit">PSI</span>
           </div>
@@ -502,7 +541,7 @@
 
   <!-- FOOTER -->
   <div class="footer">
-    <div id="beerLogo" class="beer-logo">🍺</div>
+    <div id="beerLogo" class="beer-logo"></div>
     <div class="pints-row">
       <span class="pints-val" id="pintsVal">--</span>
       <span class="pints-lbl">pints left</span>
@@ -684,7 +723,7 @@
     let demoCo2  = 14.5;
 
     updateVisuals({
-      beer_name: 'DEMO BREW PRO',
+      beer_name: 'Heineken Draft',
       remaining_pct: demoPct,
       current_temp: demoTemp,
       current_co2: demoCo2,
@@ -699,7 +738,7 @@
       demoTemp  = Math.max(2, Math.min(12, demoTemp));
 
       updateVisuals({
-        beer_name: 'DEMO BREW PRO',
+        beer_name: 'Heineken Draft',
         remaining_pct: demoPct,
         current_temp: demoTemp,
         current_co2: demoCo2,
