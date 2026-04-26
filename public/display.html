@@ -997,99 +997,62 @@
   setInterval(spawnBubble, 600);
 
   /* ── SSE Stream ── */
+  let dataReceived = false;
+  let demoInterval = null;
+
   function initStream() {
     const es = new EventSource(`/api/mqtt/stream`);
     es.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
         const topic = `keghero/display/${DISPLAY_ID}/kegs`;
-        if (msg.topic === topic) updateVisuals(msg.payload);
+        if (msg.topic === topic) {
+          dataReceived = true;
+          if (demoInterval) {
+             clearInterval(demoInterval);
+             demoInterval = null;
+             document.getElementById('alertOverlay').classList.remove('show');
+          }
+          updateVisuals(msg.payload);
+        }
       } catch {}
     };
     es.onerror = () => setTimeout(initStream, 3000);
   }
   initStream();
 
-  /* ── SHOWCASE DEMO — cycles through all states ── */
-  if (params.get('demo') === 'true') {
+  /* ── AUTOMATIC DEMO / TESTING MODE ── */
+  const scenarios = [
+    { beer_name: 'Heineken Draft', remaining_pct: 82, current_temp: 4.2, current_co2: 1.45, current_flow: 0 },
+    { beer_name: 'Heineken Draft', remaining_pct: 80, current_temp: 4.3, current_co2: 1.42, current_flow: 1.8 },
+    { beer_name: 'Guinness Stout', remaining_pct: 24, current_temp: 5.1, current_co2: 1.38, current_flow: 0 },
+    { beer_name: 'Guinness Stout', remaining_pct: 9,  current_temp: 5.4, current_co2: 1.35, current_flow: 0 }, // FASS LEER
+    { beer_name: 'Stella Artois',  remaining_pct: 61, current_temp: 4.8, current_co2: 3.1,  current_flow: 0 }, // CO2 HIGH
+    { beer_name: 'Stella Artois',  remaining_pct: 55, current_temp: 4.6, current_co2: 0.2,  current_flow: 0 }, // CO2 EMPTY
+    { beer_name: 'Corona Extra',   remaining_pct: 47, current_temp: 9.8, current_co2: 1.51, current_flow: 0 }  // TEMP WARNING
+  ];
 
-    const scenarios = [
-      {
-        label: 'Normal Operation',
-        beer_name: 'Heineken Draft',
-        remaining_pct: 82,
-        current_temp: 4.2,
-        current_co2: 1.45,  // BAR
-        current_flow: 0
-      },
-      {
-        label: 'Pouring',
-        beer_name: 'Heineken Draft',
-        remaining_pct: 80,
-        current_temp: 4.3,
-        current_co2: 1.42,
-        current_flow: 1.8
-      },
-      {
-        label: 'Keg Running Low',
-        beer_name: 'Guinness Stout',
-        remaining_pct: 24,
-        current_temp: 5.1,
-        current_co2: 1.38,
-        current_flow: 0
-      },
-      {
-        label: 'KEG CRITICAL',
-        beer_name: 'Guinness Stout',
-        remaining_pct: 9,
-        current_temp: 5.4,
-        current_co2: 1.35,
-        current_flow: 0
-      },
-      {
-        label: 'CO2 Pressure High',
-        beer_name: 'Stella Artois',
-        remaining_pct: 61,
-        current_temp: 4.8,
-        current_co2: 3.1,   // HIGH BAR
-        current_flow: 0
-      },
-      {
-        label: 'CO2 Tank Empty',
-        beer_name: 'Stella Artois',
-        remaining_pct: 55,
-        current_temp: 4.6,
-        current_co2: 0.2,   // EMPTY BAR
-        current_flow: 0
-      },
-      {
-        label: 'Temp Warning',
-        beer_name: 'Corona Extra',
-        remaining_pct: 47,
-        current_temp: 9.8,
-        current_co2: 1.51,
-        current_flow: 0
-      }
-    ];
-
-    let idx = 0;
-
-    function runScenario() {
-      const s = scenarios[idx];
-      // Add small random variation so values feel live
-      updateVisuals({
-        beer_name:      s.beer_name,
-        remaining_pct:  s.remaining_pct + (Math.random() - 0.5) * 2,
-        current_temp:   s.current_temp  + (Math.random() - 0.5) * 0.3,
-        current_co2:    s.current_co2   + (Math.random() - 0.5) * 0.4,
-        current_flow:   s.current_flow
-      });
-      idx = (idx + 1) % scenarios.length;
-    }
-
-    runScenario();
-    setInterval(runScenario, 4000); // switch scenario every 4 seconds
+  let demoIdx = 0;
+  function runScenario() {
+    if (dataReceived) return; // Stop if real data is here
+    const s = scenarios[demoIdx];
+    updateVisuals({
+      beer_name:      s.beer_name + ' (DEMO)',
+      remaining_pct:  s.remaining_pct + (Math.random() - 0.5) * 2,
+      current_temp:   s.current_temp  + (Math.random() - 0.5) * 0.3,
+      current_co2:    s.current_co2   + (Math.random() - 0.5) * 0.4,
+      current_flow:   s.current_flow
+    });
+    demoIdx = (demoIdx + 1) % scenarios.length;
   }
+
+  // Auto-start demo if no data arrives in 3 seconds (or forced via URL)
+  setTimeout(() => {
+    if (!dataReceived || params.get('demo') === 'true') {
+      runScenario();
+      demoInterval = setInterval(runScenario, 4000);
+    }
+  }, 3000);
 
   /* ── Test Level ── */
   const testLevel = params.get('testLevel');
