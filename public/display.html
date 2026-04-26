@@ -25,9 +25,9 @@
       width: 750px; height: 1560px;
       position: relative;
       background:
-        radial-gradient(ellipse 600px 400px at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 70%),
-        radial-gradient(ellipse 800px 600px at 50% 100%, rgba(30,20,5,0.9) 0%, transparent 80%),
-        linear-gradient(180deg, #0d0d12 0%, #080810 50%, #0a0906 100%);
+        radial-gradient(ellipse 500px 300px at 50% 5%,  rgba(245,158,11,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 700px 500px at 50% 95%, rgba(120,60,10,0.25)   0%, transparent 70%),
+        linear-gradient(160deg, #12111e 0%, #1a1628 30%, #1c1510 70%, #151010 100%);
     }
 
     /* ── HEADER ── */
@@ -297,10 +297,7 @@
       opacity: 0.4; text-transform: uppercase;
     }
 
-    .beer-logo {
-      font-size: 60px;
-      filter: drop-shadow(0 0 20px rgba(245,158,11,0.5));
-    }
+
 
     /* ── ALERT OVERLAY ── */
     #alertOverlay {
@@ -323,15 +320,16 @@
     .alert-sub {
       font-size: 22px; opacity: 0.6; margin-top: 10px; letter-spacing: 2px;
     }
-    /* Red pulsing border */
+    /* Red pulsing border — rounded corners to match display */
     #alertOverlay::before {
       content: ''; position: fixed; inset: 0;
-      border: 20px solid #ef4444;
+      border: 18px solid #ef4444;
+      border-radius: 48px;
       animation: borderPulse 1.2s infinite ease-in-out;
       pointer-events: none;
     }
-    @keyframes alertPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
-    @keyframes borderPulse { 0%,100%{opacity:0.8} 50%{opacity:0.2} }
+    @keyframes alertPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+    @keyframes borderPulse { 0%,100%{opacity:1; box-shadow:0 0 60px rgba(239,68,68,0.8) inset;} 50%{opacity:0.2;} }
 
     /* ── LEVEL STATE COLORS ── */
     .level--ok    .level-fill {
@@ -541,7 +539,6 @@
 
   <!-- FOOTER -->
   <div class="footer">
-    <div id="beerLogo" class="beer-logo"></div>
     <div class="pints-row">
       <span class="pints-val" id="pintsVal">--</span>
       <span class="pints-lbl">pints left</span>
