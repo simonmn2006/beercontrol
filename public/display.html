@@ -91,7 +91,7 @@
     /* ── HEADER ── */
     .header {
       position: absolute; top: 0; left: 0; right: 0;
-      padding: 50px 50px 30px;
+      padding: 90px 50px 30px;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
       background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
     }
@@ -1189,7 +1189,8 @@
              demoInterval = null;
              document.getElementById('alertOverlay').classList.remove('show');
           }
-          updateVisuals(msg.payload);
+          const kegData = msg.payload.kegs ? msg.payload.kegs[0] : msg.payload;
+          if (kegData) updateVisuals(kegData);
         }
       } catch {}
     };

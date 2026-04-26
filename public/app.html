@@ -6210,7 +6210,11 @@ function renderDetailKegs(r){
           </div>
         </div>
         <div class="flex g6" style="flex-shrink:0">
-          ${k.esp32_display_id ? `<a href="/display/${k.esp32_display_id}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:4px">📺 View Live</a>` : ''}
+          ${k.esp32_display_id ? `
+            <a href="/display/${k.esp32_display_id}?theme=tech" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:4px">📺 Tech</a>
+            <a href="/display/${k.esp32_display_id}?theme=minimal" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:4px">📺 Minimal</a>
+            <a href="/display/${k.esp32_display_id}?theme=brewery" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;display:flex;align-items:center;gap:4px">📺 Pub</a>
+          ` : ''}
           <button class="btn btn-ghost btn-sm" onclick="openEditKeg(${k.id})">✏</button>
           <button class="btn btn-ghost btn-sm" onclick="showConfirm({icon:'🛢',title:'New Keg',message:'Is this a new <b>${beer}</b> keg?',onConfirm:()=>toast('New keg session started','info')})">🛢 New Keg</button>
           <button class="btn btn-danger btn-sm" onclick="deleteKeg(${k.id})">🗑</button>
