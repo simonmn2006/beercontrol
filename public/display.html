@@ -252,13 +252,58 @@
       text-align: right; white-space: nowrap; opacity: 0.5;
     }
 
+    /* ── OUTSIDE INFO PANEL ── */
+    .level-info-panel {
+      position: absolute;
+      right: calc(100% + 36px);
+      top: 50%; transform: translateY(-50%);
+      width: 210px;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+    }
+
+    /* Huge glowing % */
+    .info-pct {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 110px; font-weight: 900; line-height: 1;
+      letter-spacing: -4px;
+      transition: color 0.4s ease, text-shadow 0.4s ease;
+      color: #f59e0b;
+      text-shadow:
+        0 0 30px rgba(245,158,11,0.9),
+        0 0 80px rgba(245,158,11,0.4),
+        0 4px 20px rgba(0,0,0,0.8);
+    }
+    .info-label {
+      font-size: 15px; font-weight: 900; letter-spacing: 5px;
+      text-transform: uppercase; opacity: 0.4; margin-top: -6px;
+    }
+    .info-divider {
+      width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
+    .info-liters {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 34px; font-weight: 800; opacity: 0.65;
+      transition: color 0.4s ease;
+    }
+    .info-liters-lbl {
+      font-size: 13px; font-weight: 700; letter-spacing: 3px;
+      opacity: 0.3; text-transform: uppercase;
+    }
+    .info-badge {
+      padding: 7px 20px; border-radius: 100px;
+      font-size: 13px; font-weight: 900; letter-spacing: 3px;
+      text-transform: uppercase; border: 2px solid currentColor;
+      transition: color 0.4s ease, box-shadow 0.4s ease;
+    }
+
     /* Big centered % — always in the middle of the tube */
     .big-pct {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
       font-family: 'JetBrains Mono', monospace;
       font-size: 52px; font-weight: 900;
-      color: #fff;
+      color: rgba(255,255,255,0.5);
       text-shadow: 0 2px 20px rgba(0,0,0,0.8), 0 0 40px rgba(0,0,0,0.9);
       letter-spacing: -2px;
       z-index: 10; pointer-events: none;
@@ -534,8 +579,16 @@
         <div class="tick major"><div class="tick-line"></div>0%</div>
       </div>
 
-      <!-- Floating side % -->
-      <div class="pct-indicator" id="pctIndicator" style="top:100%; color:#f59e0b">0%</div>
+      <!-- OUTSIDE INFO PANEL -->
+      <div class="level-info-panel">
+        <div class="info-pct" id="infoPct">0%</div>
+        <div class="info-label">Remaining</div>
+        <div class="info-divider"></div>
+        <div class="info-liters" id="infoLiters">0.0<span class="info-liters-lbl"> L</span></div>
+        <div class="info-liters-lbl">Est. in keg</div>
+        <div class="info-divider"></div>
+        <div class="info-badge" id="infoBadge">STABLE</div>
+      </div>
     </div>
   </div>
 
@@ -768,16 +821,41 @@
     /* Canvas beer level — set target fill */
     beerTargetLevel = pct / 100;
 
-    /* Big centered % */
+    /* Big centered % (subtle, inside tube) */
     const bigPct = document.getElementById('bigPct');
     bigPct.textContent = Math.round(pct) + '%';
-    bigPct.style.color = pct < 15 ? '#ef4444' : pct < 30 ? '#f97316' : '#fff';
 
-    /* Floating side % label */
-    const pctEl = document.getElementById('pctIndicator');
-    pctEl.style.top   = (100 - pct) + '%';
-    pctEl.textContent = Math.round(pct) + '%';
-    pctEl.style.color = pct < 15 ? '#ef4444' : pct < 30 ? '#f97316' : '#f59e0b';
+    /* Outside info panel */
+    const infoPct   = document.getElementById('infoPct');
+    const infoLit   = document.getElementById('infoLiters');
+    const infoBadge = document.getElementById('infoBadge');
+    const liters    = ((pct / 100) * 50).toFixed(1); // 50L keg
+
+    infoPct.textContent = Math.round(pct) + '%';
+    infoLit.innerHTML   = `${liters}<span class="info-liters-lbl"> L</span>`;
+
+    const pctColor = pct < 15 ? '#ef4444' : pct < 30 ? '#f97316' : '#f59e0b';
+    infoPct.style.color      = pctColor;
+    infoPct.style.textShadow = `0 0 30px ${pctColor}99, 0 0 80px ${pctColor}55, 0 4px 20px rgba(0,0,0,0.8)`;
+    infoLit.style.color      = pctColor;
+
+    if (flow > 0) {
+      infoBadge.textContent  = 'POURING';
+      infoBadge.style.color  = '#22c55e';
+      infoBadge.style.boxShadow = '0 0 20px rgba(34,197,94,0.4)';
+    } else if (pct < 15) {
+      infoBadge.textContent  = 'CRITICAL';
+      infoBadge.style.color  = '#ef4444';
+      infoBadge.style.boxShadow = '0 0 20px rgba(239,68,68,0.5)';
+    } else if (pct < 30) {
+      infoBadge.textContent  = 'LOW';
+      infoBadge.style.color  = '#f97316';
+      infoBadge.style.boxShadow = '0 0 20px rgba(249,115,22,0.4)';
+    } else {
+      infoBadge.textContent  = 'GOOD';
+      infoBadge.style.color  = '#22c55e';
+      infoBadge.style.boxShadow = 'none';
+    }
 
     /* Level state */
     const frame = document.getElementById('levelFrame');
