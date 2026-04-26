@@ -23,23 +23,23 @@
       --fmono: 'JetBrains Mono', monospace;
     }
 
-    /* ── THEME TOKENS V4 (Clean 720x1560) ── */
+    /* ── THEME TOKENS V5 (Level-Focused 720x1560) ── */
     [data-theme="industrial"] {
-      --bg: url('/public/img/v4_industrial.png');
+      --bg: url('/public/img/v5_industrial_level.png');
       --accent: #ffb433; /* Neon Amber */
       --beer-main: #f59e0b;
       --ft: 'Oswald', sans-serif;
       --fmono: 'Share Tech Mono', monospace;
     }
     [data-theme="modern"] {
-      --bg: url('/public/img/v4_modern.png');
+      --bg: url('/public/img/v5_modern_level.png');
       --accent: #00f2ff; /* Neon Cyan */
       --beer-main: #fef08a;
       --ft: 'Inter', sans-serif;
       --fmono: 'Roboto Mono', monospace;
     }
     [data-theme="crafthouse"] {
-      --bg: url('/public/img/v4_crafthouse.png');
+      --bg: url('/public/img/v5_crafthouse_level.png');
       --accent: #fcd34d; /* Brass Gold */
       --beer-main: #d97706;
       --ft: 'Playfair Display', serif;
@@ -85,40 +85,48 @@
     }
     
     [data-theme="industrial"] .liquid-window { 
-      width: 140px; height: 600px;
-      top: 380px; left: 50%; transform: translateX(-50%);
-      border-radius: 70px;
+      width: 160px; height: 700px;
+      top: 340px; left: 50%; transform: translateX(-50%);
+      border-radius: 80px;
     }
     [data-theme="modern"] .liquid-window { 
-      width: 140px; height: 600px;
-      top: 380px; left: 50%; transform: translateX(-50%);
-      border-radius: 70px;
+      width: 160px; height: 700px;
+      top: 340px; left: 50%; transform: translateX(-50%);
+      border-radius: 80px;
     }
     [data-theme="crafthouse"] .liquid-window { 
-      width: 140px; height: 600px;
-      top: 380px; left: 50%; transform: translateX(-50%);
-      border-radius: 70px;
+      width: 160px; height: 700px;
+      top: 340px; left: 50%; transform: translateX(-50%);
+      border-radius: 80px;
     }
 
-    /* ── DATA CARDS V2 (Production Ready) ── */
+    /* ── DATA CARDS V3 (Production Clarity) ── */
     .data-card {
       position: absolute;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       pointer-events: none; z-index: 15;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 20px;
+      width: 220px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .card-temp { top: 480px; left: 60px; }
-    .card-psi { top: 480px; right: 60px; }
+    .card-temp { top: 440px; left: 40px; }
+    .card-psi { top: 440px; right: 40px; }
     
     .card-val { 
-      font-size: 80px; font-family: var(--fmono); font-weight: 900; 
+      font-size: 85px; font-family: var(--fmono); font-weight: 900; 
       line-height: 1; color: var(--accent); 
       filter: drop-shadow(0 0 15px var(--accent));
       margin-bottom: 5px;
     }
     .card-lbl { 
-      font-size: 14px; font-weight: 800; letter-spacing: 1px; opacity: 0.6;
-      text-transform: uppercase;
+      font-size: 16px; font-weight: 800; letter-spacing: 2px; opacity: 0.8;
+      text-transform: uppercase; color: #fff;
     }
 
     .mist-layer {
@@ -144,16 +152,31 @@
       --interior-glow: rgba(180, 83, 9, 0.4);
     }
 
-    /* ── TOP HEADER ── */
-    .header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 0 40px; }
+    /* ── TOP HEADER V2 ── */
+    .header { 
+      width: 100%; position: absolute; top: 0; left: 0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 60px 40px; z-index: 20;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    }
     .live-tag {
       background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 40px; padding: 6px 16px;
       display: flex; align-items: center; gap: 8px; font-family: var(--fmono); font-size: 14px; color: #ef4444; text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 15px;
     }
     .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: blink 1s infinite; }
     @keyframes blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
 
-    .brand { font-family: var(--ft); font-size: 32px; font-weight: 900; letter-spacing: 4px; opacity: 0.6; }
+    .brand { 
+      font-family: var(--ft); font-size: 64px; font-weight: 900; 
+      letter-spacing: 4px; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      text-align: center; line-height: 1.1; margin-bottom: 5px;
+    }
+    .status-tag {
+      font-family: var(--fmono); font-size: 18px; font-weight: 700;
+      letter-spacing: 2px; color: var(--accent); opacity: 0.9;
+      text-transform: uppercase;
+    }
 
     /* ── MAIN DISPLAY AREA ── */
     .main-body { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
@@ -247,17 +270,26 @@
     .brand-logo-img { max-width: 380px; filter: drop-shadow(0 5px 20px rgba(0,0,0,0.8)); opacity: 0.95; }
     
     .remaining-tag {
-      margin-top: -20px; font-family: var(--fmono); font-size: 24px; color: var(--beer-main); font-weight: 800; letter-spacing: 2px;
+      margin-top: -10px; font-family: var(--fmono); font-size: 42px; color: var(--beer-main); font-weight: 900; letter-spacing: 2px;
+      text-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
 
-    /* ── ALERT OVERLAY ── */
+    /* ── ALERT OVERLAY V2 ── */
     #alertOverlay {
-      position: fixed; inset: 0; background: rgba(239, 68, 68, 0.2); 
-      backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100;
-      animation: alertPulse 2s infinite ease-in-out; pointer-events: none;
+      position: fixed; inset: 0; 
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, rgba(0,0,0,0.8) 100%);
+      backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100;
+      animation: alertPulse 1.5s infinite ease-in-out; pointer-events: none;
+      border: 20px solid #ef4444;
     }
-    @keyframes alertPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
-    .alert-msg { font-family: var(--ft); font-size: 80px; font-weight: 950; color: #fff; text-shadow: 0 0 40px #ef4444; }
+    @keyframes alertPulse { 
+      0%, 100% { opacity: 1; border-width: 20px; } 
+      50% { opacity: 0.7; border-width: 40px; } 
+    }
+    .alert-msg { 
+      font-family: var(--ft); font-size: 100px; font-weight: 950; color: #fff; 
+      text-shadow: 0 0 60px #ef4444; text-transform: uppercase; letter-spacing: 5px;
+    }
 
   </style>
 </head>
@@ -266,6 +298,12 @@
 <div id="alertOverlay"><span class="alert-msg">LOW KEG LEVEL</span></div>
 
 <div class="kiosk-wrapper">
+  
+  <div class="header">
+    <div class="live-tag"><div class="live-dot"></div> LIVE TAP FEED</div>
+    <div class="brand" id="txtName">SELECT BEER</div>
+    <div class="status-tag" id="txtStatus">SYSTEM READY</div>
+  </div>
   
   <!-- DATA CARDS (Top Priority) -->
   <div class="data-card card-temp">
@@ -362,6 +400,19 @@
     document.getElementById('txtPct').textContent = Math.round(pct) + '% REMAINING';
     document.getElementById('valTemp').textContent = temp.toFixed(1);
     document.getElementById('valCo2').textContent = co2.toFixed(1);
+    
+    // Status Logic
+    const elStatus = document.getElementById('txtStatus');
+    if (flow > 0) {
+      elStatus.textContent = "POURING NOW";
+      elStatus.style.color = "#22c55e"; // Green
+    } else if (temp > 8) {
+      elStatus.textContent = "TEMP WARNING";
+      elStatus.style.color = "#f59e0b"; // Amber
+    } else {
+      elStatus.textContent = "STABLE / READY";
+      elStatus.style.color = "var(--accent)";
+    }
 
     // ADAPTIVE LIGHTING
     const glowScale = 0.5 + (1 - (pct/100)) * 0.5;
