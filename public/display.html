@@ -276,6 +276,27 @@
       transition: color 0.4s ease, box-shadow 0.4s ease;
     }
 
+    /* Large bottom status indicator */
+    .system-status-large {
+      position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+      font-size: 26px; font-weight: 900; letter-spacing: 6px;
+      color: rgba(255,255,255,0.8);
+      text-transform: uppercase;
+      padding: 16px 40px; border-radius: 100px;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid rgba(255,255,255,0.15);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      transition: all 0.5s ease;
+    }
+    .system-status-large.flowing {
+      color: #3b82f6; border-color: #3b82f6;
+      box-shadow: 0 0 30px rgba(59,130,246,0.4);
+    }
+    .system-status-large.crit {
+      color: #ef4444; border-color: #ef4444;
+      box-shadow: 0 0 30px rgba(239,68,68,0.4);
+    }
+
     /* Big centered % — always in the middle of the tube */
     .big-pct {
       position: absolute; inset: 0;
@@ -386,8 +407,8 @@
 
 <div id="alertOverlay">
   <div class="alert-box">
-    <div class="alert-text" id="alertText">REPLACE KEG</div>
-    <div class="alert-sub" id="alertSub">Level Critical — Act Now</div>
+    <div class="alert-text" id="alertText">FASS WECHSELN</div>
+    <div class="alert-sub" id="alertSub">Kritischer Füllstand — Jetzt handeln</div>
   </div>
 </div>
 
@@ -397,10 +418,9 @@
   <div class="header">
     <div class="live-badge">
       <div class="live-dot"></div>
-      LIVE TAP FEED
+      LIVE-ZAPFANLAGE
     </div>
-    <div class="beer-name" id="txtName">LOADING…</div>
-    <div class="status-pill" id="txtStatus">SYSTEM READY</div>
+    <div class="beer-name" id="txtName">LÄDT…</div>
   </div>
 
   <!-- GAUGES -->
@@ -469,7 +489,7 @@
         </div>
       </div>
       <div class="gauge-footer">
-        <span class="gauge-label">Temperature</span>
+        <span class="gauge-label">Temperatur</span>
         <div class="gauge-minmax"><span>0°C</span><span>20°C</span></div>
       </div>
     </div>
@@ -529,7 +549,7 @@
         </div>
       </div>
       <div class="gauge-footer">
-        <span class="gauge-label">CO₂ Pressure</span>
+        <span class="gauge-label">CO₂-Druck</span>
         <div class="gauge-minmax"><span>0 BAR</span><span>5 BAR</span></div>
       </div>
     </div>
@@ -538,8 +558,6 @@
 
   <!-- BEER LEVEL COLUMN -->
   <div class="level-section">
-    <div class="level-header">Beer Remaining</div>
-
     <div class="level-frame" id="levelFrame">
       <canvas id="beerCanvas"></canvas>
 
@@ -557,16 +575,19 @@
 
       <!-- OUTSIDE INFO PANEL -->
       <div class="level-info-panel">
+        <div class="info-label" style="font-size: 18px; letter-spacing: 4px; opacity: 0.9;">RESTMENGE</div>
         <div class="info-pct" id="infoPct">0%</div>
-        <div class="info-label">Remaining</div>
         <div class="info-divider"></div>
         <div class="info-liters" id="infoLiters">0.0<span class="info-liters-lbl"> L</span></div>
-        <div class="info-liters-lbl">Est. in keg</div>
+        <div class="info-liters-lbl">Geschätzt im Fass</div>
         <div class="info-divider"></div>
-        <div class="info-badge" id="infoBadge">STABLE</div>
+        <div class="info-badge" id="infoBadge">STABIL</div>
       </div>
     </div>
   </div>
+
+  <!-- LARGE BOTTOM STATUS -->
+  <div class="system-status-large" id="txtStatus">SYSTEM BEREIT</div>
 
 
 
@@ -855,19 +876,19 @@
     infoLit.style.color      = pctColor;
 
     if (flow > 0) {
-      infoBadge.textContent  = 'POURING';
+      infoBadge.textContent  = 'ZAPFEN';
       infoBadge.style.color  = '#22c55e';
       infoBadge.style.boxShadow = '0 0 20px rgba(34,197,94,0.4)';
     } else if (pct < 15) {
-      infoBadge.textContent  = 'CRITICAL';
+      infoBadge.textContent  = 'KRITISCH';
       infoBadge.style.color  = '#ef4444';
       infoBadge.style.boxShadow = '0 0 20px rgba(239,68,68,0.5)';
     } else if (pct < 30) {
-      infoBadge.textContent  = 'LOW';
+      infoBadge.textContent  = 'NIEDRIG';
       infoBadge.style.color  = '#f97316';
       infoBadge.style.boxShadow = '0 0 20px rgba(249,115,22,0.4)';
     } else {
-      infoBadge.textContent  = 'GOOD';
+      infoBadge.textContent  = 'STABIL';
       infoBadge.style.color  = '#22c55e';
       infoBadge.style.boxShadow = 'none';
     }
@@ -895,29 +916,29 @@
 
     pctEl.style.color = pct < 15 ? '#ef4444' : pct < 30 ? '#f97316' : '#f59e0b';
 
-    /* Status pill — no emojis */
+    /* Status pill — Large bottom indicator */
     const pill = document.getElementById('txtStatus');
     if (flow > 0) {
-      pill.textContent   = 'POURING NOW';
-      pill.style.color   = '#22c55e';
+      pill.textContent   = 'ZAPFEN LÄUFT…';
+      pill.className     = 'system-status-large flowing';
     } else if (pct < 15) {
-      pill.textContent   = 'KEG CRITICAL';
-      pill.style.color   = '#ef4444';
+      pill.textContent   = 'FASS LEER';
+      pill.className     = 'system-status-large crit';
     } else if (pct < 30) {
-      pill.textContent   = 'KEG RUNNING LOW';
-      pill.style.color   = '#f97316';
+      pill.textContent   = 'FASS FAST LEER';
+      pill.className     = 'system-status-large crit';
     } else if (co2 > 2.8) {
-      pill.textContent   = 'CO2 HIGH';
-      pill.style.color   = '#38bdf8';
+      pill.textContent   = 'CO2 ZU HOCH';
+      pill.className     = 'system-status-large crit';
     } else if (co2 < 0.4) {
-      pill.textContent   = 'CO2 LOW';
-      pill.style.color   = '#a78bfa';
+      pill.textContent   = 'CO2 ZU NIEDRIG';
+      pill.className     = 'system-status-large crit';
     } else if (temp > 8) {
-      pill.textContent   = 'TEMP WARNING';
-      pill.style.color   = '#f59e0b';
+      pill.textContent   = 'TEMPERATUR WARNUNG';
+      pill.className     = 'system-status-large crit';
     } else {
-      pill.textContent   = 'STABLE';
-      pill.style.color   = 'rgba(255,255,255,0.4)';
+      pill.textContent   = 'SYSTEM BEREIT';
+      pill.className     = 'system-status-large';
     }
 
     /* Alert overlay — supports keg AND co2 alerts */
