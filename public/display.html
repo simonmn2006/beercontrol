@@ -188,7 +188,7 @@
 
     /* ── BEER LEVEL COLUMN ── */
     .level-section {
-      position: absolute; top: 700px; right: 40px;
+      position: absolute; top: 760px; right: 40px;
       display: flex; flex-direction: column; align-items: center; gap: 0;
     }
 
@@ -199,33 +199,12 @@
 
     .level-frame {
       position: relative;
-      width: 200px; height: 720px;
+      width: 320px; height: 460px;
     }
 
-    /* Outer casing */
-    .level-casing {
-      position: absolute; inset: 0;
-      border-radius: 65px;
-      border: 2px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.02);
-      box-shadow:
-        inset 0 0 40px rgba(0,0,0,0.8),
-        0 0 0 1px rgba(255,255,255,0.03);
-    }
-
-    /* Inner fill track — houses the canvas */
-    .level-track {
-      position: absolute; inset: 8px;
-      border-radius: 57px;
-      background: #060408;
-      overflow: hidden;
-    }
-
-    /* Canvas fills the track perfectly */
     #beerCanvas {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
-      border-radius: 57px;
     }
 
     /* Tick marks */
@@ -562,10 +541,7 @@
     <div class="level-header">Beer Remaining</div>
 
     <div class="level-frame" id="levelFrame">
-      <div class="level-casing"></div>
-      <div class="level-track">
-        <canvas id="beerCanvas"></canvas>
-      </div>
+      <canvas id="beerCanvas"></canvas>
 
       <!-- Big centered % -->
       <div class="big-pct" id="bigPct">0%</div>
@@ -647,19 +623,20 @@
   const ctx    = canvas.getContext('2d');
 
   // 3D Keg dimensions (2× retina)
-  const CW = 200, CH = 720;
+  const CW = 320, CH = 460;
   canvas.width  = CW * 2;
   canvas.height = CH * 2;
   ctx.scale(2, 2);
 
-  const CYL_W = CW - 16; 
-  const CYL_X = 8;
-  const BODY_TOP = 90;
-  const BODY_BOT = CH - 90;
-  const EL_H = 18; 
+  const RIM_W = 220;
+  const BODY_W = 320;
+  const SKIRT_TOP = 20;
+  const SKIRT_BOT = CH - 20;
+  const EL_H_RIM = 14;
+  const EL_H_BODY = 18;
 
-  const LIQ_TOP = BODY_TOP + 10;
-  const LIQ_BOT = BODY_BOT - 10;
+  const LIQ_TOP = SKIRT_TOP + 50;
+  const LIQ_BOT = SKIRT_BOT - 50;
   const LIQ_H = LIQ_BOT - LIQ_TOP;
   
   let beerTargetLevel = 0;
@@ -670,9 +647,9 @@
   function spawnCanvasBubble() {
     if (beerCurrentLevel < 0.02) return;
     bubbles.push({
-      x: CYL_X + 10 + Math.random() * (CYL_W - 20),
+      x: CW/2 - BODY_W/2 + 20 + Math.random() * (BODY_W - 40),
       y: LIQ_BOT,
-      r: 1 + Math.random() * 3.5,
+      r: 1 + Math.random() * 4,
       speed: 0.4 + Math.random() * 0.8,
       opacity: 0.3 + Math.random() * 0.4,
       wobble: Math.random() * Math.PI * 2,
@@ -681,19 +658,22 @@
   }
   setInterval(spawnCanvasBubble, 300);
 
-  function drawCylinder(ctx, x, yTop, yBot, w, rh, grad) {
+  function drawKegBodyPath(ctx) {
+    const cx = CW / 2;
+    const rx = RIM_W / 2;
+    const bx = BODY_W / 2;
+    
     ctx.beginPath();
-    ctx.ellipse(x + w/2, yTop, w/2, rh, 0, Math.PI, 0); 
-    ctx.lineTo(x + w, yBot);
-    ctx.ellipse(x + w/2, yBot, w/2, rh, 0, 0, Math.PI); 
-    ctx.lineTo(x, yTop);
-    ctx.fillStyle = grad;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(x + w/2, yBot, w/2, rh, 0, 0, Math.PI); 
-    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.moveTo(cx - rx, SKIRT_TOP);
+    ctx.ellipse(cx, SKIRT_TOP, rx, EL_H_RIM, 0, Math.PI, 0);
+    ctx.lineTo(cx + rx, SKIRT_TOP + 40);
+    ctx.bezierCurveTo(cx + bx + 5, SKIRT_TOP + 80, cx + bx + 5, SKIRT_BOT - 80, cx + rx, SKIRT_BOT - 40);
+    ctx.lineTo(cx + rx, SKIRT_BOT);
+    ctx.ellipse(cx, SKIRT_BOT, rx, EL_H_RIM, 0, 0, Math.PI);
+    ctx.lineTo(cx - rx, SKIRT_BOT - 40);
+    ctx.bezierCurveTo(cx - bx - 5, SKIRT_BOT - 80, cx - bx - 5, SKIRT_TOP + 80, cx - rx, SKIRT_TOP + 40);
+    ctx.lineTo(cx - rx, SKIRT_TOP);
+    ctx.closePath();
   }
 
   function renderBeer() {
@@ -706,28 +686,24 @@
 
     // ── 1. BEER LIQUID LAYER (Back) ──
     ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(CW/2, BODY_TOP, CYL_W/2, EL_H, 0, Math.PI, 0); 
-    ctx.lineTo(CYL_X + CYL_W, BODY_BOT);
-    ctx.ellipse(CW/2, BODY_BOT, CYL_W/2, EL_H, 0, 0, Math.PI); 
-    ctx.lineTo(CYL_X, BODY_TOP);
-    ctx.closePath();
+    drawKegBodyPath(ctx);
     ctx.clip();
 
-    ctx.fillStyle = '#080503';
+    ctx.fillStyle = '#110b06';
     ctx.fill();
 
     if (beerCurrentLevel > 0.005) {
+      const bx = BODY_W/2;
       ctx.beginPath();
-      ctx.moveTo(CYL_X, rawSurf);
-      for (let x = CYL_X; x <= CYL_X + CYL_W; x++) {
+      ctx.moveTo(CW/2 - bx, rawSurf);
+      for (let x = CW/2 - bx; x <= CW/2 + bx; x++) {
         const waveY = rawSurf
-          + Math.sin(waveTime + (x - CYL_X) * 0.05) * amp
-          + Math.cos(waveTime * 0.6 + (x - CYL_X) * 0.08) * amp * 0.5;
+          + Math.sin(waveTime + x * 0.05) * amp
+          + Math.cos(waveTime * 0.6 + x * 0.08) * amp * 0.5;
         ctx.lineTo(x, waveY);
       }
-      ctx.lineTo(CYL_X + CYL_W, LIQ_BOT + 20);
-      ctx.lineTo(CYL_X, LIQ_BOT + 20);
+      ctx.lineTo(CW/2 + bx, LIQ_BOT + 20);
+      ctx.lineTo(CW/2 - bx, LIQ_BOT + 20);
       ctx.closePath();
       
       const bg = ctx.createLinearGradient(0, rawSurf, 0, CH);
@@ -739,8 +715,8 @@
       ctx.fillStyle = bg;
       ctx.fill();
 
-      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * CYL_W + CYL_X;
-      const lg = ctx.createLinearGradient(sx - 18, 0, sx + 38, CH);
+      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * BODY_W + (CW - BODY_W)/2;
+      const lg = ctx.createLinearGradient(sx - 20, 0, sx + 40, CH);
       lg.addColorStop(0,    'rgba(255,255,200,0)');
       lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
       lg.addColorStop(0.6,  `rgba(255,255,210,${0.14 + Math.cos(waveTime*0.7)*0.05})`);
@@ -760,7 +736,7 @@
         ctx.lineWidth = 0.6; ctx.stroke();
       }
 
-      const fH = Math.max(12, CYL_W * 0.1);
+      const fH = Math.max(12, BODY_W * 0.1);
       const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
       foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
       foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
@@ -768,77 +744,99 @@
       foamG.addColorStop(1.0, 'rgba(245,225,170,0.5)');
       ctx.fillStyle = foamG;
       ctx.beginPath();
-      for (let x = CYL_X; x <= CYL_X + CYL_W; x++) {
-        const fy = rawSurf + Math.sin(waveTime + (x-CYL_X)*0.05)*amp + Math.cos(waveTime*0.6+(x-CYL_X)*0.08)*amp*0.5 - fH*0.5;
-        if (x === CYL_X) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
+      for (let x = CW/2 - bx; x <= CW/2 + bx; x++) {
+        const fy = rawSurf + Math.sin(waveTime + x*0.05)*amp + Math.cos(waveTime*0.6+x*0.08)*amp*0.5 - fH*0.5;
+        if (x === CW/2 - bx) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
       }
-      ctx.lineTo(CYL_X + CYL_W, rawSurf + 6); ctx.lineTo(CYL_X, rawSurf + 6); ctx.closePath(); ctx.fill();
+      ctx.lineTo(CW/2 + bx, rawSurf + 6); ctx.lineTo(CW/2 - bx, rawSurf + 6); ctx.closePath(); ctx.fill();
     }
+    
+    // Ghost Metal Body Shading
+    const specular = ctx.createLinearGradient(0, 0, CW, 0);
+    specular.addColorStop(0.00, 'rgba(0,0,0, 0.95)');
+    specular.addColorStop(0.08, 'rgba(255,255,255, 0.3)');
+    specular.addColorStop(0.18, 'rgba(0,0,0, 0.4)');
+    specular.addColorStop(0.35, 'rgba(255,255,255, 0.05)');
+    specular.addColorStop(0.50, 'rgba(255,255,255, 0.4)'); // Main glare
+    specular.addColorStop(0.65, 'rgba(255,255,255, 0.0)');
+    specular.addColorStop(0.85, 'rgba(0,0,0, 0.3)');
+    specular.addColorStop(0.95, 'rgba(255,255,255, 0.4)'); // Rim bounce
+    specular.addColorStop(1.00, 'rgba(0,0,0, 0.95)');
+    
+    ctx.fillStyle = specular;
+    ctx.fill();
     ctx.restore();
 
-    // ── 2. METALLIC KEG OVERLAYS (Front) ──
-    const mG_solid = ctx.createLinearGradient(0, 0, CW, 0);
-    mG_solid.addColorStop(0.00, '#111');
-    mG_solid.addColorStop(0.08, '#666');
-    mG_solid.addColorStop(0.18, '#e0e0e0');
-    mG_solid.addColorStop(0.35, '#333');
-    mG_solid.addColorStop(0.50, '#999');
-    mG_solid.addColorStop(0.60, '#f5f5f5');
-    mG_solid.addColorStop(0.70, '#555');
-    mG_solid.addColorStop(0.90, '#aaa');
-    mG_solid.addColorStop(0.96, '#222');
-    mG_solid.addColorStop(1.00, '#0a0a0a');
+    // ── 2. SOLID METALLIC OVERLAYS ──
+    const steel = ctx.createLinearGradient(0, 0, CW, 0);
+    steel.addColorStop(0.00, '#111');
+    steel.addColorStop(0.10, '#999');
+    steel.addColorStop(0.20, '#333');
+    steel.addColorStop(0.50, '#fff');
+    steel.addColorStop(0.80, '#444');
+    steel.addColorStop(0.95, '#aaa');
+    steel.addColorStop(1.00, '#111');
 
-    const mG_trans = ctx.createLinearGradient(0, 0, CW, 0);
-    mG_trans.addColorStop(0.00, 'rgba(17,17,17, 0.95)');
-    mG_trans.addColorStop(0.08, 'rgba(102,102,102, 0.6)');
-    mG_trans.addColorStop(0.18, 'rgba(224,224,224, 0.5)');
-    mG_trans.addColorStop(0.35, 'rgba(51,51,51, 0.15)');
-    mG_trans.addColorStop(0.50, 'rgba(153,153,153, 0.05)');
-    mG_trans.addColorStop(0.60, 'rgba(245,245,245, 0.35)');
-    mG_trans.addColorStop(0.70, 'rgba(85,85,85, 0.1)');
-    mG_trans.addColorStop(0.90, 'rgba(170,170,170, 0.4)');
-    mG_trans.addColorStop(0.96, 'rgba(34,34,34, 0.8)');
-    mG_trans.addColorStop(1.00, 'rgba(10,10,10, 0.95)');
+    // Top Skirt
+    ctx.beginPath();
+    ctx.moveTo(CW/2 - RIM_W/2, SKIRT_TOP);
+    ctx.ellipse(CW/2, SKIRT_TOP, RIM_W/2, EL_H_RIM, 0, Math.PI, 0);
+    ctx.lineTo(CW/2 + RIM_W/2, SKIRT_TOP + 40);
+    ctx.ellipse(CW/2, SKIRT_TOP + 40, RIM_W/2 + 6, EL_H_BODY, 0, 0, Math.PI);
+    ctx.lineTo(CW/2 - RIM_W/2, SKIRT_TOP + 40);
+    ctx.fillStyle = steel; ctx.fill();
+    
+    // Bottom Skirt
+    ctx.beginPath();
+    ctx.ellipse(CW/2, SKIRT_BOT - 40, RIM_W/2 + 6, EL_H_BODY, 0, Math.PI, 0);
+    ctx.lineTo(CW/2 + RIM_W/2, SKIRT_BOT);
+    ctx.ellipse(CW/2, SKIRT_BOT, RIM_W/2, EL_H_RIM, 0, 0, Math.PI);
+    ctx.lineTo(CW/2 - RIM_W/2, SKIRT_BOT - 40);
+    ctx.fillStyle = steel; ctx.fill();
 
-    const mG_lip = ctx.createLinearGradient(0, 0, CW, 0);
-    mG_lip.addColorStop(0, '#333'); mG_lip.addColorStop(0.5, '#eee'); mG_lip.addColorStop(1, '#222');
+    // Top rim lip
+    ctx.beginPath(); ctx.ellipse(CW/2, SKIRT_TOP, RIM_W/2, EL_H_RIM, 0, 0, Math.PI * 2);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#ccc'; ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
 
-    // Main transparent body
-    drawCylinder(ctx, CYL_X, BODY_TOP, BODY_BOT, CYL_W, EL_H, mG_trans);
+    // Bottom rim lip
+    ctx.beginPath(); ctx.ellipse(CW/2, SKIRT_BOT, RIM_W/2, EL_H_RIM, 0, 0, Math.PI * 2);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#888'; ctx.stroke();
 
-    // Bottom solid skirt
-    drawCylinder(ctx, 0, BODY_BOT, CH - 20, CW, EL_H + 4, mG_solid);
-    ctx.beginPath(); ctx.ellipse(CW/2, CH - 20, CW/2, EL_H + 4, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#0a0a0a'; ctx.fill();
-
-    // Top solid skirt
-    drawCylinder(ctx, 20, BODY_TOP, CW, EL_H + 4, mG_solid);
-    ctx.beginPath(); ctx.ellipse(CW/2, 20, CW/2, EL_H + 4, 0, 0, Math.PI*2);
-    ctx.fillStyle = mG_lip; ctx.fill();
-
-    // Inner dome inside top skirt
-    ctx.beginPath(); ctx.ellipse(CW/2, 35, CW/2 - 6, EL_H + 2, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#1a1a1a'; ctx.fill();
+    // Top Inner Dome (inside the skirt)
+    ctx.beginPath(); ctx.ellipse(CW/2, SKIRT_TOP + 12, RIM_W/2 - 8, EL_H_RIM - 2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#111'; ctx.fill();
+    
+    // Bung
+    ctx.beginPath(); ctx.ellipse(CW/2, SKIRT_TOP + 12, 24, 8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#444'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#888'; ctx.stroke();
 
     // Handle Cutouts
     ctx.fillStyle = '#050505';
-    ctx.beginPath(); ctx.ellipse(45, 60, 16, 10, 0, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(CW - 45, 60, 16, 10, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(45, 60, 16, 10, 0, 0, Math.PI); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(CW - 45, 60, 16, 10, 0, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(CW/2 - 60, SKIRT_TOP + 22, 20, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(CW/2 + 60, SKIRT_TOP + 22, 20, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.ellipse(CW/2 - 60, SKIRT_TOP + 22, 20, 10, 0, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(CW/2 + 60, SKIRT_TOP + 22, 20, 10, 0, 0, Math.PI); ctx.stroke();
 
-    // Solid Ribs around the body
-    const ribY1 = BODY_TOP + (BODY_BOT - BODY_TOP) * 0.35;
-    const ribY2 = BODY_TOP + (BODY_BOT - BODY_TOP) * 0.65;
-    [ribY1, ribY2].forEach(y => {
-      drawCylinder(ctx, 0, y - 12, y + 12, CW, EL_H + 2, mG_solid);
-      ctx.beginPath(); ctx.ellipse(CW/2, y + 12, CW/2, EL_H + 2, 0, 0, Math.PI);
-      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(CW/2, y - 12, CW/2, EL_H + 2, 0, 0, Math.PI);
-      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.stroke();
-    });
+    // Rolling Hoops (Ribs)
+    const drawHoop = (y, w) => {
+      ctx.beginPath();
+      ctx.ellipse(CW/2, y, w/2 + 4, EL_H_BODY, 0, Math.PI, 0);
+      ctx.lineTo(CW/2 + w/2 + 4, y + 24);
+      ctx.ellipse(CW/2, y + 24, w/2 + 4, EL_H_BODY, 0, 0, Math.PI);
+      ctx.lineTo(CW/2 - w/2 - 4, y);
+      ctx.fillStyle = steel; ctx.fill();
+      
+      ctx.beginPath(); ctx.ellipse(CW/2, y + 24, w/2 + 4, EL_H_BODY, 0, 0, Math.PI);
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(CW/2, y, w/2 + 4, EL_H_BODY, 0, Math.PI, 0);
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2; ctx.stroke();
+    };
+    
+    drawHoop(CH * 0.35, BODY_W - 14);
+    drawHoop(CH * 0.65, BODY_W - 14);
 
     requestAnimationFrame(renderBeer);
   }
