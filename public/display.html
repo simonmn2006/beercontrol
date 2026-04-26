@@ -652,17 +652,14 @@
   canvas.height = CH * 2;
   ctx.scale(2, 2);
 
-  // 3D Cylinder geometry
-  const CYL_W_OUTER = CW;
-  const CYL_W_INNER = CW - 24; 
-  const CYL_X_INNER = 12;
-  const CYL_Y_TOP = 80;
-  const CYL_Y_BOT = CH - 80;
-  const EL_H_OUTER = 22; 
-  const EL_H_INNER = 18; 
+  const CYL_W = CW - 16; 
+  const CYL_X = 8;
+  const BODY_TOP = 90;
+  const BODY_BOT = CH - 90;
+  const EL_H = 18; 
 
-  const LIQ_TOP = CYL_Y_TOP + 10;
-  const LIQ_BOT = CYL_Y_BOT - 10;
+  const LIQ_TOP = BODY_TOP + 10;
+  const LIQ_BOT = BODY_BOT - 10;
   const LIQ_H = LIQ_BOT - LIQ_TOP;
   
   let beerTargetLevel = 0;
@@ -673,7 +670,7 @@
   function spawnCanvasBubble() {
     if (beerCurrentLevel < 0.02) return;
     bubbles.push({
-      x: CYL_X_INNER + 10 + Math.random() * (CYL_W_INNER - 20),
+      x: CYL_X + 10 + Math.random() * (CYL_W - 20),
       y: LIQ_BOT,
       r: 1 + Math.random() * 3.5,
       speed: 0.4 + Math.random() * 0.8,
@@ -684,13 +681,19 @@
   }
   setInterval(spawnCanvasBubble, 300);
 
-  function cylinderPath(ctx, x, yTop, yBot, w, rh) {
+  function drawCylinder(ctx, x, yTop, yBot, w, rh, grad) {
     ctx.beginPath();
     ctx.ellipse(x + w/2, yTop, w/2, rh, 0, Math.PI, 0); 
     ctx.lineTo(x + w, yBot);
     ctx.ellipse(x + w/2, yBot, w/2, rh, 0, 0, Math.PI); 
     ctx.lineTo(x, yTop);
-    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + w/2, yBot, w/2, rh, 0, 0, Math.PI); 
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
 
   function renderBeer() {
@@ -701,30 +704,30 @@
     const rawSurf = LIQ_BOT - beerCurrentLevel * LIQ_H;
     const amp     = 4 + (flowActive ? 5 : 0);
 
-    // ── 1. BACKGROUND (Dark inside of glass) ──
+    // ── 1. BEER LIQUID LAYER (Back) ──
     ctx.save();
-    cylinderPath(ctx, CYL_X_INNER, CYL_Y_TOP, CYL_Y_BOT, CYL_W_INNER, EL_H_INNER);
-    ctx.fillStyle = '#060302';
+    ctx.beginPath();
+    ctx.ellipse(CW/2, BODY_TOP, CYL_W/2, EL_H, 0, Math.PI, 0); 
+    ctx.lineTo(CYL_X + CYL_W, BODY_BOT);
+    ctx.ellipse(CW/2, BODY_BOT, CYL_W/2, EL_H, 0, 0, Math.PI); 
+    ctx.lineTo(CYL_X, BODY_TOP);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.fillStyle = '#080503';
     ctx.fill();
-    ctx.restore();
 
-    // ── 2. BEER LIQUID ──
     if (beerCurrentLevel > 0.005) {
-      ctx.save();
-      cylinderPath(ctx, CYL_X_INNER, CYL_Y_TOP, CYL_Y_BOT, CYL_W_INNER, EL_H_INNER);
-      ctx.clip();
-
       ctx.beginPath();
-      ctx.moveTo(CYL_X_INNER, rawSurf);
-      for (let x = CYL_X_INNER; x <= CYL_X_INNER + CYL_W_INNER; x++) {
+      ctx.moveTo(CYL_X, rawSurf);
+      for (let x = CYL_X; x <= CYL_X + CYL_W; x++) {
         const waveY = rawSurf
-          + Math.sin(waveTime + (x - CYL_X_INNER) * 0.05) * amp
-          + Math.cos(waveTime * 0.6 + (x - CYL_X_INNER) * 0.08) * amp * 0.5;
+          + Math.sin(waveTime + (x - CYL_X) * 0.05) * amp
+          + Math.cos(waveTime * 0.6 + (x - CYL_X) * 0.08) * amp * 0.5;
         ctx.lineTo(x, waveY);
       }
-      ctx.lineTo(CYL_X_INNER + CYL_W_INNER, LIQ_BOT);
-      ctx.ellipse(CW/2, LIQ_BOT, CYL_W_INNER/2, EL_H_INNER, 0, 0, Math.PI);
-      ctx.lineTo(CYL_X_INNER, LIQ_BOT);
+      ctx.lineTo(CYL_X + CYL_W, LIQ_BOT + 20);
+      ctx.lineTo(CYL_X, LIQ_BOT + 20);
       ctx.closePath();
       
       const bg = ctx.createLinearGradient(0, rawSurf, 0, CH);
@@ -736,7 +739,7 @@
       ctx.fillStyle = bg;
       ctx.fill();
 
-      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * CYL_W_INNER + CYL_X_INNER;
+      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * CYL_W + CYL_X;
       const lg = ctx.createLinearGradient(sx - 18, 0, sx + 38, CH);
       lg.addColorStop(0,    'rgba(255,255,200,0)');
       lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
@@ -757,7 +760,7 @@
         ctx.lineWidth = 0.6; ctx.stroke();
       }
 
-      const fH = Math.max(12, CYL_W_INNER * 0.1);
+      const fH = Math.max(12, CYL_W * 0.1);
       const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
       foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
       foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
@@ -765,84 +768,77 @@
       foamG.addColorStop(1.0, 'rgba(245,225,170,0.5)');
       ctx.fillStyle = foamG;
       ctx.beginPath();
-      for (let x = CYL_X_INNER; x <= CYL_X_INNER + CYL_W_INNER; x++) {
-        const fy = rawSurf + Math.sin(waveTime + (x-CYL_X_INNER)*0.05)*amp + Math.cos(waveTime*0.6+(x-CYL_X_INNER)*0.08)*amp*0.5 - fH*0.5;
-        if (x === CYL_X_INNER) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
+      for (let x = CYL_X; x <= CYL_X + CYL_W; x++) {
+        const fy = rawSurf + Math.sin(waveTime + (x-CYL_X)*0.05)*amp + Math.cos(waveTime*0.6+(x-CYL_X)*0.08)*amp*0.5 - fH*0.5;
+        if (x === CYL_X) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
       }
-      ctx.lineTo(CYL_X_INNER + CYL_W_INNER, rawSurf + 6); ctx.lineTo(CYL_X_INNER, rawSurf + 6); ctx.closePath(); ctx.fill();
-      ctx.restore();
+      ctx.lineTo(CYL_X + CYL_W, rawSurf + 6); ctx.lineTo(CYL_X, rawSurf + 6); ctx.closePath(); ctx.fill();
     }
+    ctx.restore();
 
-    // ── 3. METALLIC CAPS & GLASS FRAME ──
-    const drawEllipse = (x, y, w, rh, grad) => {
-      ctx.beginPath();
-      ctx.ellipse(x + w/2, y, w/2, rh, 0, 0, Math.PI*2);
-      ctx.fillStyle = grad;
-      ctx.fill();
-    };
+    // ── 2. METALLIC KEG OVERLAYS (Front) ──
+    const mG_solid = ctx.createLinearGradient(0, 0, CW, 0);
+    mG_solid.addColorStop(0.00, '#111');
+    mG_solid.addColorStop(0.08, '#666');
+    mG_solid.addColorStop(0.18, '#e0e0e0');
+    mG_solid.addColorStop(0.35, '#333');
+    mG_solid.addColorStop(0.50, '#999');
+    mG_solid.addColorStop(0.60, '#f5f5f5');
+    mG_solid.addColorStop(0.70, '#555');
+    mG_solid.addColorStop(0.90, '#aaa');
+    mG_solid.addColorStop(0.96, '#222');
+    mG_solid.addColorStop(1.00, '#0a0a0a');
 
-    const mG = ctx.createLinearGradient(0, 0, CW, 0);
-    mG.addColorStop(0.00, '#111');
-    mG.addColorStop(0.15, '#4a4a4a');
-    mG.addColorStop(0.30, '#888');
-    mG.addColorStop(0.45, '#e0e0e0');
-    mG.addColorStop(0.55, '#ffffff');
-    mG.addColorStop(0.70, '#888');
-    mG.addColorStop(0.85, '#222');
-    mG.addColorStop(1.00, '#0a0a0a');
+    const mG_trans = ctx.createLinearGradient(0, 0, CW, 0);
+    mG_trans.addColorStop(0.00, 'rgba(17,17,17, 0.95)');
+    mG_trans.addColorStop(0.08, 'rgba(102,102,102, 0.6)');
+    mG_trans.addColorStop(0.18, 'rgba(224,224,224, 0.5)');
+    mG_trans.addColorStop(0.35, 'rgba(51,51,51, 0.15)');
+    mG_trans.addColorStop(0.50, 'rgba(153,153,153, 0.05)');
+    mG_trans.addColorStop(0.60, 'rgba(245,245,245, 0.35)');
+    mG_trans.addColorStop(0.70, 'rgba(85,85,85, 0.1)');
+    mG_trans.addColorStop(0.90, 'rgba(170,170,170, 0.4)');
+    mG_trans.addColorStop(0.96, 'rgba(34,34,34, 0.8)');
+    mG_trans.addColorStop(1.00, 'rgba(10,10,10, 0.95)');
 
     const mG_lip = ctx.createLinearGradient(0, 0, CW, 0);
-    mG_lip.addColorStop(0, '#333'); mG_lip.addColorStop(0.5, '#ddd'); mG_lip.addColorStop(1, '#111');
+    mG_lip.addColorStop(0, '#333'); mG_lip.addColorStop(0.5, '#eee'); mG_lip.addColorStop(1, '#222');
 
-    // Bottom Base
-    cylinderPath(ctx, 0, CYL_Y_BOT, CH - EL_H_OUTER, CW, EL_H_OUTER);
-    ctx.fillStyle = mG; ctx.fill();
-    drawEllipse(0, CYL_Y_BOT, CW, EL_H_OUTER, mG_lip);
+    // Main transparent body
+    drawCylinder(ctx, CYL_X, BODY_TOP, BODY_BOT, CYL_W, EL_H, mG_trans);
 
-    // Top Cap
-    cylinderPath(ctx, 0, EL_H_OUTER, CYL_Y_TOP, CW, EL_H_OUTER);
-    ctx.fillStyle = mG; ctx.fill();
-    drawEllipse(0, EL_H_OUTER, CW, EL_H_OUTER, mG_lip);
+    // Bottom solid skirt
+    drawCylinder(ctx, 0, BODY_BOT, CH - 20, CW, EL_H + 4, mG_solid);
+    ctx.beginPath(); ctx.ellipse(CW/2, CH - 20, CW/2, EL_H + 4, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#0a0a0a'; ctx.fill();
 
-    // Inner recess in top cap
-    drawEllipse(6, EL_H_OUTER + 2, CW - 12, EL_H_OUTER - 4, '#151515');
-    // Bung in center
-    drawEllipse(CW/2 - 16, EL_H_OUTER + 2, 32, 12, mG);
+    // Top solid skirt
+    drawCylinder(ctx, 20, BODY_TOP, CW, EL_H + 4, mG_solid);
+    ctx.beginPath(); ctx.ellipse(CW/2, 20, CW/2, EL_H + 4, 0, 0, Math.PI*2);
+    ctx.fillStyle = mG_lip; ctx.fill();
 
-    // Thick glass sides reflection
-    ctx.fillStyle = mG;
-    ctx.fillRect(0, CYL_Y_TOP, CYL_X_INNER, CYL_Y_BOT - CYL_Y_TOP);
-    ctx.fillRect(CW - CYL_X_INNER, CYL_Y_TOP, CYL_X_INNER, CYL_Y_BOT - CYL_Y_TOP);
+    // Inner dome inside top skirt
+    ctx.beginPath(); ctx.ellipse(CW/2, 35, CW/2 - 6, EL_H + 2, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#1a1a1a'; ctx.fill();
 
-    // Glass curve lines top & bottom
-    ctx.beginPath();
-    ctx.ellipse(CW/2, CYL_Y_BOT, CYL_W_INNER/2, EL_H_INNER, 0, 0, Math.PI);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-    ctx.stroke();
+    // Handle Cutouts
+    ctx.fillStyle = '#050505';
+    ctx.beginPath(); ctx.ellipse(45, 60, 16, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(CW - 45, 60, 16, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(45, 60, 16, 10, 0, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(CW - 45, 60, 16, 10, 0, 0, Math.PI); ctx.stroke();
 
-    // Protective Ribs (Hoops)
-    const midY1 = CYL_Y_TOP + (CYL_Y_BOT - CYL_Y_TOP) * 0.33;
-    const midY2 = CYL_Y_TOP + (CYL_Y_BOT - CYL_Y_TOP) * 0.66;
-    [midY1, midY2].forEach(y => {
-      cylinderPath(ctx, -2, y - 6, y + 6, CW + 4, EL_H_OUTER + 2);
-      ctx.fillStyle = mG; ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(CW/2, y + 6, (CW+4)/2, EL_H_OUTER + 2, 0, 0, Math.PI);
-      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.stroke();
+    // Solid Ribs around the body
+    const ribY1 = BODY_TOP + (BODY_BOT - BODY_TOP) * 0.35;
+    const ribY2 = BODY_TOP + (BODY_BOT - BODY_TOP) * 0.65;
+    [ribY1, ribY2].forEach(y => {
+      drawCylinder(ctx, 0, y - 12, y + 12, CW, EL_H + 2, mG_solid);
+      ctx.beginPath(); ctx.ellipse(CW/2, y + 12, CW/2, EL_H + 2, 0, 0, Math.PI);
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(CW/2, y - 12, CW/2, EL_H + 2, 0, 0, Math.PI);
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.stroke();
     });
-
-    // Glass front highlight
-    ctx.save();
-    cylinderPath(ctx, CYL_X_INNER, CYL_Y_TOP, CYL_Y_BOT, CYL_W_INNER, EL_H_INNER);
-    ctx.clip();
-    const gG = ctx.createLinearGradient(CW*0.2, 0, CW*0.45, 0);
-    gG.addColorStop(0, 'rgba(255,255,255,0)');
-    gG.addColorStop(0.5, 'rgba(255,255,255,0.18)');
-    gG.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = gG;
-    ctx.fillRect(0, 0, CW, CH);
-    ctx.restore();
 
     requestAnimationFrame(renderBeer);
   }
