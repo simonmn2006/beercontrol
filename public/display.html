@@ -23,15 +23,21 @@
       --fmono: 'JetBrains Mono', monospace;
     }
 
-    /* ── THEME TOKENS V7 (Analog Industrial) ── */
-    [data-theme="analog"] {
-      --bg: url('/public/img/v8_analog_750.png');
-      --accent: #ffcc00; /* Brass Gold */
-      --beer-main: #f59e0b;
-      --ft: 'Big Shoulders Display', sans-serif;
+    /* ── THEME TOKENS V9 (Modern HUD) ── */
+    [data-theme="modern_hud"] {
+      --bg: url('/public/img/v9_modern_hud.png');
+      --accent: #00f2ff; /* Neon Cyan */
+      --secondary: #f59e0b; /* Neon Amber */
+      --beer-main: #00f2ff;
+      --ft: 'Inter', sans-serif;
       --fmono: 'JetBrains Mono', monospace;
     }
-    /* ... keeping other v5 themes for backward compatibility ... */
+    /* ... keeping other themes ... */
+    [data-theme="analog"] {
+      --bg: url('/public/img/v8_analog_750.png');
+      --accent: #ffcc00;
+      --beer-main: #f59e0b;
+    }
     [data-theme="industrial"] {
       --bg: url('/public/img/v5_industrial_level.png');
       --accent: #ffb433;
@@ -88,6 +94,12 @@
       will-change: transform;
     }
     
+    [data-theme="modern_hud"] .liquid-window { 
+      width: 180px; height: 750px;
+      top: 360px; left: 50%; transform: translateX(-50%);
+      border-radius: 90px;
+      border: 2px solid rgba(0, 242, 255, 0.2);
+    }
     [data-theme="analog"] .liquid-window { 
       width: 100px; height: 620px;
       top: 470px; left: 63.5%; transform: translateX(-50%);
@@ -103,34 +115,25 @@
       border-radius: 80px;
     }
 
-    /* ── ANALOG GAUGES (Needles) ── */
-    .analog-gauge {
-      position: absolute; width: 180px; height: 180px;
-      z-index: 10; display: flex; align-items: center; justify-content: center;
-      display: none; /* Only show in analog theme */
+    /* ── MODERN HUD GAUGES ── */
+    .hud-gauge {
+      position: absolute; width: 220px; height: 220px;
+      z-index: 10; display: none; align-items: center; justify-content: center;
     }
-    [data-theme="analog"] .analog-gauge { display: flex; }
+    [data-theme="modern_hud"] .hud-gauge { display: flex; }
     
-    .gauge-temp { top: 405px; left: 24.5%; transform: translate(-50%, -50%); }
-    .gauge-psi { top: 920px; left: 24.5%; transform: translate(-50%, -50%); }
+    .gauge-left { top: 400px; left: 60px; }
+    .gauge-right { top: 400px; right: 60px; }
     
-    .needle {
-      width: 4px; height: 70px; background: #cc3300;
-      position: absolute; bottom: 50%; transform-origin: bottom center;
-      border-radius: 2px; box-shadow: 0 0 5px rgba(0,0,0,0.5);
-      transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 2;
-    }
-    .needle-cap {
-      width: 16px; height: 16px; background: #333; border-radius: 50%;
-      border: 2px solid #555; z-index: 3;
-    }
+    .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .gauge-track { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
+    .gauge-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray 1s ease; }
     
-    .analog-val {
-      position: absolute; bottom: -40px; font-family: var(--fmono);
-      font-size: 24px; font-weight: 800; color: #fff;
-      text-shadow: 0 0 10px rgba(0,0,0,0.8);
+    .hud-val {
+      position: absolute; font-family: var(--fmono); font-size: 38px; font-weight: 900;
+      display: flex; flex-direction: column; align-items: center;
     }
+    .hud-unit { font-size: 14px; opacity: 0.5; font-weight: 600; margin-top: -5px; }
 
     .mist-layer {
       position: absolute; inset: 0;
@@ -307,6 +310,29 @@
     <div class="status-tag" id="txtStatus">SYSTEM READY</div>
   </div>
 
+  <!-- MODERN HUD OVERLAYS -->
+  <div class="hud-gauge gauge-left">
+    <svg class="gauge-svg" viewBox="0 0 100 100">
+      <circle class="gauge-track" cx="50" cy="50" r="40" />
+      <circle class="gauge-fill" id="fillTemp" cx="50" cy="50" r="40" stroke="#00f2ff" />
+    </svg>
+    <div class="hud-val">
+      <span id="txtTempHud">0.0</span>
+      <span class="hud-unit">°C TEMP</span>
+    </div>
+  </div>
+
+  <div class="hud-gauge gauge-right">
+    <svg class="gauge-svg" viewBox="0 0 100 100">
+      <circle class="gauge-track" cx="50" cy="50" r="40" />
+      <circle class="gauge-fill" id="fillPsi" cx="50" cy="50" r="40" stroke="#f59e0b" />
+    </svg>
+    <div class="hud-val">
+      <span id="txtPsiHud">0.0</span>
+      <span class="hud-unit">PSI CO2</span>
+    </div>
+  </div>
+
   <!-- ANALOG OVERLAYS -->
   <div class="analog-gauge gauge-temp">
     <div class="needle" id="needleTemp"></div>
@@ -472,15 +498,26 @@
 
     // Analog Needle Rotation
     if (theme === 'analog') {
-      // Temp: range -5 to 30. Scale: -120deg to 120deg
       const tempDeg = ((temp + 5) / 35) * 240 - 120;
       document.getElementById('needleTemp').style.transform = `rotate(${tempDeg}deg)`;
       document.getElementById('valTempAnalog').textContent = temp.toFixed(1);
       
-      // PSI: range 0 to 30. Scale: -120deg to 120deg
       const psiDeg = (co2 / 30) * 240 - 120;
       document.getElementById('needlePsi').style.transform = `rotate(${psiDeg}deg)`;
       document.getElementById('valPsiAnalog').textContent = co2.toFixed(1);
+    }
+
+    // Modern HUD Gauge Rotation
+    if (theme === 'modern_hud') {
+      const circ = 2 * Math.PI * 40;
+      
+      const tempPct = Math.min(Math.max((temp + 5) / 35, 0), 1);
+      document.getElementById('fillTemp').style.strokeDasharray = `${tempPct * circ} ${circ}`;
+      document.getElementById('txtTempHud').textContent = temp.toFixed(1);
+      
+      const psiPct = Math.min(Math.max(co2 / 30, 0), 1);
+      document.getElementById('fillPsi').style.strokeDasharray = `${psiPct * circ} ${circ}`;
+      document.getElementById('txtPsiHud').textContent = co2.toFixed(1);
     }
 
     // ADAPTIVE LIGHTING
