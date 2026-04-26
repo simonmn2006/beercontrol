@@ -635,16 +635,8 @@
   const EL_H_RIM = 14;
   const EL_H_BODY = 18;
 
-  const LIQ_TOP = SKIRT_TOP + 50;
-  const LIQ_BOT = SKIRT_BOT - 50;
-  const LIQ_H = LIQ_BOT - LIQ_TOP;
-  
-  let beerTargetLevel = 0;
-  let beerCurrentLevel = 0;
-  let waveTime = 0;
-
   const kegImg = new Image();
-  kegImg.src = '/keg.jpg';
+  kegImg.src = '/keg2.png';
   let processedKegCanvas = null;
 
   kegImg.onload = () => {
@@ -658,24 +650,35 @@
     
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i], g = d[i+1], b = d[i+2];
-      // Background is bright white, floor shadow is light gray.
-      if (r > 210 && g > 210 && b > 210) {
-         d[i+3] = 0; // Transparent background
-      } else {
-         d[i+3] = 180; // 70% opacity for the keg body
+      // Remove bright white background
+      if (r > 230 && g > 230 && b > 230) {
+         d[i+3] = 0;
       }
     }
     octx.putImageData(idata, 0, 0);
     processedKegCanvas = off;
   };
 
+  const GL_W = 96;
+  const GL_TOP = 152;
+  const GL_BOT = 358;
+  const GL_EL = 6;
+
+  const LIQ_TOP = GL_TOP;
+  const LIQ_BOT = GL_BOT;
+  const LIQ_H = LIQ_BOT - LIQ_TOP;
+  
+  let beerTargetLevel = 0;
+  let beerCurrentLevel = 0;
+  let waveTime = 0;
+
   const bubbles = [];
   function spawnCanvasBubble() {
     if (beerCurrentLevel < 0.02) return;
     bubbles.push({
-      x: CW/2 - BODY_W/2 + 20 + Math.random() * (BODY_W - 40),
+      x: CW/2 - GL_W/2 + 10 + Math.random() * (GL_W - 20),
       y: LIQ_BOT,
-      r: 1 + Math.random() * 4,
+      r: 1 + Math.random() * 3,
       speed: 0.4 + Math.random() * 0.8,
       opacity: 0.3 + Math.random() * 0.4,
       wobble: Math.random() * Math.PI * 2,
@@ -684,21 +687,13 @@
   }
   setInterval(spawnCanvasBubble, 300);
 
-  function drawKegBodyPath(ctx) {
+  function drawGlassCylinderPath(ctx) {
     const cx = CW / 2;
-    const rx = RIM_W / 2;
-    const bx = BODY_W / 2;
-    
     ctx.beginPath();
-    ctx.moveTo(cx - rx, SKIRT_TOP);
-    ctx.ellipse(cx, SKIRT_TOP, rx, EL_H_RIM, 0, Math.PI, 0);
-    ctx.lineTo(cx + rx, SKIRT_TOP + 40);
-    ctx.bezierCurveTo(cx + bx + 5, SKIRT_TOP + 80, cx + bx + 5, SKIRT_BOT - 80, cx + rx, SKIRT_BOT - 40);
-    ctx.lineTo(cx + rx, SKIRT_BOT);
-    ctx.ellipse(cx, SKIRT_BOT, rx, EL_H_RIM, 0, 0, Math.PI);
-    ctx.lineTo(cx - rx, SKIRT_BOT - 40);
-    ctx.bezierCurveTo(cx - bx - 5, SKIRT_BOT - 80, cx - bx - 5, SKIRT_TOP + 80, cx - rx, SKIRT_TOP + 40);
-    ctx.lineTo(cx - rx, SKIRT_TOP);
+    ctx.ellipse(cx, GL_TOP, GL_W/2, GL_EL, 0, Math.PI, 0);
+    ctx.lineTo(cx + GL_W/2, GL_BOT);
+    ctx.ellipse(cx, GL_BOT, GL_W/2, GL_EL, 0, 0, Math.PI);
+    ctx.lineTo(cx - GL_W/2, GL_TOP);
     ctx.closePath();
   }
 
@@ -710,16 +705,19 @@
     const rawSurf = LIQ_BOT - beerCurrentLevel * LIQ_H;
     const amp     = 4 + (flowActive ? 5 : 0);
 
-    // ── 1. BEER LIQUID LAYER (Back) ──
-    ctx.save();
-    drawKegBodyPath(ctx);
-    ctx.clip();
+    // ── 1. BACKGROUND KEG IMAGE ──
+    if (processedKegCanvas) {
+      // Crop margins roughly (20px) to center it nicely
+      ctx.drawImage(processedKegCanvas, 20, 20, 984, 984, 0, 0, CW, CH);
+    }
 
-    ctx.fillStyle = '#110b06';
-    ctx.fill();
-
+    // ── 2. BEER LIQUID LAYER (Inside Glass Window) ──
     if (beerCurrentLevel > 0.005) {
-      const bx = BODY_W/2;
+      ctx.save();
+      drawGlassCylinderPath(ctx);
+      ctx.clip();
+
+      const bx = GL_W/2;
       ctx.beginPath();
       ctx.moveTo(CW/2 - bx, rawSurf);
       for (let x = CW/2 - bx; x <= CW/2 + bx; x++) {
@@ -733,15 +731,16 @@
       ctx.closePath();
       
       const bg = ctx.createLinearGradient(0, rawSurf, 0, CH);
-      bg.addColorStop(0.00, 'rgba(255,215,55,0.97)');
-      bg.addColorStop(0.12, 'rgba(240,165,18,0.98)');
-      bg.addColorStop(0.45, 'rgba(208,112,8,0.99)');
+      bg.addColorStop(0.00, 'rgba(255,215,55,1.00)');
+      bg.addColorStop(0.12, 'rgba(240,165,18,1.00)');
+      bg.addColorStop(0.45, 'rgba(208,112,8,1.00)');
       bg.addColorStop(0.80, 'rgba(165,65,5,1.00)');
       bg.addColorStop(1.00, 'rgba(110,35,3,1.00)');
       ctx.fillStyle = bg;
       ctx.fill();
 
-      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * BODY_W + (CW - BODY_W)/2;
+      // Caustics
+      const sx = (Math.sin(waveTime * 0.45) * 0.5 + 0.5) * GL_W + (CW - GL_W)/2;
       const lg = ctx.createLinearGradient(sx - 20, 0, sx + 40, CH);
       lg.addColorStop(0,    'rgba(255,255,200,0)');
       lg.addColorStop(0.4,  `rgba(255,245,160,${0.09 + Math.sin(waveTime) * 0.04})`);
@@ -750,6 +749,7 @@
       ctx.fillStyle = lg;
       ctx.fill();
 
+      // Bubbles
       for (let i = bubbles.length - 1; i >= 0; i--) {
         const b = bubbles[i];
         b.y -= b.speed; b.wobble += b.wobbleSpeed;
@@ -762,7 +762,8 @@
         ctx.lineWidth = 0.6; ctx.stroke();
       }
 
-      const fH = Math.max(12, BODY_W * 0.1);
+      // Foam
+      const fH = Math.max(12, GL_W * 0.1);
       const foamG = ctx.createLinearGradient(0, rawSurf - fH, 0, rawSurf + 4);
       foamG.addColorStop(0.0, 'rgba(255,252,242,0.0)');
       foamG.addColorStop(0.3, 'rgba(255,250,232,0.88)');
@@ -775,29 +776,13 @@
         if (x === CW/2 - bx) ctx.moveTo(x, fy); else ctx.lineTo(x, fy);
       }
       ctx.lineTo(CW/2 + bx, rawSurf + 6); ctx.lineTo(CW/2 - bx, rawSurf + 6); ctx.closePath(); ctx.fill();
-    }
-    
-    // ── 2. METALLIC KEG IMAGE OVERLAY ──
-    if (processedKegCanvas) {
-      ctx.save();
-      // Clip to body path to hide any stray floor shadow in the image
-      drawKegBodyPath(ctx);
-      ctx.clip();
       
-      // Draw the processed transparent image
-      // Slight crop to eliminate studio margins (40px)
-      ctx.drawImage(processedKegCanvas, 40, 40, 944, 944, 0, 0, CW, CH);
+      // Screen the original keg image over the beer to restore bright glass specular reflections!
+      if (processedKegCanvas) {
+        ctx.globalCompositeOperation = 'screen';
+        ctx.drawImage(processedKegCanvas, 20, 20, 984, 984, 0, 0, CW, CH);
+      }
       ctx.restore();
-    } else {
-      // Fallback ghost metal while loading
-      const specular = ctx.createLinearGradient(0, 0, CW, 0);
-      specular.addColorStop(0.00, 'rgba(0,0,0, 0.95)');
-      specular.addColorStop(0.18, 'rgba(0,0,0, 0.4)');
-      specular.addColorStop(0.50, 'rgba(255,255,255, 0.4)');
-      specular.addColorStop(0.85, 'rgba(0,0,0, 0.3)');
-      specular.addColorStop(1.00, 'rgba(0,0,0, 0.95)');
-      ctx.fillStyle = specular;
-      ctx.fill();
     }
 
     requestAnimationFrame(renderBeer);
