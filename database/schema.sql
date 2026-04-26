@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
   stripe_subscription_id VARCHAR(255),
   grace_period_days INT DEFAULT 7,
   admin_billing_alerts TINYINT DEFAULT 0,
+  display_feature_temp TINYINT DEFAULT 1,
+  display_feature_co2 TINYINT DEFAULT 1,
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

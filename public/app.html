@@ -742,6 +742,14 @@ textarea{resize:vertical;min-height:80px}
             <div class="form-group"><label class="fl">Interface Language</label>
               <select id="ds-lang"><option value="en">🇬🇧 English</option><option value="de">🇩🇪 Deutsch</option><option value="es">🇪🇸 Español</option><option value="it">🇮🇹 Italiano</option><option value="el">🇬🇷 Ελληνικά</option></select>
             </div>
+            <div class="form-group fg-full" style="margin-top:10px;padding-top:15px;border-top:1px solid var(--border)">
+              <label class="fl" style="color:var(--amber)">Premium Bar Display Add-Ons</label>
+              <div class="flex g16" style="margin-top:8px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="ds-feat-temp"> Show Temperature Gauge</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="ds-feat-co2"> Show CO₂ Gauge</label>
+              </div>
+              <div style="font-size:11px;color:var(--text3);margin-top:6px">Toggling these will instantly adapt the live bar display layout.</div>
+            </div>
           </div>
           <div class="form-actions"><button class="btn btn-primary" onclick="saveRestSettings()">Save Changes</button></div>
         </div>
@@ -5856,6 +5864,12 @@ async function openRestaurantDetail(id, tab){
     setField('ds-tz', r.timezone);
     setField('ds-lang', r.language);
     
+    // Feature toggles
+    const ftTemp = document.getElementById('ds-feat-temp');
+    if(ftTemp) ftTemp.checked = r.display_feature_temp !== 0; // default 1 if undefined
+    const ftCo2 = document.getElementById('ds-feat-co2');
+    if(ftCo2) ftCo2.checked = r.display_feature_co2 !== 0;
+    
     // Danger Zone
     const dsBtn = document.getElementById('dz-suspend-btn');
     if (dsBtn) {
@@ -5902,6 +5916,8 @@ async function saveRestSettings() {
     plan: document.getElementById('ds-plan')?.value,
     timezone: document.getElementById('ds-tz')?.value,
     language: document.getElementById('ds-lang')?.value,
+    display_feature_temp: document.getElementById('ds-feat-temp')?.checked ? 1 : 0,
+    display_feature_co2: document.getElementById('ds-feat-co2')?.checked ? 1 : 0,
     renewal_date: r.renewal_date,
     opening_hours: r.opening_hours,
     active: r.active

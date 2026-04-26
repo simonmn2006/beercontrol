@@ -86,7 +86,7 @@ router.put('/restaurants/:id', async (req, res) => {
     const fields = [
       'name', 'city', 'country', 'language', 'plan', 'renewal_date', 'active', 
       'phone', 'address', 'postal_code', 'timezone', 'opening_hours', 'wifi',
-      'line_length_meters', 'saved_liters_per_change'
+      'line_length_meters', 'saved_liters_per_change', 'display_feature_temp', 'display_feature_co2'
     ];
     
     let updates = [];

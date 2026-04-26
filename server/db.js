@@ -86,6 +86,8 @@ async function runMigrations() {
     if (!restColNames.includes('financial_settings')) await pool.query('ALTER TABLE restaurants ADD COLUMN financial_settings TEXT');
     if (!restColNames.includes('line_length_meters')) await pool.query("ALTER TABLE restaurants ADD COLUMN line_length_meters VARCHAR(50) DEFAULT '0-10m'");
     if (!restColNames.includes('saved_liters_per_change')) await pool.query('ALTER TABLE restaurants ADD COLUMN saved_liters_per_change DOUBLE DEFAULT 0.70');
+    if (!restColNames.includes('display_feature_temp')) await pool.query('ALTER TABLE restaurants ADD COLUMN display_feature_temp TINYINT DEFAULT 1');
+    if (!restColNames.includes('display_feature_co2')) await pool.query('ALTER TABLE restaurants ADD COLUMN display_feature_co2 TINYINT DEFAULT 1');
     
     const [userCols] = await pool.query('SHOW COLUMNS FROM users');
     const userColNames = userCols.map(c => c.Field);

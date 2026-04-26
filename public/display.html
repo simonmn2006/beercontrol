@@ -258,12 +258,20 @@
     .level-frame {
       position: relative;
       width: 160px; height: 720px;
+      transition: height 0.5s ease;
     }
 
     #beerCanvas {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
     }
+
+    /* ── PREMIUM FEATURE TOGGLE STATES ── */
+    body.no-temp .gauges-row .gauge-wrap:first-child { display: none; }
+    body.no-co2 .gauges-row .gauge-wrap:last-child { display: none; }
+    body.no-gauges .gauges-row { display: none; }
+    body.no-gauges .level-section { top: 300px; }
+    body.no-gauges .level-frame { height: 1100px; }
 
     /* Tick marks */
     .level-ticks {
@@ -705,8 +713,9 @@
   const canvas = document.getElementById('beerCanvas');
   const ctx    = canvas.getContext('2d');
 
-  // Test tube dimensions (2× retina)
-  const CW = 160, CH = 720;
+  // Base dimensions (2× retina)
+  const CW = 160;
+  let CH = 720;
   canvas.width  = CW * 2;
   canvas.height = CH * 2;
   ctx.scale(2, 2);
@@ -714,12 +723,8 @@
   const T_W = 120; // width of tube
   const T_R = T_W / 2;
   const T_TOP = 40;
-  const T_BOT = CH - T_R - 20; // rounded bottom starts here
   const CX = CW / 2;
-
   const LIQ_TOP = T_TOP + 40;
-  const LIQ_BOT = T_BOT + T_R - 10;
-  const LIQ_H = LIQ_BOT - LIQ_TOP;
   
   let beerTargetLevel = 0;
   let beerCurrentLevel = 0;
@@ -750,6 +755,19 @@
   }
 
   function renderBeer() {
+    const frame = document.getElementById('levelFrame');
+    const currentCH = frame ? frame.clientHeight : 720;
+    if (Math.abs(CH - currentCH) > 2) {
+      CH = currentCH;
+      canvas.height = CH * 2;
+      ctx.resetTransform();
+      ctx.scale(2, 2);
+    }
+    
+    const T_BOT = CH - T_R - 20;
+    const LIQ_BOT = T_BOT + T_R - 10;
+    const LIQ_H = LIQ_BOT - LIQ_TOP;
+
     beerCurrentLevel += (beerTargetLevel - beerCurrentLevel) * 0.012;
     waveTime += 0.022;
     ctx.clearRect(0, 0, CW, CH);
@@ -761,8 +779,9 @@
       // ── MINIMAL THEME (Flat 2D Bar) ──
       const B_W = 100;
       const B_X = (CW - B_W) / 2;
-      
-      // Background bar
+      const minimalTopY = T_TOP;
+      const minimalBotY = CH - 20;
+      const minimalH = minimalBotY - minimalTopY;
       ctx.fillStyle = 'rgba(0,0,0,0.05)';
       ctx.beginPath();
       ctx.roundRect(B_X, T_TOP, B_W, T_BOT - T_TOP + T_R, 20);
@@ -1008,6 +1027,16 @@
 
   /* ── Update UI ── */
   function updateVisuals(k) {
+    // Feature Toggles (Premium Add-ons)
+    if (k.feature_temp === false && k.feature_co2 === false) {
+      document.body.classList.add('no-gauges');
+      document.body.classList.remove('no-temp', 'no-co2');
+    } else {
+      document.body.classList.remove('no-gauges');
+      document.body.classList.toggle('no-temp', k.feature_temp === false);
+      document.body.classList.toggle('no-co2', k.feature_co2 === false);
+    }
+
     const name  = k.beer_name        || 'EMPTY TAP';
     const pct   = k.remaining_pct    || 0;
     const temp  = k.current_temp     || 0;
@@ -1190,7 +1219,11 @@
              document.getElementById('alertOverlay').classList.remove('show');
           }
           const kegData = msg.payload.kegs ? msg.payload.kegs[0] : msg.payload;
-          if (kegData) updateVisuals(kegData);
+          if (kegData) {
+            if(msg.payload.feature_temp !== undefined) kegData.feature_temp = msg.payload.feature_temp;
+            if(msg.payload.feature_co2 !== undefined) kegData.feature_co2 = msg.payload.feature_co2;
+            updateVisuals(kegData);
+          }
         }
       } catch {}
     };

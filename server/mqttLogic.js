@@ -159,8 +159,10 @@ class MqttLogic {
         SELECT k.id, k.tap_number, k.beer_name, k.keg_size_liters, k.remaining_liters, 
                k.current_temp, k.current_co2, k.current_flow, k.co2_min_bar, k.temp_max_c,
                k.alert_low_pct, k.alert_critical_pct, k.logo_path,
-               b.logo_data as library_logo
+               b.logo_data as library_logo,
+               r.display_feature_temp, r.display_feature_co2
         FROM kegs k
+        JOIN restaurants r ON k.restaurant_id = r.id
         LEFT JOIN beer_library b ON k.beer_name = b.name
         WHERE k.esp32_display_id = ? AND k.active = 1
         ORDER BY k.tap_number
@@ -173,6 +175,8 @@ class MqttLogic {
         display_id: displayId,
         timestamp: new Date().toISOString(),
         keg_count: kegs.length,
+        feature_temp: kegs[0].display_feature_temp === 1,
+        feature_co2: kegs[0].display_feature_co2 === 1,
         kegs: kegs.map(k => ({
           ...k,
           remaining_pct: Math.round(((k.remaining_liters || 0) / (k.keg_size_liters || 1)) * 100)
