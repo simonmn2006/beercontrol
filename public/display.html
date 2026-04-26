@@ -67,64 +67,107 @@
 
     /* ── GAUGES ROW ── */
     .gauges-row {
-      position: absolute; top: 320px; left: 0; right: 0;
-      display: flex; justify-content: space-around; align-items: center;
-      padding: 0 40px;
+      position: absolute; top: 290px; left: 0; right: 0;
+      display: flex; justify-content: space-around; align-items: flex-start;
+      padding: 0 25px;
     }
 
     .gauge-wrap {
-      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 18px;
     }
 
+    /* Outer glow halo */
+    .gauge-halo {
+      position: relative;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      box-shadow: 0 0 60px rgba(245,158,11,0.08);
+    }
+    .gauge-halo.blue { box-shadow: 0 0 60px rgba(56,189,248,0.08); }
+
     .gauge-ring {
-      position: relative; width: 280px; height: 280px;
+      position: relative; width: 100%; height: 100%;
     }
     .gauge-ring svg {
       width: 100%; height: 100%;
-      transform: rotate(-90deg);
       overflow: visible;
     }
-    .g-bg {
-      fill: none;
-      stroke: rgba(255,255,255,0.04);
-      stroke-width: 10;
-    }
+
+    /* Decorative back plate */
+    .g-plate   { fill: #0e0e18; }
+    .g-rim     { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 1.5; }
+    .g-rim2    { fill: none; stroke: rgba(255,255,255,0.025); stroke-width: 1; }
+
+    /* Track arcs — 270° sweep starting at 135° */
     .g-track {
       fill: none;
-      stroke: rgba(255,255,255,0.07);
-      stroke-width: 10;
-      stroke-dasharray: 659 659;
+      stroke: rgba(255,255,255,0.05);
+      stroke-width: 14;
+      stroke-linecap: round;
     }
+    /* Danger zone arc (red zone for high values) */
+    .g-danger {
+      fill: none;
+      stroke: rgba(239,68,68,0.15);
+      stroke-width: 14;
+      stroke-linecap: round;
+    }
+    /* Live fill arc */
     .g-fill {
       fill: none;
-      stroke-width: 10;
+      stroke-width: 14;
       stroke-linecap: round;
-      stroke-dasharray: 0 659;
-      transition: stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1),
-                  stroke 0.5s ease;
+      transition: stroke-dasharray 1.4s cubic-bezier(0.4, 0, 0.2, 1),
+                  stroke 0.5s ease, filter 0.5s ease;
     }
-    .g-tick { stroke: rgba(255,255,255,0.08); stroke-width: 2; }
+    /* Glow duplicate (blurred behind) */
+    .g-glow {
+      fill: none;
+      stroke-width: 22;
+      stroke-linecap: round;
+      opacity: 0.25;
+      filter: blur(8px);
+      transition: stroke-dasharray 1.4s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s ease;
+    }
 
+    /* Fine tick marks */
+    .g-tick-minor { stroke: rgba(255,255,255,0.07); stroke-width: 1.5; }
+    .g-tick-major { stroke: rgba(255,255,255,0.18); stroke-width: 2.5; }
+
+    /* Center readout */
     .gauge-center {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
+      gap: 2px;
     }
+    .gauge-icon  { font-size: 28px; margin-bottom: 4px; }
     .gauge-value {
-      font-size: 80px; font-weight: 800;
+      font-size: 88px; font-weight: 800;
       font-family: 'JetBrains Mono', monospace;
       line-height: 1;
       transition: color 0.5s ease, text-shadow 0.5s ease;
+      letter-spacing: -2px;
     }
     .gauge-unit {
-      font-size: 18px; font-weight: 700;
-      opacity: 0.4; margin-top: 4px; letter-spacing: 2px;
+      font-size: 20px; font-weight: 700;
+      opacity: 0.35; letter-spacing: 3px;
+      margin-top: 2px;
+    }
+
+    /* Label + min/max strip below */
+    .gauge-footer {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
     .gauge-label {
-      font-size: 15px; font-weight: 800; letter-spacing: 3px;
-      text-transform: uppercase; opacity: 0.5;
+      font-size: 14px; font-weight: 800; letter-spacing: 4px;
+      text-transform: uppercase; opacity: 0.4;
     }
-    .trend { font-size: 22px; margin-left: 4px; vertical-align: middle; }
+    .gauge-minmax {
+      display: flex; gap: 30px;
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+      opacity: 0.2; letter-spacing: 1px;
+    }
 
     /* ── BEER LEVEL COLUMN ── */
     .level-section {
@@ -324,57 +367,108 @@
 
     <!-- TEMPERATURE -->
     <div class="gauge-wrap">
-      <div class="gauge-ring">
-        <svg viewBox="0 0 100 100">
-          <!-- tick marks -->
-          <g transform="translate(50,50)">
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-135)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(-90)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-45)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(0)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(45)"/>
-          </g>
-          <circle class="g-bg" cx="50" cy="50" r="42"/>
-          <circle class="g-track" cx="50" cy="50" r="42"
-            stroke-dasharray="220 659"
-            stroke-dashoffset="-110"/>
-          <circle class="g-fill" id="gFillTemp" cx="50" cy="50" r="42"
-            stroke="#f59e0b"
-            stroke-dashoffset="-110"/>
-        </svg>
-        <div class="gauge-center">
-          <span class="gauge-value" id="gValTemp" style="color:#f59e0b; text-shadow:0 0 30px rgba(245,158,11,0.6)">0.0</span>
-          <span class="gauge-unit">°C</span>
+      <div class="gauge-halo">
+        <div class="gauge-ring">
+          <svg viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="tempGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#f59e0b"/>
+                <stop offset="100%" stop-color="#fde68a"/>
+              </linearGradient>
+            </defs>
+            <!-- Back plate -->
+            <circle class="g-plate" cx="100" cy="100" r="99"/>
+            <!-- Outer rim -->
+            <circle class="g-rim" cx="100" cy="100" r="97"/>
+            <circle class="g-rim2" cx="100" cy="100" r="90"/>
+            <!-- Fine tick marks (20 ticks over 270°) -->
+            <g id="ticksTemp" transform="translate(100,100)">
+              <!-- generated by JS -->
+            </g>
+            <!-- Track (270° arc, r=76): circ=477.5, 270/360*477.5=358.1 -->
+            <circle class="g-track" cx="100" cy="100" r="76"
+              stroke-dasharray="358 478"
+              stroke-dashoffset="-179"
+              transform="rotate(-135 100 100)"/>
+            <!-- Danger zone highlight (last 20% = top 70px) -->
+            <circle class="g-danger" cx="100" cy="100" r="76"
+              stroke-dasharray="72 478"
+              stroke-dashoffset="-467"
+              transform="rotate(-135 100 100)"/>
+            <!-- Glow layer -->
+            <circle class="g-glow" id="gGlowTemp" cx="100" cy="100" r="76"
+              stroke="#f59e0b"
+              stroke-dasharray="0 478"
+              stroke-dashoffset="-179"
+              transform="rotate(-135 100 100)"/>
+            <!-- Fill arc -->
+            <circle class="g-fill" id="gFillTemp" cx="100" cy="100" r="76"
+              stroke="url(#tempGrad)"
+              stroke-dasharray="0 478"
+              stroke-dashoffset="-179"
+              transform="rotate(-135 100 100)"/>
+            <!-- Inner rim -->
+            <circle class="g-rim2" cx="100" cy="100" r="62"/>
+          </svg>
+          <div class="gauge-center">
+            <span class="gauge-icon">🌡</span>
+            <span class="gauge-value" id="gValTemp" style="color:#f59e0b;text-shadow:0 0 40px rgba(245,158,11,0.7)">0.0</span>
+            <span class="gauge-unit">°C</span>
+          </div>
         </div>
       </div>
-      <span class="gauge-label">Temperature</span>
+      <div class="gauge-footer">
+        <span class="gauge-label">Temperature</span>
+        <div class="gauge-minmax"><span>0°C</span><span>20°C</span></div>
+      </div>
     </div>
 
     <!-- CO2 PRESSURE -->
     <div class="gauge-wrap">
-      <div class="gauge-ring">
-        <svg viewBox="0 0 100 100">
-          <g transform="translate(50,50)">
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-135)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(-90)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(-45)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-42" transform="rotate(0)"/>
-            <line class="g-tick" x1="0" y1="-46" x2="0" y2="-40" transform="rotate(45)"/>
-          </g>
-          <circle class="g-bg" cx="50" cy="50" r="42"/>
-          <circle class="g-track" cx="50" cy="50" r="42"
-            stroke-dasharray="220 659"
-            stroke-dashoffset="-110"/>
-          <circle class="g-fill" id="gFillCo2" cx="50" cy="50" r="42"
-            stroke="#38bdf8"
-            stroke-dashoffset="-110"/>
-        </svg>
-        <div class="gauge-center">
-          <span class="gauge-value" id="gValCo2" style="color:#38bdf8; text-shadow:0 0 30px rgba(56,189,248,0.6)">0.0</span>
-          <span class="gauge-unit">PSI</span>
+      <div class="gauge-halo blue">
+        <div class="gauge-ring">
+          <svg viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="co2Grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="100%" stop-color="#bae6fd"/>
+              </linearGradient>
+            </defs>
+            <circle class="g-plate" cx="100" cy="100" r="99"/>
+            <circle class="g-rim" cx="100" cy="100" r="97"/>
+            <circle class="g-rim2" cx="100" cy="100" r="90"/>
+            <g id="ticksCo2" transform="translate(100,100)"></g>
+            <circle class="g-track" cx="100" cy="100" r="76"
+              stroke-dasharray="358 478"
+              stroke-dashoffset="-179"
+              transform="rotate(-135 100 100)"/>
+            <circle class="g-danger" cx="100" cy="100" r="76"
+              stroke-dasharray="72 478"
+              stroke-dashoffset="-467"
+              transform="rotate(-135 100 100)"/>
+            <circle class="g-glow" id="gGlowCo2" cx="100" cy="100" r="76"
+              stroke="#38bdf8"
+              stroke-dasharray="0 478"
+              stroke-dashoffset="-179"
+              transform="rotate(-135 100 100)"/>
+            <circle class="g-fill" id="gFillCo2" cx="100" cy="100" r="76"
+              stroke="url(#co2Grad)"
+              stroke-dasharray="0 478"
+              stroke-dashoffset="-179"
+              transform="rotate(-135 100 100)"/>
+            <circle class="g-rim2" cx="100" cy="100" r="62"/>
+          </svg>
+          <div class="gauge-center">
+            <span class="gauge-icon">💨</span>
+            <span class="gauge-value" id="gValCo2" style="color:#38bdf8;text-shadow:0 0 40px rgba(56,189,248,0.7)">0.0</span>
+            <span class="gauge-unit">PSI</span>
+          </div>
         </div>
       </div>
-      <span class="gauge-label">CO₂ Pressure</span>
+      <div class="gauge-footer">
+        <span class="gauge-label">CO₂ Pressure</span>
+        <div class="gauge-minmax"><span>0 PSI</span><span>30 PSI</span></div>
+      </div>
     </div>
 
   </div>
@@ -426,17 +520,40 @@
   let flowActive  = false;
 
   /* ── Gauge arc helper ── */
-  // Gauge uses a 270° sweep (from -135° to +135°).
-  // Circumference of r=42: 2π*42 ≈ 263.9
-  // 270° of that = 263.9 * 0.75 ≈ 197.9
-  const CIRC = 2 * Math.PI * 42;
-  const ARC  = CIRC * 0.75;
+  // 270° sweep, r=76 in a 200x200 viewBox
+  // Circumference = 2π*76 ≈ 477.5. Arc = 477.5 * 0.75 ≈ 358
+  const CIRC = 2 * Math.PI * 76; // ≈477.5
+  const ARC  = CIRC * 0.75;       // ≈358
 
-  function setGaugeFill(id, value, min, max) {
-    const pct = Math.min(Math.max((value - min) / (max - min), 0), 1);
+  function setGaugeFill(fillId, glowId, value, min, max) {
+    const pct  = Math.min(Math.max((value - min) / (max - min), 0), 1);
     const dash = pct * ARC;
-    document.getElementById(id).style.strokeDasharray = `${dash} ${CIRC}`;
+    const arr  = `${dash} ${CIRC}`;
+    document.getElementById(fillId).style.strokeDasharray = arr;
+    if (glowId) document.getElementById(glowId).style.strokeDasharray = arr;
   }
+
+  /* ── Tick mark generator ── */
+  function buildTicks(containerId, count, r1, r2) {
+    const g = document.getElementById(containerId);
+    if (!g) return;
+    const startAngle = -135; // degrees
+    const sweep = 270;
+    for (let i = 0; i <= count; i++) {
+      const angle = (startAngle + (sweep / count) * i) * Math.PI / 180;
+      const isMajor = i % 5 === 0;
+      const inner   = isMajor ? r1 - 6 : r1 - 3;
+      const line    = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', (r1 * Math.cos(angle)).toFixed(2));
+      line.setAttribute('y1', (r1 * Math.sin(angle)).toFixed(2));
+      line.setAttribute('x2', (inner * Math.cos(angle)).toFixed(2));
+      line.setAttribute('y2', (inner * Math.sin(angle)).toFixed(2));
+      line.setAttribute('class', isMajor ? 'g-tick-major' : 'g-tick-minor');
+      g.appendChild(line);
+    }
+  }
+  buildTicks('ticksTemp', 20, 86, 80);
+  buildTicks('ticksCo2',  20, 86, 80);
 
   /* ── Update UI ── */
   function updateVisuals(k) {
@@ -463,11 +580,11 @@
     document.getElementById('pintsVal').textContent = pints;
 
     /* Temperature gauge */
-    setGaugeFill('gFillTemp', temp, 0, 20);
+    setGaugeFill('gFillTemp', 'gGlowTemp', temp, 0, 20);
     document.getElementById('gValTemp').textContent = temp.toFixed(1);
 
     /* CO2 gauge */
-    setGaugeFill('gFillCo2', co2, 0, 30);
+    setGaugeFill('gFillCo2', 'gGlowCo2', co2, 0, 30);
     document.getElementById('gValCo2').textContent = co2.toFixed(1);
 
     /* Level bar */
