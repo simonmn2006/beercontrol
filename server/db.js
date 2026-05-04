@@ -310,21 +310,30 @@ async function runMigrations() {
       INDEX idx_sensor_time (sensor_id, recorded_at)
     )`);
 
-    // Create payments table (Original logic)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS payments (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        restaurant_id INT NOT NULL,
-        stripe_invoice_id VARCHAR(255),
-        amount DOUBLE NOT NULL,
-        currency VARCHAR(10) DEFAULT 'EUR',
-        status VARCHAR(50),
-        receipt_url VARCHAR(2048),
-        hosted_invoice_url VARCHAR(2048),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
-      )
-    `);
+    // ── Website Content Management ──────────
+    console.log('◈ Checking website content tables...');
+    await pool.query(`CREATE TABLE IF NOT EXISTS site_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      setting_key VARCHAR(100) NOT NULL,
+      setting_value LONGTEXT,
+      language VARCHAR(10) DEFAULT 'de',
+      UNIQUE KEY (setting_key, language)
+    )`);
+
+    const [siteSetCount] = await pool.query('SELECT COUNT(*) as c FROM site_settings');
+    if (siteSetCount[0].c === 0) {
+      // Seed initial content from current translations
+      const initialSettings = [
+        ['hero_title', 'Übernehmen Sie die volle Kontrolle über Ihr <span>Fassbier</span>', 'de'],
+        ['hero_title', 'Take full control of your <span>draft beer</span>', 'en'],
+        ['hero_subtitle', 'Vermeiden Sie Verschwendung, beeindrucken Sie Kunden mit Live-Displays und überwachen Sie jeden Tropfen in Echtzeit von Ihrem Smartphone oder Tablet aus.', 'de'],
+        ['hero_subtitle', 'Avoid waste, impress customers with live displays, and monitor every drop in real-time from your smartphone or tablet.', 'en']
+      ];
+      for (const s of initialSettings) {
+        await pool.query('INSERT IGNORE INTO site_settings (setting_key, setting_value, language) VALUES (?,?,?)', s);
+      }
+    }
+
     console.log('✅ All migrations complete.');
   } catch (e) {
     console.error("Migration error:", e.message);

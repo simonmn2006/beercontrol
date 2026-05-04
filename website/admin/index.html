@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KegHero Website Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --panel: #14141e;
+      --accent: #f59e0b;
+      --text: #ffffff;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    
+    /* Login Box */
+    #login-container { width: 380px; padding: 40px; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; text-align: center; }
+    #admin-container { display: none; width: 800px; max-width: 95vw; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+
+    h1 { font-family: 'Outfit', sans-serif; margin-bottom: 20px; font-size: 24px; color: var(--accent); }
+    .form-group { text-align: left; margin-bottom: 20px; }
+    label { display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+    input, textarea, select { width: 100%; padding: 12px; background: #0a0a0f; border: 1px solid var(--border); border-radius: 10px; color: var(--text); outline: none; font-family: inherit; }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    button { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 10px; color: #000; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3); }
+
+    /* Admin Dashboard */
+    .admin-header { padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .admin-body { padding: 40px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 30px; }
+    .tab { padding: 8px 20px; background: #0a0a0f; border: 1px solid var(--border); border-radius: 100px; cursor: pointer; color: var(--text-muted); }
+    .tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+    
+    .editor-section { margin-bottom: 40px; }
+    .editor-section h2 { font-size: 18px; margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 15px; }
+    
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 10px; background: #22c55e; color: #fff; transform: translateY(100px); transition: 0.3s; z-index: 1000; }
+    .toast.show { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Login UI -->
+  <div id="login-container">
+    <h1>KegHero Admin</h1>
+    <form id="login-form">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" value="admin" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" value="admin" required>
+      </div>
+      <button type="submit" id="login-btn">Login</button>
+    </form>
+    <p id="login-error" style="color: #ef4444; font-size: 13px; margin-top: 15px; display: none;">Invalid credentials</p>
+  </div>
+
+  <!-- Admin UI -->
+  <div id="admin-container">
+    <div class="admin-header">
+      <h1>Website Editor</h1>
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <div class="tabs" style="margin-bottom: 0;">
+          <div class="tab active" id="tab-edit" onclick="switchTab('edit')">Editor</div>
+          <div class="tab" id="tab-inq" onclick="switchTab('inq')">Inquiries</div>
+          <div class="tab" id="tab-smtp" onclick="switchTab('smtp')">SMTP</div>
+        </div>
+        <select id="lang-toggle" onchange="loadContent()" style="width: 120px; background: var(--bg);">
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="en">🇬🇧 English</option>
+        </select>
+        <button onclick="logout()" style="width: auto; padding: 8px 15px; background: transparent; border: 1px solid #ef4444; color: #ef4444;">Logout</button>
+      </div>
+    </div>
+    
+    <div class="admin-body" id="view-edit">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+        
+        <!-- Left Column -->
+        <div>
+          <div class="editor-section">
+            <h2>Hero Section</h2>
+            <div class="form-group"><label>Title (HTML)</label><input type="text" id="hero_title"></div>
+            <div class="form-group"><label>Subtitle</label><textarea id="hero_subtitle" rows="3"></textarea></div>
+          </div>
+
+          <div class="editor-section">
+            <h2>Features Header</h2>
+            <div class="form-group"><label>Header</label><input type="text" id="features_header"></div>
+            <div class="form-group"><label>Subheader</label><input type="text" id="features_subheader"></div>
+          </div>
+
+          <div class="editor-section">
+            <h2>Feature Cards</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+              <div class="form-group"><label>F1 Title</label><input type="text" id="f1_title"><textarea id="f1_desc" rows="2"></textarea></div>
+              <div class="form-group"><label>F2 Title</label><input type="text" id="f2_title"><textarea id="f2_desc" rows="2"></textarea></div>
+              <div class="form-group"><label>F3 Title</label><input type="text" id="f3_title"><textarea id="f3_desc" rows="2"></textarea></div>
+              <div class="form-group"><label>F4 Title</label><input type="text" id="f4_title"><textarea id="f4_desc" rows="2"></textarea></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div>
+          <div class="editor-section">
+            <h2>Showcase Sections</h2>
+            <div class="form-group"><label>Industrial Title</label><input type="text" id="showcase_title"></div>
+            <div class="form-group"><label>Industrial Desc</label><textarea id="showcase_desc" rows="2"></textarea></div>
+            <div class="form-group" style="margin-top: 20px;"><label>Fridge Title</label><input type="text" id="fridge_title"></div>
+            <div class="form-group"><label>Fridge Desc</label><textarea id="fridge_desc" rows="2"></textarea></div>
+          </div>
+
+          <div class="editor-section">
+            <h2>Pricing Plans</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+              <div class="form-group">
+                <label>Plan 1 (Starter)</label>
+                <input type="text" id="p1_name" placeholder="Name">
+                <input type="text" id="p1_price" placeholder="Price">
+                <textarea id="p1_desc" rows="2" placeholder="Description"></textarea>
+                <div style="margin-top: 10px;">
+                  <input type="text" id="p1_f1" placeholder="Feature 1" style="margin-bottom: 5px;">
+                  <input type="text" id="p1_f2" placeholder="Feature 2" style="margin-bottom: 5px;">
+                  <input type="text" id="p1_f3" placeholder="Feature 3" style="margin-bottom: 5px;">
+                  <input type="text" id="p1_f4" placeholder="Feature 4">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Plan 2 (Pro)</label>
+                <input type="text" id="p2_name" placeholder="Name">
+                <input type="text" id="p2_price" placeholder="Price">
+                <textarea id="p2_desc" rows="2" placeholder="Description"></textarea>
+                <div style="margin-top: 10px;">
+                  <input type="text" id="p2_f1" placeholder="Feature 1" style="margin-bottom: 5px;">
+                  <input type="text" id="p2_f2" placeholder="Feature 2" style="margin-bottom: 5px;">
+                  <input type="text" id="p2_f3" placeholder="Feature 3" style="margin-bottom: 5px;">
+                  <input type="text" id="p2_f4" placeholder="Feature 4" style="margin-bottom: 5px;">
+                  <input type="text" id="p2_f5" placeholder="Feature 5">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Plan 3 (Enterprise)</label>
+                <input type="text" id="p3_name" placeholder="Name">
+                <input type="text" id="p3_price" placeholder="Price">
+                <textarea id="p3_desc" rows="2" placeholder="Description"></textarea>
+                <div style="margin-top: 10px;">
+                  <input type="text" id="p3_f1" placeholder="Feature 1" style="margin-bottom: 5px;">
+                  <input type="text" id="p3_f2" placeholder="Feature 2" style="margin-bottom: 5px;">
+                  <input type="text" id="p3_f3" placeholder="Feature 3" style="margin-bottom: 5px;">
+                  <input type="text" id="p3_f4" placeholder="Feature 4" style="margin-bottom: 5px;">
+                  <input type="text" id="p3_f5" placeholder="Feature 5">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h2>Contact & Legal</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div class="form-group"><label>Address</label><input type="text" id="address"></div>
+              <div class="form-group"><label>Email</label><input type="text" id="email"></div>
+              <div class="form-group"><label>Phone</label><input type="text" id="phone"></div>
+              <div class="form-group"><label>CEO</label><input type="text" id="legal_ceo"></div>
+              <div class="form-group"><label>Court</label><input type="text" id="legal_court"></div>
+              <div class="form-group"><label>Reg #</label><input type="text" id="legal_reg"></div>
+              <div class="form-group"><label>VAT ID</label><input type="text" id="legal_vat"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button onclick="saveChanges()" style="margin-top: 20px; font-size: 18px; padding: 20px;">Save All Website Content</button>
+    </div>
+
+    <div class="admin-body" id="view-inq" style="display: none;">
+      <div class="editor-section">
+        <h2>Customer Inquiries</h2>
+        <div id="inquiries-list" style="display: flex; flex-direction: column; gap: 15px;">
+          <!-- Inquiries will load here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-body" id="view-smtp" style="display: none;">
+      <div class="editor-section">
+        <h2>SMTP Email Settings</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">Configure your outgoing email server for contact forms.</p>
+        
+        <div style="max-width: 600px;">
+          <div class="form-group"><label>SMTP Host</label><input type="text" id="smtp_host" placeholder="smtp.gmail.com"></div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group"><label>Port</label><input type="number" id="smtp_port" value="587"></div>
+            <div class="form-group">
+              <label>Secure (SSL/TLS)</label>
+              <select id="smtp_secure">
+                <option value="false">No (STARTTLS)</option>
+                <option value="true">Yes (SSL)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Username</label><input type="text" id="smtp_user"></div>
+          <div class="form-group"><label>Password</label><input type="password" id="smtp_pass"></div>
+          <div class="form-group"><label>From Email</label><input type="email" id="smtp_from" placeholder="info@keghero.de"></div>
+          
+          <div style="display: flex; gap: 15px; margin-top: 30px;">
+            <button onclick="saveSMTP()" style="flex: 2;">Save SMTP Settings</button>
+            <button id="test-email-btn" onclick="testSMTP()" style="flex: 1; background: transparent; border: 1px solid var(--accent); color: var(--accent);">Test Connection</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Changes saved!</div>
+
+  <script>
+    let currentView = 'edit';
+
+    function switchTab(view) {
+      currentView = view;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + view).classList.add('active');
+      
+      document.getElementById('view-edit').style.display = view === 'edit' ? 'block' : 'none';
+      document.getElementById('view-inq').style.display = view === 'inq' ? 'block' : 'none';
+      document.getElementById('view-smtp').style.display = view === 'smtp' ? 'block' : 'none';
+      
+      if (view === 'inq') loadInquiries();
+      if (view === 'smtp') loadSMTP();
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const originalText = btn.textContent;
+      btn.textContent = 'Logging in...';
+      btn.disabled = true;
+      document.getElementById('login-error').style.display = 'none';
+
+      try {
+        const res = await fetch('/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = '../index.html';
+        } else {
+          document.getElementById('login-error').style.display = 'block';
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        console.error(err);
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    async function checkAuth() {
+      const res = await fetch('/admin/check');
+      const data = await res.json();
+      if (data.loggedIn) {
+        document.getElementById('login-container').style.display = 'none';
+        document.getElementById('admin-container').style.display = 'block';
+        loadContent();
+      }
+    }
+
+    async function logout() {
+      await fetch('/admin/logout', { method: 'POST' });
+      location.reload();
+    }
+
+    async function loadContent() {
+      const lang = document.getElementById('lang-toggle').value;
+      const res = await fetch('/api/content');
+      const data = await res.json();
+      const c = data[lang] || {};
+      
+      const fields = [
+        'hero_title', 'hero_subtitle', 'features_header', 'features_subheader',
+        'f1_title', 'f1_desc', 'f2_title', 'f2_desc', 'f3_title', 'f3_desc', 'f4_title', 'f4_desc',
+        'showcase_title', 'showcase_desc', 'fridge_title', 'fridge_desc',
+        'p1_name', 'p1_price', 'p1_desc', 'p1_f1', 'p1_f2', 'p1_f3', 'p1_f4',
+        'p2_name', 'p2_price', 'p2_desc', 'p2_f1', 'p2_f2', 'p2_f3', 'p2_f4', 'p2_f5',
+        'p3_name', 'p3_price', 'p3_desc', 'p3_f1', 'p3_f2', 'p3_f3', 'p3_f4', 'p3_f5',
+        'address', 'email', 'phone', 'legal_ceo', 'legal_court', 'legal_reg', 'legal_vat'
+      ];
+
+      fields.forEach(f => {
+        const el = document.getElementById(f);
+        if (el) el.value = c[f] || '';
+      });
+    }
+
+    async function saveChanges() {
+      const lang = document.getElementById('lang-toggle').value;
+      const fields = [
+        'hero_title', 'hero_subtitle', 'features_header', 'features_subheader',
+        'f1_title', 'f1_desc', 'f2_title', 'f2_desc', 'f3_title', 'f3_desc', 'f4_title', 'f4_desc',
+        'showcase_title', 'showcase_desc', 'fridge_title', 'fridge_desc',
+        'p1_name', 'p1_price', 'p1_desc', 'p1_f1', 'p1_f2', 'p1_f3', 'p1_f4',
+        'p2_name', 'p2_price', 'p2_desc', 'p2_f1', 'p2_f2', 'p2_f3', 'p2_f4', 'p2_f5',
+        'p3_name', 'p3_price', 'p3_desc', 'p3_f1', 'p3_f2', 'p3_f3', 'p3_f4', 'p3_f5',
+        'address', 'email', 'phone', 'legal_ceo', 'legal_court', 'legal_reg', 'legal_vat'
+      ];
+
+      for (const f of fields) {
+        const el = document.getElementById(f);
+        if (el) {
+          await fetch('/api/content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lang, key: f, value: el.value })
+          });
+        }
+      }
+
+      showToast('Changes saved!');
+    }
+
+    async function loadInquiries() {
+      try {
+        // We'll add a simple endpoint to fetch inquiries in server.js
+        const res = await fetch('/api/admin/inquiries');
+        const data = await res.json();
+        const list = document.getElementById('inquiries-list');
+        if (data.length === 0) {
+          list.innerHTML = '<p style="color: var(--text-muted);">No inquiries yet.</p>';
+          return;
+        }
+        list.innerHTML = data.reverse().map(i => `
+          <div style="background: #0a0a0f; border: 1px solid var(--border); padding: 20px; border-radius: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <strong style="color: var(--accent);">${i.name}</strong>
+              <span style="font-size: 11px; color: var(--text-muted);">${new Date(i.timestamp).toLocaleString()}</span>
+            </div>
+            <p style="font-size: 14px; margin-bottom: 10px; color: var(--text-muted);">${i.email}</p>
+            <p style="font-size: 15px; line-height: 1.5;">${i.message}</p>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadSMTP() {
+      const res = await fetch('/api/admin/smtp');
+      const smtp = await res.json();
+      document.getElementById('smtp_host').value = smtp.host || '';
+      document.getElementById('smtp_port').value = smtp.port || 587;
+      document.getElementById('smtp_secure').value = String(smtp.secure);
+      document.getElementById('smtp_user').value = smtp.user || '';
+      document.getElementById('smtp_pass').value = smtp.pass || '';
+      document.getElementById('smtp_from').value = smtp.from || 'info@keghero.de';
+    }
+
+    async function saveSMTP() {
+      const smtp = {
+        host: document.getElementById('smtp_host').value,
+        port: document.getElementById('smtp_port').value,
+        secure: document.getElementById('smtp_secure').value === 'true',
+        user: document.getElementById('smtp_user').value,
+        pass: document.getElementById('smtp_pass').value,
+        from: document.getElementById('smtp_from').value
+      };
+
+      const res = await fetch('/api/admin/smtp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(smtp)
+      });
+      if (res.ok) showToast('SMTP settings saved!');
+    }
+
+    async function testSMTP() {
+      const btn = document.getElementById('test-email-btn');
+      const originalText = btn.textContent;
+      btn.textContent = 'Testing...';
+      btn.disabled = true;
+
+      const smtp = {
+        host: document.getElementById('smtp_host').value,
+        port: document.getElementById('smtp_port').value,
+        secure: document.getElementById('smtp_secure').value === 'true',
+        user: document.getElementById('smtp_user').value,
+        pass: document.getElementById('smtp_pass').value,
+        from: document.getElementById('smtp_from').value
+      };
+
+      try {
+        const res = await fetch('/api/admin/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(smtp)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Test email sent successfully!');
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (e) {
+        alert('Failed to test connection');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    // Auto-check on load
+    checkAuth();
+  </script>
+</body>
+</html>

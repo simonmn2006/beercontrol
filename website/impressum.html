@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impressum | KegHero</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0a0a0f; --panel: #14141e; --accent: #f59e0b; --text: #ffffff; --text-muted: #94a3b8; --border: rgba(255, 255, 255, 0.1); --accent-amber: #f59e0b; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 60px 20px; transition: padding 0.3s; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-family: 'Outfit', sans-serif; font-size: 3rem; margin-bottom: 40px; color: var(--accent); }
+    h2 { font-size: 1.5rem; margin-top: 40px; margin-bottom: 20px; color: #fff; }
+    p { margin-bottom: 15px; color: var(--text-muted); }
+    a { color: var(--accent); text-decoration: none; }
+    .back-link { display: inline-block; margin-bottom: 40px; color: var(--text-muted); }
+    .legal-box { background: var(--panel); border: 1px solid var(--border); padding: 40px; border-radius: 24px; }
+    
+    /* Admin Bar Styles */
+    #admin-bar { position: fixed; top: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px); border-bottom: 1px solid var(--accent-amber); padding: 10px 20px; z-index: 10000; display: none; justify-content: space-between; align-items: center; }
+    .admin-controls { display: flex; gap: 15px; align-items: center; }
+    .admin-btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; font-family: inherit; }
+    .btn-edit { background: var(--accent-amber); color: #000; }
+    .btn-save { background: #10b981; color: #fff; display: none; }
+    .btn-logout { background: transparent; color: #ef4444; border: 1px solid #ef4444; }
+    [contenteditable="true"] { outline: 2px dashed var(--accent-amber); outline-offset: 4px; border-radius: 4px; cursor: text; }
+  </style>
+  <script src="translations.js" defer></script>
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <!-- Admin Bar -->
+  <div id="admin-bar">
+    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--accent-amber);">KegHero Admin Mode</div>
+    <div class="admin-controls">
+      <button class="admin-btn btn-edit" id="toggle-edit" onclick="toggleEditMode()">Enable Visual Edit</button>
+      <button class="admin-btn btn-save" id="save-inline" onclick="saveInlineChanges()">Save All Changes</button>
+      <button class="admin-btn btn-restore" style="background: #64748b; color: #fff;" onclick="restoreDefaults()">Restore Defaults</button>
+      <button class="admin-btn btn-logout" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <a href="index.html" class="back-link">← Zurück zur Startseite</a>
+    <h1 data-t="legal_impressum_title">Impressum</h1>
+    
+    <div class="legal-box">
+      <p data-t="legal_tmg">Angaben gemäß § 5 TMG</p>
+
+      <h2 data-t="legal_publisher">Herausgeber</h2>
+      <p id="legal-company" data-t="legal_company">KegHero GmbH</p>
+      <p id="legal-address" data-t="address">Musterstraße 123, 10115 Berlin</p>
+
+      <h2 data-t="legal_rep">Vertretung durch</h2>
+      <p id="legal-ceo" data-t="legal_ceo_display">Simon Mane (Geschäftsführer)</p>
+
+      <h2 data-t="legal_contact">Kontakt</h2>
+      <p>
+        <span data-t="legal_phone_label">Telefon:</span> <span id="legal-phone" data-t="phone">+49 (0) 30 12345678</span><br>
+        <span data-t="legal_email_label">E-Mail:</span> <span id="legal-email" data-t="email">info@keghero.de</span>
+      </p>
+
+      <h2 data-t="legal_register_title">Registereintrag</h2>
+      <p>
+        <span data-t="legal_register_desc">Eintragung im Handelsregister.</span><br>
+        <span data-t="legal_court_label">Registergericht:</span> <span id="legal-court" data-t="legal_court">Amtsgericht Berlin</span><br>
+        <span data-t="legal_reg_label">Registernummer:</span> <span id="legal-reg" data-t="legal_reg">HRB 123456</span>
+      </p>
+
+      <h2 data-t="legal_vat_title">Umsatzsteuer-ID</h2>
+      <p>
+        <span data-t="legal_vat_desc">Umsatzsteuer-Identifikationsnummer gemäß §27 a Umsatzsteuergesetz:</span><br>
+        <span id="legal-vat" data-t="legal_vat">DE 123 456 789</span>
+      </p>
+
+      <h2 data-t="legal_dispute_title">EU-Streitschlichtung</h2>
+      <p data-t="legal_dispute_desc">Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank">https://ec.europa.eu/consumers/odr/</a>. Unsere E-Mail-Adresse finden Sie oben im Impressum.</p>
+
+      <h2 data-t="legal_consumer_title">Verbraucherstreitbeilegung/ Universalschlichtungsstelle</h2>
+      <p data-t="legal_consumer_desc">Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+    </div>
+  </div>
+
+  <script>
+    async function loadLegal() {
+      try {
+        const res = await fetch('/api/content');
+        const data = await res.json();
+        // Use DE by default for legal docs in Germany
+        const c = data.de || {};
+        
+        if (c.address) document.getElementById('legal-address').textContent = c.address;
+        if (c.legal_ceo) document.getElementById('legal-ceo').textContent = c.legal_ceo + " (Geschäftsführer)";
+        if (c.phone) document.getElementById('legal-phone').textContent = c.phone;
+        if (c.email) document.getElementById('legal-email').textContent = c.email;
+        if (c.legal_court) document.getElementById('legal-court').textContent = c.legal_court;
+        if (c.legal_reg) document.getElementById('legal-reg').textContent = c.legal_reg;
+        if (c.legal_vat) document.getElementById('legal-vat').textContent = c.legal_vat;
+      } catch (e) { console.error(e); }
+    }
+    loadLegal();
+  </script>
+</body>
+</html>

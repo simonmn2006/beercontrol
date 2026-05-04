@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KegHero | The Ultimate Draft Beer Management Platform</title>
+  <meta name="description" content="Transform your bar with KegHero. Live inventory tracking, gorgeous multi-theme bar displays, real-time alerts, and financial analytics.">
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css?v=23">
+  <style>
+    /* Cookie Banner */
+    #cookie-banner { position: fixed; bottom: 0; left: 0; right: 0; background: #14141e; border-top: 1px solid rgba(255,255,255,0.1); padding: 20px; z-index: 9999; display: none; backdrop-filter: blur(20px); }
+    .cookie-content { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .cookie-text { font-size: 14px; color: #94a3b8; line-height: 1.5; }
+    .cookie-btns { display: flex; gap: 10px; }
+    .cookie-btn { padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; border: none; }
+    .cookie-accept { background: var(--accent-amber); color: #000; }
+    .cookie-decline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+    @media (max-width: 768px) { .cookie-content { flex-direction: column; text-align: center; } }
+
+    /* Admin Toolbar */
+    #admin-bar { position: fixed; top: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px); border-bottom: 1px solid var(--accent-amber); padding: 10px 20px; z-index: 10000; display: none; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .admin-controls { display: flex; gap: 15px; align-items: center; }
+    .admin-btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+    .btn-edit { background: var(--accent-amber); color: #000; }
+    .btn-save { background: #10b981; color: #fff; display: none; }
+    .btn-logout { background: transparent; color: #ef4444; border: 1px solid #ef4444; }
+    [contenteditable="true"] { outline: 2px dashed var(--accent-amber); outline-offset: 4px; border-radius: 4px; cursor: text; }
+    [contenteditable="true"]:hover { background: rgba(245, 158, 11, 0.05); }
+  </style>
+  <script src="translations.js?v=23" defer></script>
+  <script src="main.js?v=23" defer></script>
+</head>
+<body>
+
+  <!-- Admin Bar (Only visible when logged in) -->
+  <div id="admin-bar">
+    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--accent-amber);">KegHero Admin Mode</div>
+    <div class="admin-controls">
+      <button class="admin-btn btn-edit" id="toggle-edit" onclick="toggleEditMode()">Enable Visual Edit</button>
+      <button class="admin-btn btn-save" id="save-inline" onclick="saveInlineChanges()">Save All Changes</button>
+      <button class="admin-btn btn-restore" style="background: #64748b; color: #fff;" onclick="restoreDefaults()">Restore Defaults</button>
+      <button class="admin-btn btn-logout" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+  
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <img src="assets/logo_full.png?v=22" alt="KegHero Brand Logo" class="logo-img-wide" data-i="img_logo_nav">
+      </div>
+      <div class="nav-links">
+        <a href="#features" data-t="navbar_features">Funktionen</a>
+        <a href="#displays" data-t="navbar_displays">Displays</a>
+        <a href="#about" data-t="footer_about">Über uns</a>
+        <a href="#contact" data-i18n="nav_contact">Contact</a>
+        <a href="https://b2b.keg-hero.de" class="login-btn">Login</a>
+        <div class="lang-switch">
+          <button id="btn-de" class="lang-btn">DE</button>
+          <button id="btn-en" class="lang-btn">EN</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text-block">
+          <h1 class="fade-up" data-t="hero_title">Übernehmen Sie die volle Kontrolle über Ihr <span>Fassbier</span></h1>
+          <p class="fade-up" data-t="hero_subtitle">Vermeiden Sie Verschwendung, beeindrucken Sie Kunden mit Live-Displays und überwachen Sie jeden Tropfen in Echtzeit von Ihrem Smartphone oder Tablet aus.</p>
+          <div class="hero-actions fade-up">
+            <!-- Buttons removed as per previous request -->
+          </div>
+        </div>
+        <div class="hero-visual fade-in">
+          <div class="glass-panel" style="padding: 0; overflow: hidden; border-radius: 24px;">
+            <img src="assets/hero.png?v=22" alt="KegHero Live Dashboard" class="hero-image" style="width: 100%; height: auto; display: block;" data-i="img_hero">
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features Section -->
+  <section id="features" class="features section">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 data-t="features_header">Alles, was Sie für eine makellose Bar benötigen.</h2>
+        <p data-t="features_subheader">Entwickelt für Geschwindigkeit, Genauigkeit und maximale visuelle Wirkung.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card fade-up">
+          <div class="feature-icon">📊</div>
+          <h3 data-t="f1_title">Live-Inventaranalyse</h3>
+          <p data-t="f1_desc">Überwachen Sie exakte Volumina in Echtzeit. Wissen Sie genau, wann Sie Fässer wechseln müssen, und verfolgen Sie die ausgeschenkten vs. verkauften Mengen, um Schwund zu vermeiden.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay: 0.1s;">
+          <div class="feature-icon">🔔</div>
+          <h3 data-t="f2_title">Intelligentes Warnsystem</h3>
+          <p data-t="f2_desc">Erhalten Sie sofortige Benachrichtigungen auf Ihren Geräten, wenn ein Fass fast leer ist, die Temperatur Grenzwerte überschreitet oder der CO₂-Druck abfällt.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay: 0.2s;">
+          <div class="feature-icon">📱</div>
+          <h3 data-t="f3_title">Multi-Theme-Kioske</h3>
+          <p data-t="f3_desc">Verwandeln Sie Standard-Displays in wunderschöne, kundenorientierte 3D-Biermenüs. Wählen Sie aus verschiedenen Ansichtsmodi.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay: 0.3s;">
+          <div class="feature-icon">🌡️</div>
+          <h3 data-t="f4_title">Premium-Sensor-Add-ons</h3>
+          <p data-t="f4_desc">Schalten Sie erweiterte Einblicke mit Live-Temperatur- und CO₂-Anzeigen frei, die nahtlos in Ihre Displays integriert sind.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Industrial Monitoring Showcase -->
+  <section id="displays" class="showcase section">
+    <div class="container showcase-content">
+      <div class="showcase-text fade-right">
+        <h2 data-t="showcase_title">Industrielle <span>Präzision</span></h2>
+        <p data-t="showcase_desc">Optimiert für die Effizienz im Back-of-House-Bereich. Unsere hochauflösenden Industriedisplays ermöglichen es Ihrem Team, Temperatur, CO2 und Bierstand auf einen Blick zu überwachen.</p>
+        <ul class="showcase-list">
+          <li data-t="showcase_l1">Hochauflösende Überwachung für das Produktionspersonal.</li>
+          <li data-t="showcase_l2">Echtzeit-Anzeigen für Temperatur und CO2-Druck.</li>
+          <li data-t="showcase_l3">Karussell-Modus: Automatischer Wechsel zwischen Zapfhähnen.</li>
+        </ul>
+      </div>
+      
+      <div class="showcase-visual fade-left">
+        <div class="industrial-carousel-container">
+          <div class="industrial-carousel">
+            <!-- Slide 1: Bar Display Scene -->
+            <div class="industrial-display active">
+              <div class="industrial-img-wrap">
+                <img src="assets/inst_1.png" alt="Bar Display" class="inst-img">
+                <div class="img-overlay-label" data-t="comp1_k">Stunning 3D Customer Displays</div>
+              </div>
+            </div>
+            <!-- Slide 2: Sensor/Keg Room -->
+            <div class="industrial-display">
+              <div class="industrial-img-wrap">
+                <img src="assets/inst_2.png" alt="Keg Room" class="inst-img">
+                <div class="alert-overlay-mock">
+                  <div class="alert-box-mock">
+                    <div class="alert-text-mock" data-t="mock_alert_keg">FASS WECHSELN</div>
+                    <div class="alert-sub-mock" data-t="mock_alert_keg_sub">Kritischer Füllstand</div>
+                  </div>
+                </div>
+                <div class="img-overlay-label" data-t="f1_title">Live Inventory Analysis</div>
+              </div>
+            </div>
+            <!-- Slide 3: Analytics Tablet -->
+            <div class="industrial-display">
+              <div class="industrial-img-wrap">
+                <img src="assets/inst_3.png" alt="Analytics" class="inst-img">
+                <div class="img-overlay-label" data-t="f3_title">Cost & Revenue Analytics</div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Industrial Showcase -->
+  <section id="fridge-monitoring" class="showcase section" style="background: rgba(0,0,0,0.2);">
+    <div class="container showcase-content">
+      <div class="showcase-visual fade-right">
+        <div class="fridge-carousel">
+          <!-- Slide 1: Critical Cold Room -->
+          <div class="fridge-alert-mockup active">
+            <div class="alert-badge" data-t="mock_fridge_crit">KRITISCHER ALARM</div>
+            <h3 style="color: #fff; font-family: 'Outfit';" data-t="mock_fridge_name">Kühlraum A1</h3>
+            <div class="temp-display">
+              <div class="temp-big">8.4<span>°C</span></div>
+              <div class="temp-status critical" data-t="mock_fridge_status">ABWEICHUNG</div>
+            </div>
+            <div class="fridge-graph"><div class="graph-line"></div></div>
+            <div class="alert-message"><span data-t="mock_fridge_alert">Alarm gesendet an:</span> info@keghero.de</div>
+          </div>
+          <!-- Slide 2: Stable Keg Storage -->
+          <div class="fridge-alert-mockup">
+            <div class="alert-badge" style="background:rgba(34,197,94,0.1); color:#22c55e; border-color:rgba(34,197,94,0.3);" data-t="status_stable">STABIL</div>
+            <h3 style="color: #fff; font-family: 'Outfit';" data-t="mock_fridge_2_name">Fasslager B</h3>
+            <div class="temp-display">
+              <div class="temp-big">4.2<span>°C</span></div>
+              <div class="temp-status" style="color:#22c55e;" data-t="mock_fridge_2_status">STABIL</div>
+            </div>
+            <div class="fridge-graph"><div class="graph-line" style="background:#22c55e; width:100%; border-radius:10px;"></div></div>
+            <div class="alert-message"><span data-t="status_stable">STABIL</span> — 24h Monitoring</div>
+          </div>
+          <!-- Slide 3: Guest Area Warning -->
+          <div class="fridge-alert-mockup">
+            <div class="alert-badge" style="background:rgba(245,158,11,0.1); color:#f59e0b; border-color:rgba(245,158,11,0.3);" data-t="mock_fridge_warning">WARNUNG</div>
+            <h3 style="color: #fff; font-family: 'Outfit';" data-t="mock_fridge_3_name">Gastraum West</h3>
+            <div class="temp-display">
+              <div class="temp-big">24.8<span>°C</span></div>
+              <div class="temp-status" style="color:#f59e0b;" data-t="mock_fridge_3_status">ZU WARM</div>
+            </div>
+            <div class="fridge-graph"><div class="graph-line" style="background:#f59e0b; width:70%; border-radius:10px;"></div></div>
+            <div class="alert-message"><span data-t="mock_fridge_alert">Alarm gesendet an:</span> manager@keghero.de</div>
+          </div>
+          <div class="fridge-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-text fade-left">
+        <h2 data-t="fridge_title">Klima- & <span>Kühlraum-Überwachung</span></h2>
+        <p data-t="fridge_desc">Behalten Sie die volle Kontrolle über Ihre gesamte Umgebung. Überwachen Sie Kühlschränke, begehbare Kühlräume, Fasslager und Gasträume rund um die Uhr mit digitalen Präzisionssensoren.</p>
+        <ul class="showcase-list">
+          <li data-t="fridge_l1">Sofortige Alarmierung bei Temperaturabweichungen.</li>
+          <li data-t="fridge_l2">Verhindert teuren Inventarverlust durch Kühlungsausfall.</li>
+          <li data-t="fridge_l3">Optimieren Sie den Energieverbrauch durch präzise Daten.</li>
+        </ul>
+        <span class="price-note" data-t="fridge_price_note">*Zusatzmodul: Nicht im Standard-Abo enthalten. Separate Buchung erforderlich.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- KegHero Advantage -->
+  <section class="advantage-section section">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 data-t="adv_title">Der KegHero <span>Vorteil</span></h2>
+        <p data-t="adv_subtitle">Warum sich Profis für uns entscheiden.</p>
+      </div>
+      <div class="advantage-grid">
+        <div class="adv-card fade-up" style="transition-delay: 0.1s;">
+          <div class="adv-icon">📊</div>
+          <h3 data-t="adv1_title">Schluss mit dem Rätselraten</h3>
+          <p data-t="adv1_desc">Vergleichen Sie punktgenau das ausgeschenkte Volumen mit Ihren Kassendaten. Identifizieren Sie Schwund, Gratisbiere oder Diebstahl sofort.</p>
+        </div>
+        <div class="adv-card fade-up" style="transition-delay: 0.2s;">
+          <div class="adv-icon">⚙️</div>
+          <h3 data-t="adv2_title">Industrielle Zuverlässigkeit</h3>
+          <p data-t="adv2_desc">Keine Verzögerung, kein Ausfall. Unsere auf MQTT basierende Architektur ist für den 24/7-Dauerbetrieb in rauen Bar-Umgebungen ausgelegt.</p>
+        </div>
+        <div class="adv-card fade-up" style="transition-delay: 0.3s;">
+          <div class="adv-icon">🌐</div>
+          <h3 data-t="adv3_title">Multi-Standort-Management</h3>
+          <p data-t="adv3_desc">Verwalten Sie eine oder hundert Bars von überall auf der Welt. Skalierbare Enterprise-Lösungen für wachsende Unternehmen.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Unique Comparison -->
+  <section id="unique" class="comparison-section section">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 data-t="uniq_title">Warum KegHero weltweit <span>einzigartig</span> ist</h2>
+        <p data-t="uniq_subtitle">Wir zählen nicht nur Bier – wir revolutionieren Ihr gesamtes Bar-Management.</p>
+      </div>
+      
+      <div class="comp-grid fade-up">
+        <!-- KegHero Side -->
+        <div class="comp-col keghero">
+          <div class="comp-title-area">
+            <div class="sub">KEGHERO STANDARD</div>
+            <h3 data-t="comp_header_keghero">Zukunft des Zapfens</h3>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">✨</div>
+            <div class="comp-text">
+              <h4 data-t="comp1_k">3D-Kunden-Displays</h4>
+              <p data-t="comp1_k_desc">Marketing-Tool für maximale visuelle Wirkung am Gast.</p>
+            </div>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">🛡️</div>
+            <div class="comp-text">
+              <h4 data-t="comp2_k">Aktive Schaum-Prävention</h4>
+              <p data-t="comp2_k_desc">Überwachung von CO2 & Temp zur Vermeidung von Ausschankverlusten.</p>
+            </div>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">⚡</div>
+            <div class="comp-text">
+              <h4 data-t="comp3_k">Industrielle Echtzeit</h4>
+              <p data-t="comp3_k_desc">Keine Verzögerung dank hocheffizientem MQTT-Protokoll.</p>
+            </div>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">💰</div>
+            <div class="comp-text">
+              <h4 data-t="comp4_k">POS-Finanz-Check</h4>
+              <p data-t="comp4_k_desc">Direkter Abgleich von Ausschank und Umsatz (Soll vs. Haben).</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="comp-icon">🔔</div>
+            <div class="comp-text">
+              <h4 data-t="comp5_k">Aktive Personal-Alarme (Bild & Ton)</h4>
+              <p data-t="comp5_k_desc">Sofortige Vollbild-Alarme und Ton-Benachrichtigungen während des Betriebs.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="comp-icon">🇩🇪</div>
+            <div class="comp-text">
+              <h4 data-t="comp6_k">Entwicklung & Support aus Deutschland</h4>
+              <p data-t="comp6_k_desc">Höchste Qualitätsstandards und lokaler Ansprechpartner.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legacy Side -->
+        <div class="comp-col others">
+          <div class="comp-title-area">
+            <div class="sub">TRADITIONAL SYSTEMS</div>
+            <h3 data-t="comp_header_others">Veraltete Methoden</h3>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">📄</div>
+            <div class="comp-text">
+              <h4 data-t="comp1_o">Reine Text-Berichte</h4>
+              <p data-t="comp1_o_desc">Veraltete, schwer lesbare Listen ohne visuellen Mehrwert.</p>
+            </div>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">📉</div>
+            <div class="comp-text">
+              <h4 data-t="comp2_o">Verlustnotizen</h4>
+              <p data-t="comp2_o_desc">Man erfährt erst später, wie viel Bier verloren gegangen ist.</p>
+            </div>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">⌛</div>
+            <div class="comp-text">
+              <h4 data-t="comp3_o">Zeitversetzte Daten</h4>
+              <p data-t="comp3_o_desc">Daten werden oft nur stündlich oder täglich aktualisiert.</p>
+            </div>
+          </div>
+          
+          <div class="comp-item">
+            <div class="comp-icon">🧊</div>
+            <div class="comp-text">
+              <h4 data-t="comp4_o">Daten-Inseln</h4>
+              <p data-t="comp4_o_desc">Kein Abgleich mit Kassen- oder Finanzsystemen möglich.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="comp-icon">🔇</div>
+            <div class="comp-text">
+              <h4 data-t="comp5_o">Stille, statische Dashboards</h4>
+              <p data-t="comp5_o_desc">Das Personal muss manuell prüfen, ob ein Fehler vorliegt.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="comp-icon">🌍</div>
+            <div class="comp-text">
+              <h4 data-t="comp6_o">Anonymer Support aus Übersee</h4>
+              <p data-t="comp6_o_desc">Anonyme Call-Center und weit entfernte Server-Standorte.</p>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Us / Mission -->
+  <section id="about" class="about-section section" style="background: rgba(245, 158, 11, 0.02);">
+    <div class="container">
+      <div class="about-content fade-up">
+        <h2 data-t="about_title">Unsere Mission</h2>
+        <p class="about-p" data-t="about_text">KegHero wurde in Berlin mit einem klaren Ziel gegründet: Die Gastronomie ins digitale Zeitalter zu führen. Wir kombinieren präzise Sensortechnik mit intuitiver Software, um Ausschankverluste zu eliminieren und die Rentabilität Ihrer Bar zu maximieren. Wir glauben, dass Technologie hinter den Kulissen arbeiten sollte, damit Sie sich auf das Wesentliche konzentrieren können: Ihre Gäste.</p>
+        <div class="about-footer">
+          <div class="germany-badge" style="margin-bottom: 0;">
+            <div class="germany-flag">
+              <div class="flag-black"></div>
+              <div class="flag-red"></div>
+              <div class="flag-gold"></div>
+            </div>
+            <span data-t="made_in_germany">Entwickelt & Hergestellt in Deutschland</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="pricing section">
+    <div class="container">
+      <div class="section-header fade-up">
+        <h2 data-t="pricing_title">Einfache, transparente Preise</h2>
+        <p data-t="pricing_subheader">Keine versteckten Gebühren.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card fade-up">
+          <h3 class="plan-name" data-t="p1_name">Starter</h3>
+          <div class="plan-price" data-t="p1_price">89 €<span>/Monat</span></div>
+          <p class="plan-desc" data-t="p1_desc">Perfekt für kleine Bars.</p>
+          <ul class="plan-features">
+            <li data-t="p1_f1">Bis zu 4 Zapfhähne</li>
+            <li data-t="p1_f2">Dashboard</li>
+            <li data-t="p1_f3">Alarme</li>
+            <li data-t="p1_f4">Basic Theme</li>
+          </ul>
+        </div>
+        <div class="price-card featured fade-up">
+          <h3 class="plan-name" data-t="p2_name">Pro</h3>
+          <div class="plan-price" data-t="p2_price">189 €<span>/Monat</span></div>
+          <p class="plan-desc" data-t="p2_desc">Für Restaurants.</p>
+          <ul class="plan-features">
+            <li data-t="p2_f1">Bis zu 12 Zapfhähne</li>
+            <li data-t="p2_f2">Multi-Theme</li>
+            <li data-t="p2_f3">Sensoren</li>
+            <li data-t="p2_f4">Finanzen</li>
+            <li data-t="p2_f5">Support</li>
+          </ul>
+        </div>
+        <div class="price-card fade-up">
+          <h3 class="plan-name" data-t="p3_name">Enterprise</h3>
+          <div class="plan-price" data-t="p3_price">390 €<span>/Monat</span></div>
+          <p class="plan-desc" data-t="p3_desc">Für Ketten.</p>
+          <ul class="plan-features">
+            <li data-t="p3_f1">Unbegrenzt</li>
+            <li data-t="p3_f2">Custom Themes</li>
+            <li data-t="p3_f3">API Access</li>
+            <li data-t="p3_f4">Account Manager</li>
+            <li data-t="p3_f5">Installation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="contact-section">
+    <div class="container">
+      <div class="contact-card">
+        <div class="contact-header">
+          <h2 data-i18n="contact_title">Starten Sie jetzt mit <span>KegHero</span></h2>
+          <p data-i18n="contact_subtitle">Haben Sie Fragen?</p>
+        </div>
+        <form id="contactForm" class="premium-form">
+          <div class="form-row">
+            <div class="form-group floating"><input type="text" name="name" required id="f-name" placeholder=" "><label for="f-name" data-i18n="form_name">Ihr Name</label></div>
+            <div class="form-group floating"><input type="email" name="email" required id="f-email" placeholder=" "><label for="f-email" data-i18n="form_email">E-Mail</label></div>
+          </div>
+          <div class="form-group floating"><textarea name="message" required id="f-msg" rows="4" placeholder=" "></textarea><label for="f-msg" data-i18n="form_message">Nachricht</label></div>
+          <div class="form-footer">
+            <div class="privacy-note"><input type="checkbox" id="privacyAgree" required><label for="privacyAgree">Ich akzeptiere die <a href="datenschutz.html">Datenschutz</a></label></div>
+            <button type="submit" class="cta-button large-btn"><span data-i18n="form_submit">Senden</span><span class="btn-arrow">→</span></button>
+          </div>
+          <div id="formStatus" class="form-status"></div>
+        </form>
+        <div class="contact-footer-info">
+          <a id="link-address" target="_blank" class="c-info-item"><span class="c-icon">📍</span><p id="display-address" data-t="form_address">Musterstraße 123, Berlin</p></a>
+          <a id="link-email" class="c-info-item"><span class="c-icon">📧</span><p id="display-email">info@keghero.de</p></a>
+          <a id="link-phone" class="c-info-item"><span class="c-icon">📞</span><p id="display-phone">+49 30 123456</p></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <div class="logo"><img src="assets/logo_full.png?v=22" alt="KegHero Logo" style="height: 30px; width: auto; margin-bottom: 1rem;" data-i="img_logo_footer"></div>
+        <p data-t="footer_brand_desc">Die Premium-Zapfmanagement-Lösung.</p>
+      </div>
+      <div class="footer-links">
+        <div class="link-group">
+          <h4 data-t="footer_l1">Produkt</h4>
+          <a href="#features" data-t="navbar_features">Funktionen</a>
+          <a href="#displays" data-t="navbar_displays">Displays</a>
+        </div>
+        <div class="link-group">
+          <h4 data-t="footer_l2">Unternehmen</h4>
+          <a href="#about" data-t="footer_about">Über uns</a>
+          <a href="#contact" data-t="footer_contact">Kontakt</a>
+        </div>
+        <div class="link-group">
+          <h4 data-t="footer_l3">Rechtliches</h4>
+          <a href="impressum.html">Impressum</a>
+          <a href="datenschutz.html">Datenschutz</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom" data-t="footer_copy">&copy; 2026 KegHero. Alle Rechte vorbehalten.</div>
+  </footer>
+
+  <!-- Cookie Banner -->
+  <div id="cookie-banner">
+    <div class="cookie-content">
+      <p class="cookie-text">Diese Website verwendet Cookies. <a href="datenschutz.html" style="color:var(--accent-amber);">Mehr erfahren</a></p>
+      <div class="cookie-btns">
+        <button class="cookie-btn cookie-decline" onclick="closeCookieBanner()">Ablehnen</button>
+        <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Akzeptieren</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

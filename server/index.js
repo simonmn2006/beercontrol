@@ -51,7 +51,6 @@ function requireAdmin(req, res, next) {
   res.status(403).json({ error: 'Admin only' });
 }
 
-// ── Routes ─────────────────────────────────
 app.use('/', authRouter);
 app.use('/api', requireLogin, apiRouter);
 app.use('/api/admin', requireLogin, requireAdmin, adminRouter);

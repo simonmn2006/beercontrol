@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datenschutzerklärung | KegHero</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #0a0a0f; --panel: #14141e; --accent: #f59e0b; --text: #ffffff; --text-muted: #94a3b8; --border: rgba(255, 255, 255, 0.1); --accent-amber: #f59e0b; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 60px 20px; transition: padding 0.3s; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-family: 'Outfit', sans-serif; font-size: 3rem; margin-bottom: 40px; color: var(--accent); }
+    h2 { font-size: 1.5rem; margin-top: 40px; margin-bottom: 20px; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    h3 { font-size: 1.2rem; margin-top: 30px; margin-bottom: 15px; color: var(--accent); }
+    p { margin-bottom: 15px; color: var(--text-muted); }
+    ul { margin-bottom: 20px; padding-left: 20px; color: var(--text-muted); }
+    li { margin-bottom: 8px; }
+    a { color: var(--accent); text-decoration: none; }
+    .back-link { display: inline-block; margin-bottom: 40px; color: var(--text-muted); }
+    .legal-box { background: var(--panel); border: 1px solid var(--border); padding: 40px; border-radius: 24px; }
+
+    /* Admin Bar Styles */
+    #admin-bar { position: fixed; top: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px); border-bottom: 1px solid var(--accent-amber); padding: 10px 20px; z-index: 10000; display: none; justify-content: space-between; align-items: center; }
+    .admin-controls { display: flex; gap: 15px; align-items: center; }
+    .admin-btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; font-family: inherit; }
+    .btn-edit { background: var(--accent-amber); color: #000; }
+    .btn-save { background: #10b981; color: #fff; display: none; }
+    .btn-logout { background: transparent; color: #ef4444; border: 1px solid #ef4444; }
+    [contenteditable="true"] { outline: 2px dashed var(--accent-amber); outline-offset: 4px; border-radius: 4px; cursor: text; }
+  </style>
+  <script src="translations.js" defer></script>
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <!-- Admin Bar -->
+  <div id="admin-bar">
+    <div style="font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--accent-amber);">KegHero Admin Mode</div>
+    <div class="admin-controls">
+      <button class="admin-btn btn-edit" id="toggle-edit" onclick="toggleEditMode()">Enable Visual Edit</button>
+      <button class="admin-btn btn-save" id="save-inline" onclick="saveInlineChanges()">Save All Changes</button>
+      <button class="admin-btn btn-restore" style="background: #64748b; color: #fff;" onclick="restoreDefaults()">Restore Defaults</button>
+      <button class="admin-btn btn-logout" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <a href="index.html" class="back-link">← Zurück zur Startseite</a>
+    <h1 data-t="legal_privacy_title">Datenschutzerklärung</h1>
+    
+    <div class="legal-box">
+      <h2 data-t="privacy_s1_title">1. Datenschutz auf einen Blick</h2>
+      <h3 data-t="privacy_s1_sub1">Allgemeine Hinweise</h3>
+      <p data-t="privacy_s1_p1">Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. Ausführliche Informationen zum Thema Datenschutz entnehmen Sie unserer unter diesem Text aufgeführten Datenschutzerklärung.</p>
+
+      <h3 data-t="privacy_s1_sub2">Datenerfassung auf dieser Website</h3>
+      <p data-t="privacy_s1_p2"><strong>Wer ist verantwortlich für die Datenerfassung auf dieser Website?</strong></p>
+      <p data-t="privacy_s1_p3">Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Dessen Kontaktdaten können Sie dem Impressum dieser Website entnehmen.</p>
+      
+      <p data-t="privacy_s1_p4"><strong>Wie erfassen wir Ihre Daten?</strong></p>
+      <p data-t="privacy_s1_p5">Ihre Daten werden zum einen dadurch erhoben, dass Sie uns diese mitteilen. Hierbei kann es sich z. B. um Daten handeln, die Sie in ein Kontaktformular eingeben. Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT-Systeme erfasst. Das sind vor allem technische Daten (z. B. Internetbrowser, Betriebssystem oder Uhrzeit des Seitenaufrufs).</p>
+
+      <h2 data-t="privacy_s2_title">2. Allgemeine Hinweise und Pflichtinformationen</h2>
+      <h3 data-t="privacy_s2_sub1">Datenschutz</h3>
+      <p data-t="privacy_s2_p1">Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.</p>
+      
+      <h3 data-t="privacy_s2_sub2">Hinweis zur verantwortlichen Stelle</h3>
+      <p data-t="privacy_s2_p2">Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:</p>
+      <p>
+        <span data-t="legal_company">KegHero GmbH</span><br>
+        <span data-t="address">Musterstraße 123</span><br>
+        <span data-t="city_zip">10115 Berlin</span><br>
+        E-Mail: <span data-t="email">info@keghero.de</span>
+      </p>
+
+      <h3 data-t="privacy_s2_sub3">Speicherdauer</h3>
+      <p data-t="privacy_s2_p4">Soweit innerhalb dieser Datenschutzerklärung keine speziellere Speicherdauer genannt wurde, verbleiben Ihre personenbezogenen Daten bei uns, bis der Zweck für die Datenverarbeitung entfällt. Wenn Sie ein berechtigtes Löschersuchen geltend machen oder eine Einwilligung zur Datenverarbeitung widerrufen, werden Ihre Daten gelöscht, sofern wir keine anderen rechtlich zulässigen Gründe für die Speicherung Ihrer personenbezogenen Daten haben.</p>
+
+      <h3 data-t="privacy_s2_sub4">Rechte des Nutzers: Auskunft, Berichtigung und Löschung</h3>
+      <p data-t="privacy_s2_p5">Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung und ggf. ein Recht auf Berichtigung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema personenbezogene Daten können Sie sich jederzeit an uns wenden.</p>
+
+      <h3 data-t="privacy_s2_sub5">SSL- bzw. TLS-Verschlüsselung</h3>
+      <p data-t="privacy_s2_p6">Diese Seite nutzt aus Sicherheitsgründen und zum Schutz der Übertragung vertraulicher Inhalte, wie zum Beispiel Anfragen, die Sie an uns als Seitenbetreiber senden, eine SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen Sie daran, dass die Adresszeile des Browsers von „http://“ auf „https://“ wechselt.</p>
+
+      <h2 data-t="privacy_s3_title">3. Datenerfassung auf dieser Website</h2>
+      <h3 data-t="privacy_s3_sub1">Cookies</h3>
+      <p data-t="privacy_s3_p1">Unsere Internetseiten verwenden so genannte „Cookies“. Cookies sind kleine Textdateien und richten auf Ihrem Endgerät keinen Schaden an. Sie werden entweder vorübergehend für die Dauer einer Sitzung (Session-Cookies) oder dauerhaft (permanente Cookies) auf Ihrem Endgerät gespeichert.</p>
+      
+      <h3 data-t="privacy_s3_sub2">Kontaktformular</h3>
+      <p data-t="privacy_s3_p2">Wenn Sie uns per Kontaktformular Anfragen zukommen lassen, werden Ihre Angaben aus dem Anfrageformular inklusive der von Ihnen dort angegebenen Kontaktdaten zwecks Bearbeitung der Anfrage und für den Fall von Anschlussfragen bei uns gespeichert. Diese Daten geben wir nicht ohne Ihre Einwilligung weiter.</p>
+
+      <h2 data-t="privacy_s4_title">4. Hosting</h2>
+      <p data-t="privacy_s4_p1">Wir hosten die Inhalte unserer Website bei folgendem Anbieter:</p>
+      <p><strong>Externes Hosting</strong></p>
+      <p data-t="privacy_s4_p2">Diese Website wird extern gehostet. Die personenbezogenen Daten, die auf dieser Website erfasst werden, werden auf den Servern des Hosters gespeichert. Hierbei kann es sich v. a. um IP-Adressen, Kontaktanfragen, Meta- und Kommunikationsdaten, Webseitenzugriffe und sonstige Daten, die über eine Website generiert werden, handeln.</p>
+
+      <h2 data-t="privacy_s5_title">5. Plugins und Tools</h2>
+      <h3 data-t="privacy_s5_sub1">Google Web Fonts</h3>
+      <p data-t="privacy_s5_p1">Diese Seite nutzt zur einheitlichen Darstellung von Schriftarten so genannte Web Fonts, die von Google bereitgestellt werden. Beim Aufruf einer Seite lädt Ihr Browser die benötigten Web Fonts in ihren Browsercache, um Texte und Schriftarten korrekt anzuzeigen.</p>
+      <p data-t="privacy_s5_p2">Zu diesem Zweck muss der von Ihnen verwendete Browser Verbindung zu den Servern von Google aufnehmen. Hierdurch erlangt Google Kenntnis darüber, dass über Ihre IP-Adresse diese Website aufgerufen wurde. Die Nutzung von Google WebFonts erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO.</p>
+    </div>
+  </div>
+</body>
+</html>
