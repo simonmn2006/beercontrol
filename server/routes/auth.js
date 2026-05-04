@@ -49,15 +49,39 @@ router.post('/api/login', async (req, res) => {
 
     console.log(`✅ Login successful: ${user.email} (${user.role}) | SID: ${req.sessionID}`);
 
+    // Fetch all accessible restaurants for this user
+    let access = [];
+    if (user.role === 'admin') {
+      // Admins see all active restaurants
+      const allRests = await db.all("SELECT id, name FROM restaurants WHERE active=1");
+      access = allRests.map(r => ({ id: r.id, name: r.name }));
+    } else {
+      // Check the mapping table
+      const userAccess = await db.all(`
+        SELECT r.id, r.name 
+        FROM user_restaurant_access ura
+        JOIN restaurants r ON ura.restaurant_id = r.id
+        WHERE ura.user_id = ? AND r.active = 1
+      `, [user.id]);
+      
+      access = userAccess.map(r => ({ id: r.id, name: r.name }));
+      
+      // Also include the primary restaurant if not already in the list
+      if (user.restaurant_id && !access.find(a => a.id === user.restaurant_id)) {
+        access.push({ id: user.restaurant_id, name: user.restaurant_name });
+      }
+    }
+
     // Store session
     req.session.user = {
       id:            user.id,
       name:          user.name,
       email:         user.email,
       role:          user.role,
-      restaurant_id: user.restaurant_id,
-      restaurant:    user.restaurant_name,
+      restaurant_id: user.restaurant_id || (access.length > 0 ? access[0].id : null),
+      restaurant:    user.restaurant_name || (access.length > 0 ? access[0].name : null),
       language:      user.language || user.rest_language || 'en',
+      access:        access
     };
 
     req.session.save((err) => {
@@ -94,6 +118,32 @@ router.get('/api/me', (req, res) => {
   } else {
     res.json({ loggedIn: false });
   }
+});
+
+// ── Switch Restaurant ───────────────────────
+router.post('/api/me/switch-restaurant', async (req, res) => {
+  if (!req.session || !req.session.user) return res.status(401).json({ error: 'unauthorized' });
+  
+  const { restaurant_id } = req.body;
+  if (!restaurant_id) return res.status(400).json({ error: 'missing_id' });
+
+  // Verify access
+  const hasAccess = req.session.user.access.find(a => Number(a.id) === Number(restaurant_id));
+  if (!hasAccess && req.session.user.role !== 'admin') {
+    return res.status(403).json({ error: 'no_access' });
+  }
+
+  // Update session
+  const rest = await db.get("SELECT name FROM restaurants WHERE id=?", [restaurant_id]);
+  if (!rest) return res.status(404).json({ error: 'not_found' });
+
+  req.session.user.restaurant_id = Number(restaurant_id);
+  req.session.user.restaurant = rest.name;
+  
+  req.session.save((err) => {
+    if (err) return res.status(500).json({ error: 'save_error' });
+    res.json({ success: true, restaurant: rest.name });
+  });
 });
 
 module.exports = router;

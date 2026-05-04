@@ -73,6 +73,16 @@ async function runMigrations() {
       FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE SET NULL
     )`);
 
+    // New table for Multi-Restaurant Management
+    await pool.query(`CREATE TABLE IF NOT EXISTS user_restaurant_access (
+      user_id INT NOT NULL,
+      restaurant_id INT NOT NULL,
+      role VARCHAR(50) DEFAULT 'manager',
+      PRIMARY KEY (user_id, restaurant_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
+    )`);
+
     // ── Expansion Migrations ────────────────
     console.log('◈ Checking expansion columns...');
     const [restCols] = await pool.query('SHOW COLUMNS FROM restaurants');

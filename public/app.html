@@ -503,6 +503,10 @@ textarea{resize:vertical;min-height:80px}
     <div class="topbar-title" id="topTitle">Dashboard</div>
     <div class="mqtt-status" style="display: none;"><div class="live-dot" id="mqttDot"></div><span class="mqtt-label">MQTT</span><span id="mqttBroker">Connecting...</span></div>
     <div class="topbar-spacer"></div>
+    <div id="venue-switcher-wrap" style="display:none;align-items:center;gap:10px;margin-right:20px;padding:4px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)">
+      <span style="font-size:11px;color:var(--text3);font-family:var(--fm);letter-spacing:1px">VENUE:</span>
+      <select id="venue-switcher" style="background:none;border:none;color:var(--amber);font-weight:600;font-size:14px;cursor:pointer;outline:none;padding:0;width:auto"></select>
+    </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="toast(t('refreshing'),'info')">↻ <span data-i18n="refresh">Refresh</span></button>
       <button class="btn btn-ghost btn-sm" id="themeBtn" onclick="toggleTheme()">☀ Light</button>
@@ -2390,6 +2394,30 @@ textarea{resize:vertical;min-height:80px}
         document.getElementById('uemail').textContent = u.role === 'admin' ? u.email : u.restaurant;
         document.getElementById('urole').textContent = u.role === 'admin' ? 'Admin' : window.t('active');
         document.getElementById('urole').className = 'role-badge ' + (u.role === 'admin' ? 'admin' : 'user');
+        
+        // Multi-Restaurant Switcher
+        const switcherWrap = document.getElementById('venue-switcher-wrap');
+        if (u.access && u.access.length > 1) {
+          const sel = document.getElementById('venue-switcher');
+          switcherWrap.style.display = 'flex';
+          sel.innerHTML = u.access.map(a => `<option value="${a.id}" ${Number(a.id) === Number(u.restaurant_id) ? 'selected' : ''}>${a.name}</option>`).join('');
+          sel.onchange = async (e) => {
+            try {
+              const res = await fetch('/api/me/switch-restaurant', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ restaurant_id: e.target.value })
+              });
+              const data = await res.json();
+              if (data.success) {
+                toast('Switching venue to ' + data.restaurant + '...', 'info');
+                setTimeout(() => window.location.reload(), 800);
+              }
+            } catch(err) { console.error('Switch failed', err); }
+          };
+        } else {
+          switcherWrap.style.display = 'none';
+        }
         
         // Initialize Data after successful login
         if (u.role === 'admin') {
@@ -8234,25 +8262,53 @@ nav = function(id, el) {
   }
 };
 
+function selectLineRange(range, liters, idx) {
+  document.getElementById('selected-line-range').value = range;
+  document.getElementById('selected-line-liters').value = liters;
+  document.querySelectorAll('.line-range-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('lrc-' + idx);
+  if (card) card.classList.add('active');
+}
+
 function buildLineTab() {
   const r = RESTAURANTS_DATA.find(x => x.id === parseInt(window.currentRestaurantId));
   if (!r) return;
-  
-  const range = r </script>   // Update local memory so it stays selected if they switch tabs
-      const r = RESTAURANTS_DATA.find(x => x.id === restId);
+  const range = r.line_length_meters || '0-10m';
+  const cards = { '0-10m': 1, '11-20m': 2, '21-30m': 3, '31-50m': 4 };
+  const idx = cards[range] || 1;
+  const liters = { '0-10m': 0.70, '11-20m': 1.40, '21-30m': 2.15, '31-50m': 3.50 }[range] || 0.70;
+  selectLineRange(range, liters, idx);
+}
+
+async function saveLineSettings() {
+  const btn = event.target;
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  try {
+    const range = document.getElementById('selected-line-range').value;
+    const liters = document.getElementById('selected-line-liters').value;
+    const restId = window.currentRestaurantId;
+    const res = await fetch('/api/restaurants/' + restId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ line_length_meters: range, saved_liters_per_change: liters })
+    });
+    const result = await res.json();
+    if (result.success) {
+      toast('Line settings saved!', 'success');
+      const r = RESTAURANTS_DATA.find(x => x.id === parseInt(restId));
       if (r) {
         r.line_length_meters = range;
-        r.saved_liters_per_change = liters;
+        r.saved_liters_per_change = parseFloat(liters);
       }
-      
-      // Update dashboard to reflect new savings immediately
-      loadRestaurantDashboard(); 
+      loadRestaurantDashboard();
     } else {
       toast('Failed to save: ' + (result.error || 'Server error'), 'error');
     }
-  } catch(e) { 
+  } catch(e) {
     console.error(e);
-    toast('Error saving settings', 'error'); 
+    toast('Error saving settings', 'error');
   } finally {
     btn.textContent = oldText;
     btn.disabled = false;

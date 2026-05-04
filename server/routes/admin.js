@@ -71,8 +71,17 @@ router.post('/restaurants', async (req, res) => {
     
     if (owner_email && owner_name) {
       const hash = bcrypt.hashSync(owner_password || 'changeme123', 10);
-      await db.run("INSERT IGNORE INTO users (name,email,password_hash,role,language,restaurant_id) VALUES (?,?,?,'owner',?,?)",
+      const userRes = await db.run("INSERT IGNORE INTO users (name,email,password_hash,role,language,restaurant_id) VALUES (?,?,?,'owner',?,?)",
         [owner_name, owner_email, hash, language||'en', r.lastInsertRowid]);
+      
+      // Also add mapping for multi-restaurant access
+      let uid = userRes.lastInsertRowid;
+      if (uid === 0) { // User already existed
+        const existing = await db.get("SELECT id FROM users WHERE email=?", [owner_email]);
+        uid = existing.id;
+      }
+      await db.run("INSERT IGNORE INTO user_restaurant_access (user_id, restaurant_id, role) VALUES (?,?,?)",
+        [uid, r.lastInsertRowid, 'owner']);
     }
     res.json({ success: true, id: r.lastInsertRowid });
   } catch (err) {
@@ -177,6 +186,12 @@ router.post('/users', async (req, res) => {
     const hash = bcrypt.hashSync(password || 'changeme123', 10);
     const r = await db.run("INSERT INTO users (name,email,password_hash,role,restaurant_id,language,phone) VALUES (?,?,?,?,?,?,?)",
       [name, email, hash, role||'user', restaurant_id||null, language||'en', phone||'']);
+    
+    // Add mapping for multi-restaurant access
+    if (restaurant_id) {
+      await db.run("INSERT IGNORE INTO user_restaurant_access (user_id, restaurant_id, role) VALUES (?,?,?)",
+        [r.lastInsertRowid, restaurant_id, role||'user']);
+    }
     res.json({ success: true, id: r.lastInsertRowid });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
